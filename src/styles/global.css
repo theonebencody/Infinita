@@ -297,6 +297,35 @@
   .lh-filter-row{justify-content:center}
 }
 
+/* ── Mission Report ── */
+  .mission-report-btn{display:block;margin-bottom:6px;background:rgba(0,15,30,0.7);border:1px solid rgba(0,238,255,0.22);color:#0ef;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border-radius:2px;transition:all 0.15s;white-space:nowrap}
+  .mission-report-btn:hover{border-color:rgba(0,238,255,0.55);background:rgba(0,238,255,0.08)}
+  .report-overlay{position:fixed;inset:0;z-index:155;display:none;align-items:center;justify-content:center;background:rgba(0,4,12,0.88);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .report-overlay.active{display:flex}
+  .report-card{position:relative;background:rgba(0,10,22,0.96);border:1px solid rgba(0,238,255,0.2);border-radius:6px;padding:0;max-width:600px;width:92%;max-height:85vh;overflow-y:auto;animation:welcomeSlide 0.4s ease}
+  .report-card::-webkit-scrollbar{width:4px}.report-card::-webkit-scrollbar-thumb{background:rgba(0,238,255,0.15);border-radius:2px}
+  .report-header{padding:24px 28px 16px;border-bottom:1px solid rgba(0,238,255,0.1);text-align:center}
+  .report-icon{font-size:28px;color:#0ef;margin-bottom:8px}
+  .report-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;letter-spacing:4px;color:rgba(0,238,255,0.5);margin-bottom:10px}
+  .report-target{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:#fff;letter-spacing:1px}
+  .report-body{padding:20px 28px 28px}
+  .report-section{margin-bottom:18px}
+  .report-section-title{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,238,255,0.4);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid rgba(0,238,255,0.07)}
+  .report-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(0,238,255,0.04)}
+  .report-label{font-size:11px;color:rgba(255,255,255,0.55)}
+  .report-value{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#0ef;text-align:right;max-width:55%}
+  .report-mindblown{background:rgba(255,185,0,0.06);border:1px solid rgba(255,185,0,0.15);border-radius:4px;padding:12px 14px;margin-top:8px}
+  .report-mindblown-title{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:#fb4;margin-bottom:8px}
+  .report-mindblown-text{font-size:11px;color:rgba(255,255,255,0.7);line-height:1.8}
+
+  @media(max-width:768px){
+    .report-card{width:95%;max-height:80vh}
+    .report-header{padding:18px 16px 12px}
+    .report-body{padding:14px 16px 20px}
+    .report-target{font-size:16px}
+    .mission-report-btn{font-size:8px;padding:5px 10px}
+  }
+
 /* ── Welcome Intro ── */
   .welcome-overlay{position:fixed;inset:0;z-index:160;background:rgba(0,4,12,0.92);display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fadeIn 0.4s ease}
   .welcome-overlay.active{display:flex}

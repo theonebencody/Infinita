@@ -1549,6 +1549,7 @@ if (isMobile) {
     _closeMenu(); exploreMode ? stopExploreMode() : startExploreMode();
   });
   document.getElementById('mob-controls').addEventListener('click', () => { _closeMenu(); toggleControls(); });
+  document.getElementById('mob-report').addEventListener('click', () => { _closeMenu(); generateMissionReport(); });
 
   // View
   document.getElementById('mob-scale').addEventListener('click', () => {
@@ -1736,6 +1737,164 @@ function updateHUD() {
     if (sl) sl.textContent = formatSpeed(moveSpeed);
   }
 }
+
+// ═══════════════════════════════════════════════
+//  MISSION REPORT
+// ═══════════════════════════════════════════════
+function generateMissionReport() {
+  const nearest = _nearestBody;
+  const name = nearest?.name || 'Unknown';
+  const distAU = camera.position.distanceTo(nearest?.pos || new THREE.Vector3());
+  const distKM = distAU * AU;
+  const distLY = distAU / 63241;
+
+  // Real distances from Sun for known bodies (AU)
+  const realDistFromEarth = {
+    Sun: 1.0, Mercury: 0.61, Venus: 0.28, Earth: 0, Mars: 0.52,
+    Jupiter: 4.2, Saturn: 8.5, Uranus: 18.2, Neptune: 29.1
+  };
+  const earthDistAU = realDistFromEarth[name] !== undefined ? realDistFromEarth[name] : distAU;
+  const earthDistKM = earthDistAU * AU;
+
+  // Light travel time
+  const lightTimeSec = earthDistKM / 299792.458;
+  let lightTimeStr;
+  if (lightTimeSec < 60) lightTimeStr = lightTimeSec.toFixed(1) + ' seconds';
+  else if (lightTimeSec < 3600) lightTimeStr = (lightTimeSec / 60).toFixed(1) + ' minutes';
+  else if (lightTimeSec < 86400) lightTimeStr = (lightTimeSec / 3600).toFixed(2) + ' hours';
+  else if (lightTimeSec < 86400 * 365.25) lightTimeStr = (lightTimeSec / 86400).toFixed(1) + ' days';
+  else lightTimeStr = (lightTimeSec / (86400 * 365.25)).toFixed(2) + ' years';
+
+  // Travel times at various speeds
+  const speeds = [
+    { name: 'Walking (5 km/h)', kms: 0.00139 },
+    { name: 'Commercial jet (900 km/h)', kms: 0.25 },
+    { name: 'Apollo 10 (39,897 km/h)', kms: 11.08 },
+    { name: 'Voyager 1 (17 km/s)', kms: 17 },
+    { name: 'Parker Solar Probe (163 km/s)', kms: 163 },
+    { name: '10% speed of light', kms: 29979 },
+    { name: 'Speed of light', kms: 299792.458 }
+  ];
+
+  function fmtTime(seconds) {
+    if (seconds < 60) return seconds.toFixed(1) + ' sec';
+    if (seconds < 3600) return (seconds / 60).toFixed(1) + ' min';
+    if (seconds < 86400) return (seconds / 3600).toFixed(1) + ' hours';
+    if (seconds < 86400 * 365.25) return (seconds / 86400).toFixed(1) + ' days';
+    const years = seconds / (86400 * 365.25);
+    if (years < 1000) return years.toFixed(1) + ' years';
+    if (years < 1e6) return (years / 1000).toFixed(1) + ' thousand years';
+    if (years < 1e9) return (years / 1e6).toFixed(1) + ' million years';
+    return (years / 1e9).toFixed(1) + ' billion years';
+  }
+
+  // Relativity: time dilation at 90% c
+  const v = 0.9; // 90% of c
+  const gamma = 1 / Math.sqrt(1 - v * v); // Lorentz factor
+  const travelTimeEarth = earthDistKM / (v * 299792.458); // seconds
+  const travelTimeShip = travelTimeEarth / gamma;
+
+  // 99.99% c
+  const v2 = 0.9999;
+  const gamma2 = 1 / Math.sqrt(1 - v2 * v2);
+  const travelTimeEarth2 = earthDistKM / (v2 * 299792.458);
+  const travelTimeShip2 = travelTimeEarth2 / gamma2;
+
+  // Interesting facts
+  const diameterKM = (nearest?.rReal || 0) * 2;
+  const howManyEarths = diameterKM > 0 ? ((nearest?.rReal || 1) / 6371).toFixed(1) : '?';
+  const tempC = (nearest?.temp || 0) > 0 ? `${nearest.temp} K (${(nearest.temp - 273.15).toFixed(0)}°C)` : 'Unknown';
+
+  // Build report HTML
+  let html = '';
+
+  // Distance section
+  html += `<div class="report-section">
+    <div class="report-section-title">Distance from Earth</div>
+    <div class="report-row"><span class="report-label">Kilometers</span><span class="report-value">${earthDistKM > 1e9 ? (earthDistKM / 1e9).toFixed(2) + ' billion km' : earthDistKM > 1e6 ? (earthDistKM / 1e6).toFixed(1) + ' million km' : earthDistKM.toFixed(0) + ' km'}</span></div>
+    <div class="report-row"><span class="report-label">Astronomical Units</span><span class="report-value">${earthDistAU.toFixed(4)} AU</span></div>
+    ${distLY > 0.001 ? `<div class="report-row"><span class="report-label">Light Years</span><span class="report-value">${distLY < 1 ? (distLY * 365.25).toFixed(1) + ' light-days' : distLY.toFixed(2) + ' ly'}</span></div>` : ''}
+    <div class="report-row"><span class="report-label">Light travel time</span><span class="report-value">${lightTimeStr}</span></div>
+  </div>`;
+
+  // Object info section
+  if (diameterKM > 0) {
+    html += `<div class="report-section">
+      <div class="report-section-title">Object Profile</div>
+      ${diameterKM > 0 ? `<div class="report-row"><span class="report-label">Diameter</span><span class="report-value">${diameterKM > 1e6 ? (diameterKM / 1e6).toFixed(2) + ' million km' : diameterKM.toFixed(0) + ' km'}</span></div>` : ''}
+      <div class="report-row"><span class="report-label">Size vs Earth</span><span class="report-value">${howManyEarths}× Earth radius</span></div>
+      ${nearest?.temp ? `<div class="report-row"><span class="report-label">Temperature</span><span class="report-value">${tempC}</span></div>` : ''}
+    </div>`;
+  }
+
+  // Travel times section
+  html += `<div class="report-section">
+    <div class="report-section-title">How long to get there?</div>`;
+  speeds.forEach(s => {
+    const sec = earthDistKM / s.kms;
+    html += `<div class="report-row"><span class="report-label">${s.name}</span><span class="report-value">${fmtTime(sec)}</span></div>`;
+  });
+  html += `</div>`;
+
+  // Relativity section
+  html += `<div class="report-section">
+    <div class="report-section-title">Einstein{"'"}s Relativity</div>
+    <div class="report-row"><span class="report-label">At 90% light speed (0.9c)</span><span class="report-value"></span></div>
+    <div class="report-row"><span class="report-label">&nbsp;&nbsp;Time on Earth</span><span class="report-value">${fmtTime(travelTimeEarth)}</span></div>
+    <div class="report-row"><span class="report-label">&nbsp;&nbsp;Time on the ship</span><span class="report-value">${fmtTime(travelTimeShip)}</span></div>
+    <div class="report-row"><span class="report-label">&nbsp;&nbsp;Lorentz factor (γ)</span><span class="report-value">${gamma.toFixed(2)}×</span></div>
+    <div class="report-row"><span class="report-label">At 99.99% light speed (0.9999c)</span><span class="report-value"></span></div>
+    <div class="report-row"><span class="report-label">&nbsp;&nbsp;Time on Earth</span><span class="report-value">${fmtTime(travelTimeEarth2)}</span></div>
+    <div class="report-row"><span class="report-label">&nbsp;&nbsp;Time on the ship</span><span class="report-value">${fmtTime(travelTimeShip2)}</span></div>
+    <div class="report-row"><span class="report-label">&nbsp;&nbsp;Lorentz factor (γ)</span><span class="report-value">${gamma2.toFixed(1)}×</span></div>
+  </div>`;
+
+  // Mind-bending facts
+  const ageDiffYears = (travelTimeEarth - travelTimeShip) / (86400 * 365.25);
+  const ageDiffYears2 = (travelTimeEarth2 - travelTimeShip2) / (86400 * 365.25);
+  const walkYears = earthDistKM / (0.00139 * 86400 * 365.25);
+  const lifetimes = walkYears / 80;
+
+  let mindBlown = '';
+  if (ageDiffYears2 > 0.01) {
+    mindBlown += `<p>At 99.99% the speed of light, you'd arrive having aged <strong>${fmtTime(travelTimeShip2)}</strong>, but everyone on Earth would have aged <strong>${fmtTime(travelTimeEarth2)}</strong>. You'd come back <strong>${ageDiffYears2 > 1 ? ageDiffYears2.toFixed(1) + ' years' : (ageDiffYears2 * 365.25).toFixed(0) + ' days'}</strong> younger than your twin who stayed home.</p>`;
+  }
+  if (lifetimes > 1) {
+    mindBlown += `<p>Walking non-stop, it would take <strong>${walkYears > 1e6 ? (walkYears / 1e6).toFixed(1) + ' million' : walkYears > 1000 ? (walkYears / 1000).toFixed(1) + ' thousand' : walkYears.toFixed(0)}</strong> years — about <strong>${lifetimes > 1e6 ? (lifetimes / 1e6).toFixed(1) + ' million' : lifetimes > 1000 ? (lifetimes / 1000).toFixed(0) + ' thousand' : lifetimes.toFixed(0)}</strong> human lifetimes.</p>`;
+  }
+  if (lightTimeSec > 1) {
+    mindBlown += `<p>If you called home, it would take <strong>${lightTimeStr}</strong> for your voice to arrive. A conversation would have a <strong>${(lightTimeSec * 2) < 60 ? (lightTimeSec * 2).toFixed(1) + ' second' : (lightTimeSec * 2) < 3600 ? ((lightTimeSec * 2) / 60).toFixed(1) + ' minute' : fmtTime(lightTimeSec * 2)}</strong> round-trip delay.</p>`;
+  }
+  if (earthDistKM > 1e9) {
+    const photonAge = lightTimeSec / (86400 * 365.25);
+    mindBlown += `<p>The light reaching you from ${name} right now left there <strong>${photonAge > 1 ? photonAge.toFixed(1) + ' years' : (photonAge * 365.25).toFixed(0) + ' days'}</strong> ago. You're literally looking back in time.</p>`;
+  }
+  if (nearest?.temp > 5000) {
+    mindBlown += `<p>At <strong>${nearest.temp.toLocaleString()} K</strong>, ${name} is so hot that every known material would vaporize long before you got close.</p>`;
+  }
+
+  if (mindBlown) {
+    html += `<div class="report-mindblown">
+      <div class="report-mindblown-title">★ MIND-BENDING FACTS</div>
+      <div class="report-mindblown-text">${mindBlown}</div>
+    </div>`;
+  }
+
+  // Show the report
+  document.getElementById('report-target-name').textContent = name.toUpperCase();
+  document.getElementById('report-body').innerHTML = html;
+  document.getElementById('mission-report').classList.add('active');
+}
+
+document.getElementById('mission-report-btn').addEventListener('click', generateMissionReport);
+document.getElementById('report-close-btn').addEventListener('click', () => {
+  document.getElementById('mission-report').classList.remove('active');
+});
+document.getElementById('mission-report').addEventListener('click', e => {
+  if (e.target === document.getElementById('mission-report')) {
+    document.getElementById('mission-report').classList.remove('active');
+  }
+});
 
 // ═══════════════════════════════════════════════
 //  SPLASH BIG BANG BACKGROUND

@@ -85,7 +85,8 @@ function App() {
         </div>
 
         <div className="hud-bl">
-          <button className="lh-back-btn" id="hud-back-btn" style={{marginBottom:'8px',pointerEvents:'all'}}>← BACK</button>
+          <button className="lh-back-btn" id="hud-back-btn" style={{marginBottom:'8px',pointerEvents:'all'}}>{'\u2190'} BACK</button>
+          <button className="mission-report-btn" id="mission-report-btn" style={{pointerEvents:'all'}}>{'\u2263'} MISSION REPORT</button>
           <div className="hud-panel controls-help" id="controls-help">
             <span>C</span> Show all controls
           </div>
@@ -220,6 +221,19 @@ function App() {
             <div className="welcome-feat">{'\u2726'} Hit R for auto-explore and let the universe surprise you</div>
           </div>
           <div className="welcome-hint">Controls will display next...</div>
+        </div>
+      </div>
+
+      {/* Mission Report Overlay */}
+      <div id="mission-report" className="report-overlay">
+        <div className="report-card">
+          <button className="panel-close-btn" id="report-close-btn">{'\u2715'}</button>
+          <div className="report-header">
+            <div className="report-icon">{'\u2263'}</div>
+            <div className="report-title">MISSION REPORT</div>
+            <div className="report-target" id="report-target-name">---</div>
+          </div>
+          <div className="report-body" id="report-body"></div>
         </div>
       </div>
 
@@ -381,6 +395,7 @@ function App() {
             <button className="mob-menu-item" id="mob-nav">{'\u2316'} Navigation Computer</button>
             <button className="mob-menu-item" id="mob-explore">{'\u2B21'} Auto-Explore</button>
             <button className="mob-menu-item" id="mob-controls">{'\u2328'} Show Controls</button>
+            <button className="mob-menu-item" id="mob-report">{'\u2263'} Mission Report</button>
           </div>
           <div className="mob-menu-section">
             <div className="mob-menu-title">VIEW</div>
