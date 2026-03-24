@@ -245,6 +245,26 @@ function App() {
         </div>
       </div>
 
+      {/* Mobile Touch Controls */}
+      <div id="mobile-controls">
+        <div className="mobile-joystick" id="joystick-area">
+          <div className="joystick-knob" id="joystick-knob"></div>
+        </div>
+        <div className="mobile-action-bar">
+          <button className="mob-btn" id="mob-search" title="Search">F</button>
+          <button className="mob-btn" id="mob-nav" title="Navigation">T</button>
+          <button className="mob-btn" id="mob-explore" title="Explore">R</button>
+          <button className="mob-btn" id="mob-scale" title="Scale">TAB</button>
+          <button className="mob-btn" id="mob-nearest" title="Nearest">G</button>
+          <button className="mob-btn" id="mob-time" title="Time">P</button>
+        </div>
+      </div>
+      <div className="mobile-speed-area" id="mobile-speed">
+        <button className="mob-speed-btn" id="mob-speed-up">+</button>
+        <div className="mob-speed-label" id="mob-speed-label">SPD</div>
+        <button className="mob-speed-btn" id="mob-speed-down">-</button>
+      </div>
+
       <div id="labels" />
     </>
   )

@@ -14,11 +14,16 @@ export function init(container) {
 'use strict';
 
 // ═══════════════════════════════════════════════
+//  MOBILE DETECTION
+// ═══════════════════════════════════════════════
+const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 1200);
+
+// ═══════════════════════════════════════════════
 //  THREE.JS SETUP
 // ═══════════════════════════════════════════════
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 container.prepend(renderer.domElement);
@@ -117,7 +122,7 @@ PLANETS.forEach(p => {
 // ═══════════════════════════════════════════════
 //  ASTEROID BELT
 // ═══════════════════════════════════════════════
-const asteroidCount = 2000;
+const asteroidCount = isMobile ? 800 : 2000;
 const asteroidPositions = new Float32Array(asteroidCount * 3);
 for (let i = 0; i < asteroidCount; i++) {
   const a = 2.2 + Math.random() * 1.2; // 2.2 - 3.4 AU
@@ -246,7 +251,7 @@ initComets(scene);
 // ═══════════════════════════════════════════════
 //  BACKGROUND STARFIELD
 // ═══════════════════════════════════════════════
-const starCount = 8000;
+const starCount = isMobile ? 3000 : 8000;
 const starPositions = new Float32Array(starCount * 3);
 const starColors = new Float32Array(starCount * 3);
 for (let i = 0; i < starCount; i++) {
@@ -312,7 +317,7 @@ const galaxyGroup = new THREE.Group();
 galaxyGroup.visible = false;
 scene.add(galaxyGroup);
 
-const galaxyStarCount = 15000;
+const galaxyStarCount = isMobile ? 6000 : 15000;
 const gPositions = new Float32Array(galaxyStarCount * 3);
 const gColors = new Float32Array(galaxyStarCount * 3);
 for (let i = 0; i < galaxyStarCount; i++) {
@@ -1362,14 +1367,185 @@ document.addEventListener('wheel', e => {
   moveSpeed = getSpeedFromLevel(speedLevel);
 }, { passive: true });
 
-// Pointer lock for smoother control
-renderer.domElement.addEventListener('click', () => {
-  if (started) renderer.domElement.requestPointerLock && renderer.domElement.requestPointerLock();
-});
-document.addEventListener('pointerlockchange', () => {
-  if (document.pointerLockElement === renderer.domElement) mouseDown = true;
-  else mouseDown = false;
-});
+// Pointer lock for smoother control (desktop only)
+if (!isMobile) {
+  renderer.domElement.addEventListener('click', () => {
+    if (started) renderer.domElement.requestPointerLock && renderer.domElement.requestPointerLock();
+  });
+  document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement === renderer.domElement) mouseDown = true;
+    else mouseDown = false;
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  MOBILE TOUCH CONTROLS
+// ═══════════════════════════════════════════════
+if (isMobile) {
+  const mobileCtrl = document.getElementById('mobile-controls');
+  const mobileSpeed = document.getElementById('mobile-speed');
+  const joystickArea = document.getElementById('joystick-area');
+  const joystickKnob = document.getElementById('joystick-knob');
+
+  // Joystick state
+  let joyActive = false, joyTouchId = null;
+  let joyX = 0, joyY = 0; // -1 to 1
+
+  joystickArea.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    joyActive = true;
+    joyTouchId = t.identifier;
+    _updateJoy(t);
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    if (!joyActive) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joyTouchId) {
+        _updateJoy(e.changedTouches[i]);
+        break;
+      }
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joyTouchId) {
+        joyActive = false; joyTouchId = null; joyX = 0; joyY = 0;
+        joystickKnob.style.transform = 'translate(-50%,-50%)';
+        break;
+      }
+    }
+  });
+
+  function _updateJoy(touch) {
+    const rect = joystickArea.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const maxR = rect.width / 2 - 22;
+    let dx = touch.clientX - cx, dy = touch.clientY - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > maxR) { dx = dx/dist*maxR; dy = dy/dist*maxR; }
+    joyX = dx / maxR; joyY = dy / maxR;
+    joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  }
+
+  // Apply joystick to movement keys each frame
+  function applyJoystick() {
+    keys['KeyW'] = joyY < -0.2;
+    keys['KeyS'] = joyY > 0.2;
+    keys['KeyA'] = joyX < -0.2;
+    keys['KeyD'] = joyX > 0.2;
+  }
+
+  // Touch look: one-finger drag on the canvas (not joystick) rotates camera
+  let lookTouchId = null;
+  let lookLastX = 0, lookLastY = 0;
+
+  renderer.domElement.addEventListener('touchstart', e => {
+    if (e.touches.length === 1 && !joyActive) {
+      lookTouchId = e.touches[0].identifier;
+      lookLastX = e.touches[0].clientX;
+      lookLastY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  renderer.domElement.addEventListener('touchmove', e => {
+    if (lookTouchId === null) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      if (t.identifier === lookTouchId) {
+        if (!started || travelActive) return;
+        const dx = t.clientX - lookLastX;
+        const dy = t.clientY - lookLastY;
+        yaw -= dx * 0.004;
+        pitch -= dy * 0.004;
+        pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+        lookLastX = t.clientX;
+        lookLastY = t.clientY;
+        break;
+      }
+    }
+  }, { passive: true });
+
+  renderer.domElement.addEventListener('touchend', e => {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === lookTouchId) {
+        lookTouchId = null;
+        break;
+      }
+    }
+  });
+
+  // Pinch to zoom (adjust speed)
+  let pinchDist0 = 0;
+  renderer.domElement.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lookTouchId = null; // cancel look
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchDist0 = Math.sqrt(dx*dx + dy*dy);
+    }
+  }, { passive: true });
+
+  renderer.domElement.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const delta = d - pinchDist0;
+      if (Math.abs(delta) > 5) {
+        speedLevel = Math.max(MIN_SPEED_LEVEL, Math.min(MAX_SPEED_LEVEL, speedLevel + (delta > 0 ? 1 : -1)));
+        moveSpeed = getSpeedFromLevel(speedLevel);
+        pinchDist0 = d;
+      }
+    }
+  }, { passive: true });
+
+  // Speed +/- buttons
+  document.getElementById('mob-speed-up').addEventListener('click', () => {
+    speedLevel = Math.min(MAX_SPEED_LEVEL, speedLevel + 2);
+    moveSpeed = getSpeedFromLevel(speedLevel);
+  });
+  document.getElementById('mob-speed-down').addEventListener('click', () => {
+    speedLevel = Math.max(MIN_SPEED_LEVEL, speedLevel - 2);
+    moveSpeed = getSpeedFromLevel(speedLevel);
+  });
+
+  // Action buttons
+  document.getElementById('mob-search').addEventListener('click', () => openSearch());
+  document.getElementById('mob-nav').addEventListener('click', () => openTravelPanel());
+  document.getElementById('mob-explore').addEventListener('click', () => {
+    exploreMode ? stopExploreMode() : startExploreMode();
+  });
+  document.getElementById('mob-scale').addEventListener('click', () => {
+    currentScale = (currentScale + 1) % SCALE_LEVELS.length; applyScale();
+  });
+  document.getElementById('mob-nearest').addEventListener('click', () => goToNearest());
+  document.getElementById('mob-time').addEventListener('click', () => {
+    timeRateIndex = timeRateIndex === 0 ? 2 : 0;
+  });
+
+  // Show/hide mobile controls with HUD
+  const _origShowHud = () => {
+    mobileCtrl.classList.add('active');
+    mobileSpeed.classList.add('active');
+  };
+  const _origHideHud = () => {
+    mobileCtrl.classList.remove('active');
+    mobileSpeed.classList.remove('active');
+  };
+
+  // Hook into the splash explore button to show mobile controls
+  const _splashExplore = document.getElementById('splash-explore-btn');
+  _splashExplore.addEventListener('click', _origShowHud);
+
+  // Export applyJoystick so animate loop can call it
+  window._mobileApplyJoystick = applyJoystick;
+  window._mobileHideControls = _origHideHud;
+  window._mobileShowControls = _origShowHud;
+}
 
 function goToNearest() {
   let minDist = Infinity, target = null;
@@ -1525,6 +1701,12 @@ function updateHUD() {
   hudDate.textContent = `${yr}.${String(dayOfYear).padStart(3, '0')}`;
 
   hudPos.textContent = `x:${camera.position.x.toFixed(2)} y:${camera.position.y.toFixed(2)} z:${camera.position.z.toFixed(2)}`;
+
+  // Update mobile speed label
+  if (isMobile) {
+    const sl = document.getElementById('mob-speed-label');
+    if (sl) sl.textContent = formatSpeed(moveSpeed);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1548,6 +1730,7 @@ document.getElementById('hud-back-btn').addEventListener('click', () => {
   started = false;
   document.getElementById('hud').classList.remove('active');
   document.getElementById('splash').classList.remove('hidden');
+  if (isMobile && window._mobileHideControls) window._mobileHideControls();
   if (exploreMode) stopExploreMode();
   if (travelActive) abortTravel();
   if (_arrivalOrbit.active) _arrivalOrbit.active = false;
@@ -1597,6 +1780,9 @@ function animate(now) {
       );
     });
   }
+
+  // Apply mobile joystick input
+  if (isMobile && window._mobileApplyJoystick) window._mobileApplyJoystick();
 
   // Camera movement (suppressed during cinematic dwell)
   const euler = new THREE.Euler(pitch, yaw, roll, 'YXZ');
