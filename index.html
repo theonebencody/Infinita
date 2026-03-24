@@ -859,7 +859,9 @@ function simbadOtypeInfo(otype) {
 function simbadDistAU(plx, z, typeInfo) {
   if (plx && plx > 0)  return (1000 / plx) * 3.26156 * 63241;
   if (z  && z  > 0 && z < 10) return (z * 299792.458 / 70) * 3.26156e6 * 63241;
-  if (typeInfo.scale === 4) return 10e6  * 63241;  // nominal 10 Mly for galaxies
+  // Nearby galaxy with blueshift (e.g. M31 z≈-0.001): use Local Group nominal distance
+  if (z  && z  < 0 && z > -0.01 && typeInfo.scale === 4) return 2.5e6 * 63241;
+  if (typeInfo.scale === 4) return 50e6  * 63241;  // nominal 50 Mly for distant galaxies
   if (typeInfo.scale === 3) return 5000  * 63241;  // nominal 5 kly for nebulae
   return 300 * 63241;                               // nominal 300 ly for stars
 }
@@ -906,11 +908,34 @@ function titleCase(s) {
   return s.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-async function queryLiveSIMBAD(query, reqId) {
-  const safe = titleCase(query.trim()).replace(/'/g, "''");
-  const q = `SELECT TOP 12 b.main_id,b.ra,b.dec,b.otype,b.plx_value,b.rvz_redshift,b.sp_type ` +
-            `FROM basic b JOIN ident i ON i.oidref=b.oid ` +
-            `WHERE i.id LIKE '%${safe}%' AND b.ra IS NOT NULL`;
+// Common name aliases → exact SIMBAD main_id
+const COMMON_ALIASES = {
+  'andromeda': 'M  31', 'andromeda galaxy': 'M  31', 'm31': 'M  31', 'm 31': 'M  31',
+  'triangulum galaxy': 'M  33', 'm33': 'M  33', 'm 33': 'M  33',
+  'whirlpool galaxy': 'M  51', 'whirlpool': 'M  51', 'm51': 'M  51',
+  'sombrero galaxy': 'M 104', 'sombrero': 'M 104',
+  'pinwheel galaxy': 'M 101', 'm101': 'M 101',
+  "bode's galaxy": 'M  81', 'bode galaxy': 'M  81', 'm81': 'M  81',
+  'cigar galaxy': 'M  82', 'm82': 'M  82',
+  'orion nebula': 'M  42', 'm42': 'M  42',
+  'crab nebula': 'M   1', 'm1': 'M   1',
+  'large magellanic cloud': 'NAME LMC', 'lmc': 'NAME LMC',
+  'small magellanic cloud': 'NAME SMC', 'smc': 'NAME SMC',
+  'centaurus a': 'NGC 5128',
+};
+
+async function queryLiveSIMBAD(query, reqId, exactId) {
+  let q;
+  if (exactId) {
+    const safeId = exactId.replace(/'/g, "''");
+    q = `SELECT TOP 1 b.main_id,b.ra,b.dec,b.otype,b.plx_value,b.rvz_redshift,b.sp_type ` +
+        `FROM basic b WHERE b.main_id = '${safeId}' AND b.ra IS NOT NULL`;
+  } else {
+    const safe = titleCase(query.trim()).replace(/'/g, "''");
+    q = `SELECT TOP 12 b.main_id,b.ra,b.dec,b.otype,b.plx_value,b.rvz_redshift,b.sp_type ` +
+        `FROM basic b JOIN ident i ON i.oidref=b.oid ` +
+        `WHERE i.id LIKE '%${safe}%' AND b.ra IS NOT NULL`;
+  }
   const url = `https://simbad.cds.unistra.fr/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=json&QUERY=${encodeURIComponent(q)}`;
   const resp = await fetch(url);
   const json = await resp.json();
@@ -996,7 +1021,8 @@ async function performSearch(query) {
   const myId = ++liveReqId;
   searchDebounce = setTimeout(async () => {
     try {
-      const { reqId, json } = await queryLiveSIMBAD(query.trim(), myId);
+      const aliasId = COMMON_ALIASES[q];
+      const { reqId, json } = await queryLiveSIMBAD(query.trim(), myId, aliasId);
       if (reqId !== liveReqId) return;
       const cols = (json?.metadata || []).map(m => m.name);
       const idx  = n => cols.indexOf(n);
@@ -1030,14 +1056,16 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 //  TRAVEL SYSTEM
 // ═══════════════════════════════════════════════
 const TRAVEL_SPEEDS = [
-  { label: 'ISS Orbit',      sub: '7.7 km/s',            au_s: 7700 / 149597870.7 },
-  { label: 'Voyager 1',      sub: '17 km/s',              au_s: 17000 / 149597870.7 },
-  { label: 'Solar Probe',    sub: '163 km/s',             au_s: 163000 / 149597870.7 },
-  { label: '1% Light',       sub: '0.01c · 3,000 km/s',  au_s: C_AU_S * 0.01 },
-  { label: 'Light Speed',    sub: '1c · 299,792 km/s',   au_s: C_AU_S },
-  { label: '10× Light',      sub: '10c · sci-fi drive',  au_s: C_AU_S * 10 },
-  { label: '100× Light',     sub: '100c · hyperdrive',   au_s: C_AU_S * 100 },
-  { label: '1,000× Light',   sub: '1,000c · warp',       au_s: C_AU_S * 1000 },
+  { label: 'ISS Orbit',        sub: '7.7 km/s',                   au_s: 7700 / 149597870.7 },
+  { label: 'Voyager 1',        sub: '17 km/s',                     au_s: 17000 / 149597870.7 },
+  { label: 'Solar Probe',      sub: '163 km/s',                    au_s: 163000 / 149597870.7 },
+  { label: '1% Light',         sub: '0.01c · 3,000 km/s',         au_s: C_AU_S * 0.01 },
+  { label: 'Light Speed',      sub: '1c · 299,792 km/s',          au_s: C_AU_S },
+  { label: '10× Light',        sub: '10c · sci-fi drive',         au_s: C_AU_S * 10 },
+  { label: '100× Light',       sub: '100c · hyperdrive',          au_s: C_AU_S * 100 },
+  { label: '1,000× Light',     sub: '1,000c · warp',              au_s: C_AU_S * 1000 },
+  { label: '1 Million× Light', sub: '1M c · transwarp',           au_s: C_AU_S * 1e6 },
+  { label: 'Nav Warp',         sub: '1B c · navigation warp',     au_s: C_AU_S * 1e9 },
 ];
 
 let travelPanelOpen = false;
@@ -1091,7 +1119,7 @@ const travelResults = document.getElementById('travel-dest-results');
 function renderTravelResult(name, typeLabel, distLY, onClick) {
   const div = document.createElement('div');
   div.className = 'travel-dest-result';
-  const d = distLY > 0 ? (distLY < 1000 ? distLY.toFixed(2) + ' ly' : (distLY/1000).toFixed(1) + ' kly') : 'Solar System';
+  const d = distLY <= 0 ? 'Solar System' : distLY < 1000 ? distLY.toFixed(2) + ' ly' : distLY < 1e6 ? (distLY/1000).toFixed(1) + ' kly' : (distLY/1e6).toFixed(2) + ' Mly';
   div.innerHTML = `<div class="res-name">${name}</div><div class="res-info">${typeLabel} · ${d}</div>`;
   div.addEventListener('click', onClick);
   travelResults.appendChild(div);
@@ -1111,7 +1139,8 @@ async function doTravelSearch(query) {
   const myId = ++liveReqId;
   travelDestDebounce = setTimeout(async () => {
     try {
-      const { reqId, json } = await queryLiveSIMBAD(query.trim(), myId);
+      const aliasId = COMMON_ALIASES[q];
+      const { reqId, json } = await queryLiveSIMBAD(query.trim(), myId, aliasId);
       if (reqId !== liveReqId) return;
       const cols = (json?.metadata || []).map(m => m.name);
       const idx  = n => cols.indexOf(n);
@@ -1138,6 +1167,10 @@ travelInput.addEventListener('keydown', e => e.stopPropagation());
 document.getElementById('travel-engage-btn').addEventListener('click', () => {
   if (!travelDest) return;
   closeTravelPanel();
+  // Switch to destination's scale level immediately so camera.far covers the distance
+  if (travelDest.scaleLevel !== undefined && currentScale !== travelDest.scaleLevel) {
+    currentScale = travelDest.scaleLevel; applyScale();
+  }
   travelActive = true;
   travelSpeed  = 0;
   document.getElementById('travel-hud').classList.add('active');
@@ -1246,7 +1279,7 @@ function updateTravel(dt) {
 }
 
 function _renderWarp(dt) {
-  const sf = Math.min(1, travelSpeed / (C_AU_S * 5));
+  const sf = Math.min(1, travelSpeed / C_AU_S);  // reaches full intensity at 1c
   const intensity = sf * sf;
   document.getElementById('warp-overlay').style.opacity = Math.min(0.9, intensity * 0.85);
   if (intensity < 0.002) { warpMesh.visible = false; return; }
@@ -1258,8 +1291,9 @@ function _renderWarp(dt) {
   _tU.crossVectors(_tR, _tD);
 
   const sc  = camera.far * 0.65;
-  const adv = travelSpeed * dt / sc;
-  const stk = Math.min(0.45, intensity * 0.25 + adv * 25) * sc;
+  // Visual-only advance — decoupled from physical units so warp looks good at any scale
+  const adv = Math.sqrt(intensity) * 0.018 + intensity * 0.018;
+  const stk = Math.min(0.45, intensity * 0.35) * sc;
 
   for (let i = 0; i < WARP_N; i++) {
     _wZ[i] += adv;
@@ -1454,9 +1488,10 @@ function formatSpeed(auPerSec) {
   if (kms < 1) return (kms * 1000).toFixed(0) + ' m/s';
   if (kms < C_KMS * 0.01) return kms.toFixed(1) + ' km/s';
   const c = kms / C_KMS;
-  if (c < 100) return c.toFixed(3) + ' c';
-  const lys = auPerSec / 63241;
-  return lys.toFixed(2) + ' ly/s';
+  if (c < 1000) return c.toFixed(1) + ' c';
+  if (c < 1e6)  return (c / 1000).toFixed(1) + 'k c';
+  if (c < 1e9)  return (c / 1e6).toFixed(2) + 'M c';
+  return (c / 1e9).toFixed(2) + 'B c';
 }
 
 function formatDist(au) {
