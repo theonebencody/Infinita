@@ -32,6 +32,11 @@ function App() {
               <div className="splash-btn-label">LAUNCH HISTORY</div>
               <div className="splash-btn-sub">Relive humanity{"'"}s greatest missions</div>
             </button>
+            <button className="splash-btn" id="splash-sim-btn">
+              <div className="splash-btn-icon">{'\u2622'}</div>
+              <div className="splash-btn-label">LAUNCH SIMULATOR</div>
+              <div className="splash-btn-sub">Design and simulate your own mission</div>
+            </button>
           </div>
         </div>
       </div>
@@ -197,6 +202,25 @@ function App() {
         <button className="exp-stop" id="explore-stop-btn">{'\u25A0'} STOP</button>
       </div>
 
+      {/* Welcome Intro */}
+      <div id="welcome-intro" className="welcome-overlay">
+        <div className="welcome-card">
+          <div className="welcome-icon">{'\u2B21'}</div>
+          <div className="welcome-title">WELCOME, EXPLORER</div>
+          <div className="welcome-text">
+            You are now a pilot in an infinite universe. Fly between planets, visit distant stars,
+            search 15 million real objects, and bend time itself. The cosmos is yours.
+          </div>
+          <div className="welcome-features">
+            <div className="welcome-feat">{'\u2726'} Fly freely through the Solar System and beyond</div>
+            <div className="welcome-feat">{'\u2726'} Search and travel to real stars, galaxies, and nebulae</div>
+            <div className="welcome-feat">{'\u2726'} Control the flow of time from paused to 27 years per second</div>
+            <div className="welcome-feat">{'\u2726'} Hit R for auto-explore and let the universe surprise you</div>
+          </div>
+          <div className="welcome-hint">Controls will display next...</div>
+        </div>
+      </div>
+
       {/* UFO Alert */}
       <div id="ufo-alert">
         <span className="ufo-msg">UNIDENTIFIED CRAFT DETECTED</span>
@@ -222,6 +246,90 @@ function App() {
           <div className="lh-center"><canvas id="earth-canvas"></canvas></div>
           <div className="lh-right" id="lh-detail-panel">
             <div className="lh-detail-empty">SELECT A MISSION<br />TO VIEW DETAILS</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Launch Simulator Overlay */}
+      <div id="launch-sim" className="lh-overlay">
+        <div className="lh-header">
+          <button className="lh-back-btn" id="sim-back-btn">{'\u2190'} BACK</button>
+          <div className="lh-title">LAUNCH SIMULATOR</div>
+          <div className="sim-status" id="sim-status"></div>
+        </div>
+        <div className="lh-body">
+          <div className="sim-config" id="sim-config">
+            <div className="sim-section">
+              <div className="sim-label">LAUNCH PROVIDER</div>
+              <div className="sim-options" id="sim-provider">
+                <button className="sim-opt-btn active" data-val="SpaceX">SpaceX</button>
+                <button className="sim-opt-btn" data-val="NASA">NASA</button>
+                <button className="sim-opt-btn" data-val="Blue Origin">Blue Origin</button>
+                <button className="sim-opt-btn" data-val="ESA">ESA</button>
+                <button className="sim-opt-btn" data-val="ISRO">ISRO</button>
+                <button className="sim-opt-btn" data-val="Custom">Custom</button>
+              </div>
+            </div>
+
+            <div className="sim-section">
+              <div className="sim-label">ROCKET</div>
+              <div className="sim-options" id="sim-rocket">
+                <button className="sim-opt-btn active" data-val="Falcon 9">Falcon 9</button>
+                <button className="sim-opt-btn" data-val="Falcon Heavy">Falcon Heavy</button>
+                <button className="sim-opt-btn" data-val="Starship">Starship</button>
+                <button className="sim-opt-btn" data-val="SLS">SLS</button>
+                <button className="sim-opt-btn" data-val="New Glenn">New Glenn</button>
+                <button className="sim-opt-btn" data-val="Ariane 6">Ariane 6</button>
+              </div>
+            </div>
+
+            <div className="sim-section">
+              <div className="sim-label">DESTINATION</div>
+              <div className="sim-options" id="sim-dest">
+                <button className="sim-opt-btn active" data-val="LEO">Low Earth Orbit</button>
+                <button className="sim-opt-btn" data-val="ISS">ISS</button>
+                <button className="sim-opt-btn" data-val="GTO">Geostationary</button>
+                <button className="sim-opt-btn" data-val="Moon">Moon</button>
+                <button className="sim-opt-btn" data-val="Mars">Mars</button>
+                <button className="sim-opt-btn" data-val="Deep">Deep Space</button>
+              </div>
+            </div>
+
+            <div className="sim-section">
+              <div className="sim-label">LAUNCH SITE</div>
+              <div className="sim-options" id="sim-site">
+                <button className="sim-opt-btn active" data-val="KSC">Kennedy Space Center</button>
+                <button className="sim-opt-btn" data-val="CCSFS">Cape Canaveral</button>
+                <button className="sim-opt-btn" data-val="Boca">Starbase, TX</button>
+                <button className="sim-opt-btn" data-val="Vandy">Vandenberg</button>
+                <button className="sim-opt-btn" data-val="Kourou">Kourou, Fr. Guiana</button>
+              </div>
+            </div>
+
+            <div className="sim-section">
+              <div className="sim-label">PAYLOAD MASS (kg)</div>
+              <input type="number" className="sim-input" id="sim-payload" defaultValue="5000" min="0" max="500000" />
+            </div>
+
+            <div className="sim-section">
+              <div className="sim-label">MISSION NAME</div>
+              <input type="text" className="sim-input" id="sim-mission-name" placeholder="Enter mission name..." autoComplete="off" spellCheck="false" />
+            </div>
+
+            <button className="sim-launch-btn" id="sim-launch-btn">INITIATE LAUNCH SEQUENCE</button>
+          </div>
+
+          <div className="sim-viewport">
+            <canvas id="sim-canvas"></canvas>
+            <div className="sim-telemetry" id="sim-telemetry">
+              <div className="sim-telem-row"><span className="sim-telem-label">T+</span><span className="sim-telem-val" id="sim-t-time">00:00</span></div>
+              <div className="sim-telem-row"><span className="sim-telem-label">ALT</span><span className="sim-telem-val" id="sim-t-alt">0 km</span></div>
+              <div className="sim-telem-row"><span className="sim-telem-label">VEL</span><span className="sim-telem-val" id="sim-t-vel">0 m/s</span></div>
+              <div className="sim-telem-row"><span className="sim-telem-label">ACCEL</span><span className="sim-telem-val" id="sim-t-accel">0 g</span></div>
+              <div className="sim-telem-row"><span className="sim-telem-label">FUEL</span><span className="sim-telem-val" id="sim-t-fuel">100%</span></div>
+              <div className="sim-telem-row"><span className="sim-telem-label">STAGE</span><span className="sim-telem-val" id="sim-t-stage">1</span></div>
+              <div className="sim-telem-row"><span className="sim-telem-label">STATUS</span><span className="sim-telem-val" id="sim-t-status">READY</span></div>
+            </div>
           </div>
         </div>
       </div>

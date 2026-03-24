@@ -1733,11 +1733,269 @@ document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
   if (isMobile && window._mobileShowControls) window._mobileShowControls();
   applyScale();
   lastTime = performance.now();
+
+  // Show welcome intro, then controls
+  const welcomeEl = document.getElementById('welcome-intro');
+  welcomeEl.classList.add('active');
+  setTimeout(() => {
+    welcomeEl.classList.remove('active');
+    // Show controls overlay briefly
+    controlsOpen = true;
+    document.getElementById('controls-overlay').classList.add('open');
+    setTimeout(() => {
+      controlsOpen = false;
+      document.getElementById('controls-overlay').classList.remove('open');
+    }, 4500);
+  }, 4000);
 });
 document.getElementById('splash-launches-btn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('splash').classList.add('hidden');
   openLaunchHistory();
+});
+
+// ═══════════════════════════════════════════════
+//  LAUNCH SIMULATOR
+// ═══════════════════════════════════════════════
+let _simActive = false;
+let _simRenderer = null, _simScene = null, _simCam = null;
+let _simRocket = null, _simExhaust = null, _simEarth = null;
+let _simT = 0, _simRunning = false, _simLastT = 0;
+let _simAlt = 0, _simVel = 0, _simAccel = 0, _simFuel = 100, _simStage = 1;
+
+const SIM_SITES = {
+  KSC:   { lat: 28.57, lon: -80.65, name: 'Kennedy Space Center' },
+  CCSFS: { lat: 28.50, lon: -80.58, name: 'Cape Canaveral' },
+  Boca:  { lat: 25.99, lon: -97.15, name: 'Starbase, TX' },
+  Vandy: { lat: 34.63, lon: -120.63, name: 'Vandenberg SFB' },
+  Kourou: { lat: 5.23, lon: -52.77, name: 'Kourou, Fr. Guiana' }
+};
+
+const SIM_ROCKETS = {
+  'Falcon 9':     { thrust: 7600, mass: 549000, fuel: 411000, stages: 2, isp: 311 },
+  'Falcon Heavy': { thrust: 22800, mass: 1421000, fuel: 1100000, stages: 2, isp: 311 },
+  'Starship':     { thrust: 74000, mass: 5000000, fuel: 4600000, stages: 2, isp: 350 },
+  'SLS':          { thrust: 39000, mass: 2600000, fuel: 2100000, stages: 2, isp: 363 },
+  'New Glenn':    { thrust: 17100, mass: 590000, fuel: 450000, stages: 2, isp: 320 },
+  'Ariane 6':     { thrust: 8000, mass: 530000, fuel: 400000, stages: 2, isp: 340 }
+};
+
+function _getSimVal(groupId) {
+  const active = document.querySelector(`#${groupId} .sim-opt-btn.active`);
+  return active ? active.dataset.val : '';
+}
+
+function openLaunchSim() {
+  _simActive = true;
+  document.getElementById('launch-sim').classList.add('open');
+  _simRunning = false;
+  _simT = 0; _simAlt = 0; _simVel = 0; _simFuel = 100; _simStage = 1;
+  document.getElementById('sim-status').textContent = 'CONFIGURE MISSION';
+  _updateSimTelemetry();
+  setTimeout(() => _initSimViewer(), 60);
+}
+
+function closeLaunchSim() {
+  _simActive = false; _simRunning = false;
+  document.getElementById('launch-sim').classList.remove('open');
+  if (_simRenderer) { _simRenderer.dispose(); _simRenderer = null; }
+}
+
+function _initSimViewer() {
+  if (_simRenderer) return;
+  const canvas = document.getElementById('sim-canvas');
+  const w = canvas.offsetWidth, h = canvas.offsetHeight;
+  if (!w || !h) return;
+  _simRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  _simRenderer.setSize(w, h);
+  _simRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  _simRenderer.setClearColor(0x010208, 1);
+
+  _simScene = new THREE.Scene();
+  _simCam = new THREE.PerspectiveCamera(50, w / h, 0.01, 2000);
+  _simCam.position.set(3, 2, 5);
+  _simCam.lookAt(0, 1, 0);
+
+  // Earth
+  const eGeo = new THREE.SphereGeometry(2, 48, 48);
+  const eTex = _mkTex(256, 128, _pTexFns.Earth);
+  _simEarth = new THREE.Mesh(eGeo, new THREE.MeshStandardMaterial({ map: eTex, roughness: 0.8 }));
+  _simEarth.position.set(0, -1.8, 0);
+  _simScene.add(_simEarth);
+
+  // Atmosphere glow
+  const aCanvas = document.createElement('canvas'); aCanvas.width = 128; aCanvas.height = 128;
+  const aCtx = aCanvas.getContext('2d');
+  const aGrad = aCtx.createRadialGradient(64, 64, 28, 64, 64, 64);
+  aGrad.addColorStop(0, 'rgba(100,160,255,0)');
+  aGrad.addColorStop(0.6, 'rgba(100,160,255,0)');
+  aGrad.addColorStop(0.8, 'rgba(100,160,255,0.15)');
+  aGrad.addColorStop(1, 'rgba(100,160,255,0)');
+  aCtx.fillStyle = aGrad; aCtx.fillRect(0, 0, 128, 128);
+  const atmo = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(aCanvas), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
+  atmo.scale.setScalar(6); _simEarth.add(atmo);
+
+  // Rocket
+  const rGrp = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.18, 8), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.5, roughness: 0.4 }));
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.015, 0.05, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd }));
+  nose.position.y = 0.115;
+  rGrp.add(body, nose);
+  rGrp.position.set(0, 0.22, 0);
+  _simRocket = rGrp;
+  _simScene.add(rGrp);
+
+  // Exhaust particles
+  const exGeo = new THREE.BufferGeometry();
+  const exPos = new Float32Array(60 * 3);
+  exGeo.setAttribute('position', new THREE.BufferAttribute(exPos, 3));
+  _simExhaust = new THREE.Points(exGeo, new THREE.PointsMaterial({ color: 0xff8800, size: 0.012, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
+  _simExhaust.visible = false;
+  _simScene.add(_simExhaust);
+
+  // Lights
+  _simScene.add(new THREE.AmbientLight(0x223344, 0.4));
+  const sunL = new THREE.DirectionalLight(0xfff0dd, 1.2);
+  sunL.position.set(5, 3, 2);
+  _simScene.add(sunL);
+
+  // Stars
+  const sPos = new Float32Array(500 * 3);
+  for (let i = 0; i < 500; i++) {
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1), r = 400 + Math.random() * 600;
+    sPos[i*3] = r * Math.sin(ph) * Math.cos(th);
+    sPos[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+    sPos[i*3+2] = r * Math.cos(ph);
+  }
+  const sGeo = new THREE.BufferGeometry();
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+  _simScene.add(new THREE.Points(sGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, sizeAttenuation: true })));
+
+  requestAnimationFrame(t => { _simLastT = t; _simAnimate(t); });
+}
+
+function _updateSimTelemetry() {
+  const mins = Math.floor(_simT / 60), secs = Math.floor(_simT % 60);
+  document.getElementById('sim-t-time').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  document.getElementById('sim-t-alt').textContent = _simAlt < 1000 ? `${_simAlt.toFixed(1)} km` : `${(_simAlt/1000).toFixed(2)} Mm`;
+  document.getElementById('sim-t-vel').textContent = _simVel < 1000 ? `${_simVel.toFixed(0)} m/s` : `${(_simVel/1000).toFixed(2)} km/s`;
+  document.getElementById('sim-t-accel').textContent = `${_simAccel.toFixed(1)} g`;
+  document.getElementById('sim-t-fuel').textContent = `${Math.max(0, _simFuel).toFixed(0)}%`;
+  document.getElementById('sim-t-stage').textContent = _simStage;
+  document.getElementById('sim-t-status').textContent = !_simRunning ? 'READY' : _simFuel <= 0 ? 'MECO — COASTING' : _simStage === 1 ? 'POWERED FLIGHT' : 'STAGE 2 BURN';
+}
+
+function _startLaunch() {
+  if (_simRunning) return;
+  _simRunning = true; _simT = 0; _simAlt = 0; _simVel = 0; _simFuel = 100; _simStage = 1; _simAccel = 0;
+  if (_simRocket) _simRocket.position.set(0, 0.22, 0);
+  if (_simExhaust) _simExhaust.visible = true;
+  document.getElementById('sim-status').textContent = 'LAUNCH IN PROGRESS';
+  document.getElementById('sim-launch-btn').textContent = 'LAUNCHING...';
+  document.getElementById('sim-launch-btn').classList.add('counting');
+}
+
+function _simAnimate(now) {
+  if (!_simActive || !_simRenderer) return;
+  requestAnimationFrame(_simAnimate);
+  const dt = Math.min((now - _simLastT) / 1000, 0.1); _simLastT = now;
+
+  if (_simRunning) {
+    _simT += dt;
+    const rocketName = _getSimVal('sim-rocket');
+    const rData = SIM_ROCKETS[rocketName] || SIM_ROCKETS['Falcon 9'];
+
+    // Simple physics
+    if (_simFuel > 0) {
+      const thrustG = (rData.thrust * 1000) / (rData.mass * 9.81);
+      _simAccel = thrustG * (_simFuel / 100) * 1.2;
+      _simVel += _simAccel * 9.81 * dt;
+      _simFuel -= dt * (100 / (rData.fuel / (rData.thrust * 1000 / (rData.isp * 9.81))));
+      if (_simFuel <= 0) { _simFuel = 0; _simAccel = 0; }
+    } else {
+      _simAccel = 0;
+      _simVel -= 0.5 * dt; // gentle gravity drag in coast
+    }
+    _simAlt += _simVel * dt / 1000; // m/s to km
+
+    // Stage separation
+    if (_simStage === 1 && _simFuel < 30 && _simT > 10) { _simStage = 2; }
+
+    // Move rocket up
+    if (_simRocket) {
+      const rY = 0.22 + Math.min(_simAlt / 50, 3.5);
+      _simRocket.position.y = rY;
+      // Slight gravity turn
+      _simRocket.rotation.z = Math.min(_simT * 0.008, 0.35);
+    }
+
+    // Exhaust particles
+    if (_simExhaust && _simFuel > 0) {
+      const pos = _simExhaust.geometry.attributes.position.array;
+      const rPos = _simRocket ? _simRocket.position : { x: 0, y: 0.22, z: 0 };
+      for (let i = 0; i < 60; i++) {
+        pos[i*3]   = rPos.x + (Math.random()-0.5)*0.03;
+        pos[i*3+1] = rPos.y - 0.09 - Math.random()*0.15;
+        pos[i*3+2] = rPos.z + (Math.random()-0.5)*0.03;
+      }
+      _simExhaust.geometry.attributes.position.needsUpdate = true;
+    }
+    if (_simExhaust && _simFuel <= 0) _simExhaust.visible = false;
+
+    // Camera follows rocket
+    if (_simCam && _simRocket) {
+      const tY = _simRocket.position.y;
+      _simCam.position.y += (tY + 0.5 - _simCam.position.y) * dt * 2;
+      _simCam.lookAt(_simRocket.position.x, tY, _simRocket.position.z);
+    }
+
+    _updateSimTelemetry();
+
+    // End condition
+    if (_simAlt > 400) {
+      _simRunning = false;
+      document.getElementById('sim-status').textContent = 'ORBIT ACHIEVED';
+      document.getElementById('sim-launch-btn').textContent = 'INITIATE LAUNCH SEQUENCE';
+      document.getElementById('sim-launch-btn').classList.remove('counting');
+      document.getElementById('sim-t-status').textContent = 'ORBIT INSERTION';
+    }
+  }
+
+  _simEarth.rotation.y += dt * 0.02;
+  _simRenderer.render(_simScene, _simCam);
+}
+
+// Wire sim option buttons
+document.querySelectorAll('.sim-options').forEach(group => {
+  group.querySelectorAll('.sim-opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.sim-opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+});
+
+// Wire sim inputs to stop propagation
+document.querySelectorAll('.sim-input').forEach(inp => {
+  inp.addEventListener('keydown', e => e.stopPropagation());
+  inp.addEventListener('touchstart', e => e.stopPropagation());
+});
+
+document.getElementById('sim-launch-btn').addEventListener('click', _startLaunch);
+document.getElementById('sim-back-btn').addEventListener('click', closeLaunchSim);
+document.getElementById('splash-sim-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('splash').classList.add('hidden');
+  openLaunchSim();
+});
+
+// Sim canvas resize
+window.addEventListener('resize', () => {
+  if (_simRenderer && _simActive) {
+    const canvas = document.getElementById('sim-canvas');
+    const w = canvas.offsetWidth, h = canvas.offsetHeight;
+    if (w && h) { _simRenderer.setSize(w, h); _simCam.aspect = w / h; _simCam.updateProjectionMatrix(); }
+  }
 });
 document.getElementById('hud-back-btn').addEventListener('click', () => {
   started = false;
