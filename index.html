@@ -130,6 +130,34 @@
   .travel-abort-btn:hover{background:rgba(255,50,50,0.25)}
   /* ── Warp Overlay ── */
   #warp-overlay{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity 0.4s;background:radial-gradient(ellipse 55% 55% at 50% 50%,rgba(80,140,255,0.06) 0%,transparent 50%,rgba(0,0,25,0.75) 100%)}
+
+  /* ── Fun Facts Panel ── */
+  #facts-panel{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:10;pointer-events:all;width:272px;max-height:calc(100vh - 300px)}
+  .facts-card{background:rgba(0,10,22,0.88);border:1px solid rgba(0,238,255,0.15);border-radius:4px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 4px 32px rgba(0,0,0,0.5)}
+  .facts-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;cursor:pointer;border-bottom:1px solid rgba(0,238,255,0.08);user-select:none;transition:background 0.15s}
+  .facts-hdr:hover{background:rgba(0,238,255,0.04)}
+  .facts-hdr-title{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(0,238,255,0.52);display:flex;align-items:center;gap:7px}
+  .facts-hdr-icon{color:#0ef;opacity:0.8;font-size:12px}
+  .facts-chevron{font-size:10px;color:rgba(0,238,255,0.32);transition:transform 0.3s}
+  #facts-panel.collapsed .facts-chevron{transform:rotate(-90deg)}
+  .facts-body{overflow:hidden;transition:max-height 0.35s ease,opacity 0.25s ease;max-height:500px;opacity:1}
+  #facts-panel.collapsed .facts-body{max-height:0;opacity:0;pointer-events:none}
+  .facts-inner{padding:12px 14px 11px}
+  .facts-badge{display:inline-flex;align-items:center;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:2px 7px;border-radius:2px;margin-bottom:8px;font-family:'Share Tech Mono',monospace;gap:4px}
+  .facts-badge.travel{background:rgba(0,238,255,0.09);color:#0ef;border:1px solid rgba(0,238,255,0.2)}
+  .facts-badge.nearby{background:rgba(80,220,120,0.07);color:#7de;border:1px solid rgba(80,220,120,0.18)}
+  .facts-badge.suggest{background:rgba(255,185,0,0.07);color:#fb4;border:1px solid rgba(255,185,0,0.2)}
+  .facts-obj-name{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#fff;margin-bottom:10px;line-height:1.35;letter-spacing:0.5px}
+  .facts-text{font-size:11px;color:rgba(255,255,255,0.78);line-height:1.7;min-height:55px;transition:opacity 0.25s}
+  .facts-text.fading{opacity:0}
+  .facts-footer{display:flex;align-items:center;gap:5px;margin-top:11px;min-height:14px}
+  .facts-dot{width:5px;height:5px;border-radius:50%;background:rgba(0,238,255,0.16);cursor:pointer;flex-shrink:0;transition:background 0.2s,transform 0.18s}
+  .facts-dot:hover{background:rgba(0,238,255,0.45);transform:scale(1.35)}
+  .facts-dot.active{background:#0ef;box-shadow:0 0 6px rgba(0,238,255,0.6)}
+  .facts-progress{flex:1;height:2px;background:rgba(0,238,255,0.07);border-radius:1px;overflow:hidden;margin-left:5px}
+  .facts-pfill{height:100%;background:linear-gradient(90deg,rgba(0,238,255,0.25),rgba(0,238,255,0.55));width:0%;border-radius:1px}
+  .facts-suggest-btn{display:block;width:100%;margin-top:10px;padding:7px 10px;background:rgba(255,185,0,0.07);border:1px solid rgba(255,185,0,0.2);color:#fb4;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;cursor:pointer;border-radius:2px;text-align:center;transition:background 0.15s}
+  .facts-suggest-btn:hover{background:rgba(255,185,0,0.15)}
 </style>
 </head>
 <body>
@@ -236,6 +264,7 @@
           <div class="ctrl-row"><span class="ctrl-key">T</span><span class="ctrl-desc">Navigation Computer</span></div>
           <div class="ctrl-row"><span class="ctrl-key">Enter</span><span class="ctrl-desc">Travel to result</span></div>
           <div class="ctrl-row"><span class="ctrl-key">Esc</span><span class="ctrl-desc">Close / abort travel</span></div>
+          <div class="ctrl-row"><span class="ctrl-key">◈ Panel</span><span class="ctrl-desc">Click header to collapse</span></div>
         </div>
 
       </div>
@@ -291,6 +320,25 @@
 
 <!-- Warp effect overlay -->
 <div id="warp-overlay"></div>
+
+<!-- Fun Facts Panel -->
+<div id="facts-panel">
+  <div class="facts-card">
+    <div class="facts-hdr" id="facts-toggle-btn">
+      <div class="facts-hdr-title"><span class="facts-hdr-icon">◈</span>Stellar Intelligence</div>
+      <span class="facts-chevron">▼</span>
+    </div>
+    <div class="facts-body">
+      <div class="facts-inner">
+        <div id="facts-badge" class="facts-badge nearby">◉ Nearby</div>
+        <div id="facts-obj-name" class="facts-obj-name">—</div>
+        <div id="facts-text" class="facts-text"></div>
+        <div id="facts-footer" class="facts-footer"></div>
+        <button id="facts-suggest-btn" class="facts-suggest-btn" style="display:none">★ TRAVEL HERE →</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="labels"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -924,6 +972,329 @@ const COMMON_ALIASES = {
   'centaurus a': 'NGC 5128',
 };
 
+// ═══════════════════════════════════════════════
+//  FUN FACTS DATABASE
+// ═══════════════════════════════════════════════
+const OBJECT_FACTS = {
+  'sun': [
+    "The Sun contains 99.86% of all mass in the Solar System — roughly 333,000 Earths by mass.",
+    "The Sun's core reaches 15 million °C, fusing 620 million tonnes of hydrogen into helium every second.",
+    "Light generated in the Sun's core takes up to 100,000 years to reach the surface — then just 8 min 20 sec to reach Earth.",
+    "The Sun's magnetic field reverses polarity every ~11 years, driving the sunspot cycle and solar storms.",
+    "In ~5 billion years the Sun will swell into a red giant, likely engulfing Mercury and Venus."
+  ],
+  'mercury': [
+    "With no atmosphere to retain heat, Mercury's surface swings from −180 °C at night to 430 °C at noon.",
+    "A day on Mercury (sunrise to sunrise) lasts 176 Earth days — longer than its 88-day year.",
+    "Mercury is slowly shrinking as its iron core cools. It has contracted by up to 7 km in radius.",
+    "Mercury has the highest orbital speed of any planet — 47 km/s — and no moons."
+  ],
+  'venus': [
+    "Venus is the hottest planet at 465 °C, hotter than Mercury despite being farther from the Sun — thanks to a runaway greenhouse effect.",
+    "Venus rotates backwards compared to most planets, and its day (243 Earth days) is longer than its year (225 days).",
+    "Atmospheric pressure on Venus is 92× Earth's — equivalent to being 900 m underwater.",
+    "Venus may still be volcanically active. It has over 1,600 known major volcanoes."
+  ],
+  'earth': [
+    "Earth is the only known planet with active plate tectonics, continuously recycling its crust and regulating climate.",
+    "Our Moon is unusually large — about 1/4 of Earth's diameter — likely born from a Mars-sized body colliding with early Earth 4.5 billion years ago.",
+    "Life has existed on Earth for at least 3.8 billion years, almost as long as the planet itself.",
+    "Earth's liquid iron outer core generates a magnetic field that deflects solar radiation and makes life possible."
+  ],
+  'mars': [
+    "Olympus Mons on Mars is the Solar System's tallest volcano — 21 km high and 600 km wide, three times taller than Everest.",
+    "Valles Marineris stretches 4,000 km across Mars — long enough to span the entire United States.",
+    "A Martian day (sol) is 24 hours 37 minutes, the closest match to Earth's day of any planet.",
+    "Liquid water likely covered much of Mars 3–4 billion years ago, and ice still exists at its poles today.",
+    "Mars has two tiny moons, Phobos and Deimos, thought to be captured asteroids."
+  ],
+  'jupiter': [
+    "Jupiter's Great Red Spot is a storm larger than Earth that has raged for at least 400 years.",
+    "Jupiter has 95 known moons. Ganymede is larger than Mercury and has its own magnetic field.",
+    "Jupiter's gravity acts as the Solar System's shield, deflecting or capturing comets before they reach the inner planets.",
+    "A day on Jupiter lasts only 10 hours — the shortest of any planet — despite being 11× wider than Earth.",
+    "Jupiter radiates more heat than it receives from the Sun, powered by slow gravitational compression."
+  ],
+  'saturn': [
+    "Saturn's rings span 282,000 km — almost the Earth–Moon distance — yet are only ~20 metres thick on average.",
+    "Saturn is the least dense planet in the Solar System. It would float in a large enough ocean.",
+    "Saturn's moon Titan has a thick atmosphere and lakes of liquid methane — the only world other than Earth with stable surface liquids.",
+    "The hexagonal polar storm on Saturn is 30,000 km wide and has been spinning for over 40 years.",
+    "Saturn has 146 known moons — more than any other planet."
+  ],
+  'uranus': [
+    "Uranus rotates on its side with a 98° axial tilt, likely the result of a massive collision early in the Solar System.",
+    "Uranus has 13 known rings, discovered in 1977 when they occluded a background star.",
+    "Uranus is the coldest planet at −224 °C — colder than Neptune, which is farther from the Sun.",
+    "Seasons on Uranus last 21 years each, with 42-year polar days and nights."
+  ],
+  'neptune': [
+    "Neptune has the fastest winds in the Solar System, reaching 2,100 km/h — faster than the speed of sound on Earth.",
+    "Neptune was predicted mathematically before being observed — astronomers noticed it was tugging on Uranus's orbit.",
+    "Triton, Neptune's largest moon, orbits backwards and is slowly spiralling inward. In ~3.6 billion years it will be torn apart into a new ring system.",
+    "Light from the Sun takes over 4 hours to reach Neptune. It receives 900× less sunlight than Earth."
+  ],
+  'alpha centauri': [
+    "Alpha Centauri is a triple star system and the closest stellar system to our Sun at 4.37 light-years.",
+    "Proxima Centauri, the faintest of the three, hosts Proxima b — a rocky planet in the habitable zone.",
+    "Alpha Centauri A and B are similar in size and temperature to our Sun and orbit each other every 80 years.",
+    "At the speed of Voyager 1, reaching Alpha Centauri would take about 75,000 years."
+  ],
+  "barnard's star": [
+    "Barnard's Star has the largest proper motion of any star — it moves nearly 10 arcseconds per year across the sky.",
+    "It's one of the oldest stars in the Milky Way, estimated at 10 billion years old — over twice the Sun's age.",
+    "Barnard's Star is a red dwarf with just 14% of the Sun's mass and is completely invisible to the naked eye."
+  ],
+  'sirius': [
+    "Sirius is the brightest star in Earth's night sky and is twice as massive as the Sun.",
+    "Sirius A orbits a white dwarf companion, Sirius B — one of the most massive known white dwarfs.",
+    "Ancient Egyptians used Sirius's annual helical rising to predict the Nile flood and mark the start of their calendar year.",
+    "Sirius is relatively close at 8.6 light-years, which is why it outshines far more luminous stars."
+  ],
+  'vega': [
+    "Vega spins so fast — 274 km/s — that its equator bulges 23% wider than its poles.",
+    "Due to Earth's axial precession, Vega was the North Star 12,000 years ago and will be again in ~14,000 years.",
+    "Vega was the first star beyond the Sun to be photographed (1850) and to have its spectrum analyzed."
+  ],
+  'betelgeuse': [
+    "Betelgeuse is so large that if placed at the Sun's position, its surface would extend past Jupiter's orbit.",
+    "Betelgeuse is expected to explode as a supernova within the next 100,000 years — possibly bright enough to cast shadows at night.",
+    "In 2019–2020, Betelgeuse dimmed dramatically in the 'Great Dimming' event, thought to be caused by a massive dust ejection.",
+    "The light you see from Betelgeuse left the star roughly 700 years ago — around the time of the Black Death."
+  ],
+  'rigel': [
+    "Rigel is a blue supergiant and one of the most intrinsically luminous stars known — about 120,000× brighter than the Sun.",
+    "Despite being ~860 light-years away, Rigel is the 7th brightest star in the sky.",
+    "Rigel is only ~8 million years old — extremely young for a star — and will end its life in a spectacular supernova."
+  ],
+  'andromeda': [
+    "The Andromeda Galaxy contains roughly 1 trillion stars — about twice as many as the Milky Way.",
+    "Andromeda is on a collision course with the Milky Way, expected to begin merging in ~4.5 billion years to form a giant elliptical galaxy.",
+    "At 2.5 million light-years away, Andromeda is the most distant object visible to the naked eye — its light has been travelling since before Homo habilis walked Earth.",
+    "The Andromeda Galaxy has a mysterious double nucleus, possibly the remnant core of a smaller galaxy it absorbed long ago."
+  ],
+  'lmc': [
+    "The Large Magellanic Cloud is a satellite galaxy of the Milky Way, about 163,000 light-years away.",
+    "In 1987, the LMC hosted SN 1987A — the first supernova visible to the naked eye since 1604, observed in modern times with unprecedented detail.",
+    "The LMC is being slowly stretched and consumed by the Milky Way's tidal forces."
+  ],
+  'smc': [
+    "Henrietta Leavitt used Cepheid variable stars in the SMC to discover the period-luminosity law, enabling the first accurate measurements of cosmic distances.",
+    "The SMC and LMC are connected by a 200,000 light-year bridge of gas called the Magellanic Stream, torn out by the Milky Way's gravity.",
+    "The Small Magellanic Cloud contains roughly 3 billion stars and is only 200,000 light-years away."
+  ],
+  'orion nebula': [
+    "The Orion Nebula is a stellar nursery 1,344 light-years away, actively forming hundreds of new stars and planetary systems right now.",
+    "It's visible to the naked eye as the fuzzy 'star' in the middle of Orion's sword — yet it spans 24 light-years.",
+    "At its heart, four massive young stars called the Trapezium ionize the surrounding gas, creating the nebula's characteristic glow."
+  ],
+  'crab nebula': [
+    "The Crab Nebula is the remnant of a supernova witnessed and recorded by Chinese and Islamic astronomers on July 4, 1054 CE.",
+    "At its center is a pulsar — a neutron star 20 km across spinning 30 times per second, radiating as much energy as 100,000 Suns.",
+    "The nebula is still expanding at ~1,500 km/s and has grown to about 11 light-years across in under 1,000 years."
+  ],
+  'ngc 5128': [
+    "Centaurus A is the closest active galaxy to Earth, powered by a supermassive black hole 55 million times the Sun's mass.",
+    "Its striking dark dust lane is the remnant of a spiral galaxy it absorbed 200–700 million years ago.",
+    "Centaurus A fires relativistic jets millions of light-years into space — one of the most powerful radio sources in the sky."
+  ],
+  'whirlpool': [
+    "The Whirlpool Galaxy (M51) was the first galaxy to have its spiral structure recognized, by Lord Rosse in 1845.",
+    "M51 is gravitationally interacting with its smaller companion NGC 5195, distorting both galaxies' spiral arms in real time.",
+    "The Whirlpool is about 23 million light-years away and is estimated to contain 160 billion stars."
+  ],
+  'triangulum': [
+    "The Triangulum Galaxy is the third-largest in the Local Group and the most distant object visible with the naked eye under ideal conditions.",
+    "M33 contains no known central supermassive black hole — making it an unusual outlier among spiral galaxies.",
+    "It has one of the most prominent giant HII star-forming regions in the Local Group: NGC 604, 40× larger than the Orion Nebula."
+  ],
+};
+
+// SIMBAD identifier aliases for fact lookup
+const _FACTS_ALIASES = {
+  'm  31':'andromeda','m 31':'andromeda','m31':'andromeda',
+  '* alf cen':'alpha centauri','alf cen a':'alpha centauri','alf cen b':'alpha centauri',
+  '* alf cma':'sirius','* alf lyr':'vega',
+  '* alf ori':'betelgeuse','* bet ori':'rigel',
+  'name lmc':'lmc','name smc':'smc',
+  'm  42':'orion nebula','m 42':'orion nebula',
+  'm   1':'crab nebula','m 1':'crab nebula',
+  'm  51':'whirlpool','m 51':'whirlpool',
+  'm  33':'triangulum','m 33':'triangulum',
+  "barnard's star":'barnard\'s star','barnard star':'barnard\'s star',
+};
+
+const SUGGESTIONS = [
+  {
+    label:'Andromeda Galaxy', badge:'M 31',
+    facts:[
+      "Our nearest large galactic neighbour, 2.5 million light-years away — and on a slow collision course with the Milky Way.",
+      "Andromeda is visible to the naked eye on a dark night. The light reaching your eye left there before humans used stone tools.",
+      "Open the Navigation Computer (T) and search 'andromeda' to set a course."
+    ]
+  },
+  {
+    label:'Betelgeuse', badge:'α Orionis',
+    facts:[
+      "A red supergiant star so enormous it would swallow Jupiter's orbit if placed at the Sun. Expected to explode as a supernova within 100,000 years.",
+      "In 2019, Betelgeuse mysteriously dimmed to its lowest recorded brightness in the dramatic 'Great Dimming' event.",
+      "Search 'betelgeuse' in the Navigation Computer (T) to visit the most famous dying star in our sky."
+    ]
+  },
+  {
+    label:'Saturn', badge:'Planet',
+    facts:[
+      "Saturn's ring system is 282,000 km across but only ~20 metres thick — thinner relative to its width than a sheet of paper.",
+      "Saturn is the least dense planet — less dense than water. It would float in a large enough ocean.",
+      "Press G near the Sun to jump to the nearest body, or use Tab to switch to Solar System scale."
+    ]
+  },
+  {
+    label:'Orion Nebula', badge:'M 42',
+    facts:[
+      "The Orion Nebula is a stellar nursery 1,344 light-years away, actively forming hundreds of solar systems right now.",
+      "Visible as a fuzzy patch in Orion's sword, it's one of the most studied objects in the sky.",
+      "Search 'orion nebula' in the Navigation Computer (T) to fly into an active star-forming region."
+    ]
+  },
+  {
+    label:'Sirius', badge:'α Canis Majoris',
+    facts:[
+      "Sirius is the brightest star in the night sky — a binary system with a white dwarf companion packed with more mass than the Sun.",
+      "Ancient Egyptians used Sirius's annual rising to predict the Nile flood, making it one of the most culturally significant stars in history.",
+      "At only 8.6 light-years away, Sirius is practically a next-door neighbour in cosmic terms."
+    ]
+  },
+];
+
+let _nearestBody = { name: 'Sun', rReal: 696340 };
+let _factsCollapsed = false;
+let _factsSubject   = null;
+let _factsList      = [];
+let _factsIdx       = 0;
+let _factsTimer     = 0;
+let _factsSuggestTarget = null;
+const _FACTS_CYCLE = 10; // seconds per fact
+
+document.getElementById('facts-toggle-btn').addEventListener('click', () => {
+  _factsCollapsed = !_factsCollapsed;
+  document.getElementById('facts-panel').classList.toggle('collapsed', _factsCollapsed);
+});
+
+document.getElementById('facts-suggest-btn').addEventListener('click', () => {
+  if (_factsSuggestTarget) {
+    openTravelPanel();
+    const inp = document.getElementById('travel-dest-input');
+    inp.value = _factsSuggestTarget;
+    doTravelSearch(_factsSuggestTarget);
+  }
+});
+
+function _matchFacts(name) {
+  let n = (name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (_FACTS_ALIASES[n]) n = _FACTS_ALIASES[n];
+  if (OBJECT_FACTS[n]) return OBJECT_FACTS[n];
+  for (const [k, v] of Object.entries(OBJECT_FACTS)) {
+    if (n.includes(k) || k.includes(n)) return v;
+  }
+  return null;
+}
+
+function _showFact() {
+  const el = document.getElementById('facts-text');
+  el.classList.add('fading');
+  setTimeout(() => {
+    el.textContent = _factsList[_factsIdx] || '';
+    el.classList.remove('fading');
+  }, 250);
+  document.querySelectorAll('#facts-footer .facts-dot').forEach((d, i) => d.classList.toggle('active', i === _factsIdx));
+  _restartProgress();
+}
+
+function _restartProgress() {
+  const fill = document.getElementById('facts-pfill');
+  if (!fill) return;
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    fill.style.transition = `width ${_FACTS_CYCLE}s linear`;
+    fill.style.width = '100%';
+  }));
+}
+
+function _buildFactsUI(displayName, badge, facts, suggestTarget) {
+  document.getElementById('facts-obj-name').textContent = displayName.replace(/\s+/g, ' ').trim();
+  const badgeEl = document.getElementById('facts-badge');
+  badgeEl.className = 'facts-badge ' + badge;
+  if (badge === 'travel')       badgeEl.textContent = '→ EN ROUTE';
+  else if (badge === 'suggest') badgeEl.textContent = '★ EXPLORE';
+  else                          badgeEl.textContent = '◉ NEARBY';
+  _factsSuggestTarget = suggestTarget || null;
+  const sugBtn = document.getElementById('facts-suggest-btn');
+  sugBtn.style.display = suggestTarget ? 'block' : 'none';
+  const footer = document.getElementById('facts-footer');
+  footer.innerHTML = '';
+  if (facts.length > 1) {
+    facts.forEach((_, i) => {
+      const dot = document.createElement('span');
+      dot.className = 'facts-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => { _factsIdx = i; _factsTimer = 0; _showFact(); });
+      footer.appendChild(dot);
+    });
+    const prog = document.createElement('div'); prog.className = 'facts-progress';
+    const fill = document.createElement('div'); fill.className = 'facts-pfill'; fill.id = 'facts-pfill';
+    prog.appendChild(fill); footer.appendChild(prog);
+  }
+}
+
+function tickFacts(dt) {
+  let subject, badge, displayName, facts, suggestTarget = null;
+
+  if (travelActive && travelDest) {
+    subject     = travelDest.name.toLowerCase();
+    badge       = 'travel';
+    displayName = travelDest.name;
+    facts       = _matchFacts(travelDest.name);
+  } else {
+    subject     = (_nearestBody?.name || 'Sun').toLowerCase();
+    badge       = 'nearby';
+    displayName = _nearestBody?.name || 'Sun';
+    facts       = _matchFacts(displayName);
+  }
+
+  if (!facts) {
+    const si  = Math.floor(Date.now() / 18000) % SUGGESTIONS.length;
+    const sug = SUGGESTIONS[si];
+    subject      = '__sug' + si;
+    displayName  = sug.label;
+    badge        = 'suggest';
+    facts        = sug.facts;
+    suggestTarget = sug.label.toLowerCase();
+  }
+
+  if (subject !== _factsSubject) {
+    _factsSubject = subject;
+    _factsList    = facts;
+    _factsIdx     = 0;
+    _factsTimer   = 0;
+    _buildFactsUI(displayName, badge, facts, suggestTarget);
+    const el = document.getElementById('facts-text');
+    el.textContent = facts[0] || '';
+    el.classList.remove('fading');
+    _restartProgress();
+    return;
+  }
+
+  if (_factsList.length > 1) {
+    _factsTimer += dt;
+    if (_factsTimer >= _FACTS_CYCLE) {
+      _factsTimer = 0;
+      _factsIdx = (_factsIdx + 1) % _factsList.length;
+      _showFact();
+    }
+  }
+}
+
 async function queryLiveSIMBAD(query, reqId, exactId) {
   let q;
   if (exactId) {
@@ -1526,6 +1897,7 @@ function updateHUD() {
     const d = camera.position.distanceTo(b.pos);
     if (d < minDist) { minDist = d; nearest = b; }
   });
+  _nearestBody = nearest;
   hudNearestName.textContent = nearest.name;
   hudNearestInfo.textContent = `${formatDist(minDist)} | Real Ø ${nearest.rReal > 10000 ? (nearest.rReal/1000).toFixed(0) + ' k' : nearest.rReal.toFixed(0)} km`;
 
@@ -1625,6 +1997,7 @@ function animate(now) {
 
   updateTravel(dt);
   updateHUD();
+  tickFacts(dt);
   updateLabels();
   renderer.render(scene, camera);
 }
