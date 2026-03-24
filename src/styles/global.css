@@ -54,7 +54,9 @@
 
   /* Object labels */
   #labels{position:fixed;inset:0;pointer-events:none;z-index:5}
-  .obj-label{position:absolute;color:#fff;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 6px rgba(0,0,0,1),0 0 12px rgba(0,0,0,0.8);transform:translate(-50%,-100%);white-space:nowrap;padding-bottom:6px}
+  .obj-label{position:absolute;color:#fff;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 6px rgba(0,0,0,1),0 0 12px rgba(0,0,0,0.8);transform:translate(-50%,-100%);white-space:nowrap;padding-bottom:6px;display:flex;flex-direction:column;align-items:center}
+  .obj-label-name{display:block}
+  .obj-label-dist{display:block;font-size:8px;font-weight:400;letter-spacing:1.5px;color:rgba(0,238,255,0.55);margin-top:2px}
 
   /* Controls overlay */
   .controls-overlay{position:fixed;inset:0;z-index:150;background:rgba(0,5,12,0.88);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}

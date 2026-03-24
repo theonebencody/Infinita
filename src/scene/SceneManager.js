@@ -36,8 +36,12 @@ scene.fog = new THREE.FogExp2(0x000005, 0.0008);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.0001, 50000);
 camera.position.set(0, 1.5, 4);
 
-const ambientLight = new THREE.AmbientLight(0x111122, 0.3);
+const ambientLight = new THREE.AmbientLight(0x223344, 0.55);
 scene.add(ambientLight);
+// Fill light from opposite side of sun to soften shadows on dark sides
+const fillLight = new THREE.DirectionalLight(0x334466, 0.3);
+fillLight.position.set(-5, 2, -3);
+scene.add(fillLight);
 
 // ═══════════════════════════════════════════════
 //  SUN
@@ -437,7 +441,7 @@ const labelsList = []; // { el, mesh, scaleLevel }
 function createLabel(text) {
   const el = document.createElement('div');
   el.className = 'obj-label';
-  el.textContent = text;
+  el.innerHTML = `<span class="obj-label-name">${text}</span><span class="obj-label-dist"></span>`;
   labelsContainer.appendChild(el);
   return el;
 }
@@ -470,6 +474,15 @@ function updateLabels() {
     el.style.display = '';
     el.style.left = x + 'px';
     el.style.top  = y + 'px';
+    // Update distance display
+    const distEl = el.querySelector('.obj-label-dist');
+    if (distEl) {
+      const dAU = camera.position.distanceTo(_labelWorldPos);
+      const dLY = dAU / 63241;
+      if (dLY >= 0.01) distEl.textContent = dLY < 1000 ? dLY.toFixed(2) + ' ly' : dLY < 1e6 ? (dLY/1000).toFixed(1) + ' kly' : (dLY/1e6).toFixed(2) + ' Mly';
+      else if (dAU >= 0.001) distEl.textContent = dAU.toFixed(3) + ' AU';
+      else distEl.textContent = (dAU * AU).toFixed(0) + ' km';
+    }
   });
 }
 
@@ -1182,7 +1195,7 @@ function abortTravel(arrived) {
   _resumeTimeAfterTravel();
   if (arrived && travelDest && !exploreMode) {
     // Cinematic orbit around the destination for non-explore arrivals
-    const r = Math.max(0.3, (travelDest.radius || 0.3) * 3.5);
+    const r = Math.max(0.3, (travelDest.radius || 0.3) * 6);
     _arrivalOrbit.active = true;
     _arrivalOrbit.target = travelDest.position.clone();
     _arrivalOrbit.r      = r;
@@ -1228,8 +1241,11 @@ function updateTravel(dt) {
   }
   if (!travelDest) return;
 
-  // Compute stop point: offset from object center by its orbit radius
-  const stopR = travelDest.radius || 0.3;
+  // Compute stop point: offset from object center at a comfortable viewing distance
+  const objR = travelDest.radius || 0.3;
+  const stopR = exploreMode
+    ? Math.max(0.5, objR * (exploreDest?.vMult || 8))  // match dwell orbit radius
+    : Math.max(0.3, objR * 6);                          // nav computer: 6× object radius
   const _stopDir = new THREE.Vector3().subVectors(travelDest.position, travelOrigin).normalize();
   const stopPt = travelDest.position.clone().addScaledVector(_stopDir, -stopR);
 
@@ -1903,7 +1919,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
   const canvas = document.getElementById('splash-bg');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let w, h, particles = [], t = 0, animId = null;
+  let w, h, t = 0, animId = null;
 
   function resize() {
     w = canvas.width = window.innerWidth;
@@ -1912,37 +1928,31 @@ document.getElementById('mission-report').addEventListener('click', e => {
   resize();
   window.addEventListener('resize', resize);
 
-  // Create particles expanding from center
-  const N = 280;
-  for (let i = 0; i < N; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 0.15 + Math.random() * 0.8;
-    const dist = Math.random() * 0.3; // start near center
-    const hue = Math.random() < 0.4 ? 190 + Math.random() * 30 : // cyan/blue
-                Math.random() < 0.6 ? 260 + Math.random() * 40 : // purple
-                Math.random() < 0.8 ? 20 + Math.random() * 30 :  // orange/warm
-                340 + Math.random() * 40; // pink
-    particles.push({
-      angle, speed, dist,
-      hue,
-      size: 0.5 + Math.random() * 2,
-      alpha: 0.2 + Math.random() * 0.5,
-      drift: (Math.random() - 0.5) * 0.002,
-      pulse: Math.random() * Math.PI * 2
+  // Wave rings expanding from center
+  const waves = [];
+  for (let i = 0; i < 18; i++) {
+    waves.push({
+      radius: i * 0.06, // staggered start
+      speed: 0.012 + Math.random() * 0.008,
+      hue: [195, 220, 260, 280, 310, 15, 30][i % 7],
+      width: 1.5 + Math.random() * 2,
+      alpha: 0.06 + Math.random() * 0.06,
+      wobble: Math.random() * Math.PI * 2,
+      wobbleAmp: 0.02 + Math.random() * 0.04,
+      wobbleFreq: 2 + Math.floor(Math.random() * 5)
     });
   }
 
-  // Nebula clouds
-  const clouds = [];
-  for (let i = 0; i < 12; i++) {
-    clouds.push({
+  // Sparse dust motes that drift along wave fronts
+  const motes = [];
+  for (let i = 0; i < 60; i++) {
+    motes.push({
       angle: Math.random() * Math.PI * 2,
-      dist: 0.1 + Math.random() * 0.4,
-      size: 60 + Math.random() * 120,
-      hue: Math.random() < 0.5 ? 200 + Math.random() * 40 : 280 + Math.random() * 50,
-      alpha: 0.015 + Math.random() * 0.025,
-      speed: 0.02 + Math.random() * 0.06,
-      drift: (Math.random() - 0.5) * 0.001
+      wave: Math.floor(Math.random() * waves.length),
+      offset: (Math.random() - 0.5) * 0.04,
+      size: 0.8 + Math.random() * 1.5,
+      alpha: 0.15 + Math.random() * 0.35,
+      hue: [195, 240, 280, 320, 30][Math.floor(Math.random() * 5)]
     });
   }
 
@@ -1953,54 +1963,82 @@ document.getElementById('mission-report').addEventListener('click', e => {
       return;
     }
     animId = requestAnimationFrame(draw);
-    t += 0.004;
+    t += 0.003;
     const cx = w / 2, cy = h / 2;
-    const maxR = Math.min(w, h) * 0.6;
+    const maxR = Math.max(w, h) * 0.7;
 
-    // Clear with dark bg
-    ctx.fillStyle = 'rgba(2,10,20,0.12)';
+    // Fade trails — slow fade for wave persistence
+    ctx.fillStyle = 'rgba(2,10,20,0.06)';
     ctx.fillRect(0, 0, w, h);
 
-    // Central glow
-    const coreR = maxR * 0.08;
-    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-    coreGrad.addColorStop(0, 'rgba(100,180,255,0.06)');
-    coreGrad.addColorStop(0.5, 'rgba(60,100,200,0.03)');
+    // Central core glow — pulsing
+    const corePulse = 0.85 + 0.15 * Math.sin(t * 1.2);
+    const coreR = maxR * 0.06 * corePulse;
+    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 3);
+    coreGrad.addColorStop(0, `rgba(120,180,255,${0.08 * corePulse})`);
+    coreGrad.addColorStop(0.3, `rgba(80,120,220,${0.04 * corePulse})`);
+    coreGrad.addColorStop(0.7, `rgba(40,60,160,${0.015 * corePulse})`);
     coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = coreGrad;
-    ctx.fillRect(cx - coreR, cy - coreR, coreR * 2, coreR * 2);
+    ctx.beginPath();
+    ctx.arc(cx, cy, coreR * 3, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Nebula clouds
-    clouds.forEach(c => {
-      c.dist += c.speed * 0.001;
-      c.angle += c.drift;
-      if (c.dist > 0.9) c.dist = 0.1;
-      const x = cx + Math.cos(c.angle) * c.dist * maxR;
-      const y = cy + Math.sin(c.angle) * c.dist * maxR;
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, c.size);
-      grad.addColorStop(0, `hsla(${c.hue},60%,50%,${c.alpha})`);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
+    // Draw expanding wave rings
+    ctx.lineWidth = 1;
+    waves.forEach(wv => {
+      wv.radius += wv.speed * 0.003;
+      wv.wobble += 0.008;
+      if (wv.radius > 1.2) wv.radius -= 1.2; // loop
+
+      const r = wv.radius * maxR;
+      if (r < 2) return;
+      const fade = wv.radius < 0.1 ? wv.radius / 0.1 : wv.radius > 0.9 ? (1.2 - wv.radius) / 0.3 : 1;
+      const a = wv.alpha * fade;
+      if (a < 0.003) return;
+
+      ctx.strokeStyle = `hsla(${wv.hue},55%,55%,${a})`;
+      ctx.lineWidth = wv.width * fade;
       ctx.beginPath();
-      ctx.arc(x, y, c.size, 0, Math.PI * 2);
-      ctx.fill();
+
+      // Wobbly ring — slightly distorted circle
+      for (let i = 0; i <= 120; i++) {
+        const ang = (i / 120) * Math.PI * 2;
+        const wobR = r + Math.sin(ang * wv.wobbleFreq + wv.wobble) * r * wv.wobbleAmp;
+        const x = cx + Math.cos(ang) * wobR;
+        const y = cy + Math.sin(ang) * wobR;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      // Inner glow of the wave — subtle filled ring
+      if (a > 0.02 && wv.width > 1.5) {
+        const glowGrad = ctx.createRadialGradient(cx, cy, Math.max(0, r - 15), cx, cy, r + 15);
+        glowGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        glowGrad.addColorStop(0.4, `hsla(${wv.hue},50%,50%,${a * 0.25})`);
+        glowGrad.addColorStop(0.6, `hsla(${wv.hue},50%,50%,${a * 0.25})`);
+        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
 
-    // Particles
-    particles.forEach(p => {
-      p.dist += p.speed * 0.0008;
-      p.angle += p.drift;
-      p.pulse += 0.02;
-      if (p.dist > 1.0) { p.dist = Math.random() * 0.05; p.angle = Math.random() * Math.PI * 2; }
-
-      const x = cx + Math.cos(p.angle) * p.dist * maxR;
-      const y = cy + Math.sin(p.angle) * p.dist * maxR;
-      const flicker = 0.7 + 0.3 * Math.sin(p.pulse);
-      const a = p.alpha * flicker * (1 - p.dist * 0.5);
-
-      ctx.fillStyle = `hsla(${p.hue},70%,70%,${a})`;
+    // Dust motes riding wave fronts
+    motes.forEach(m => {
+      m.angle += 0.003;
+      const wv = waves[m.wave];
+      const r = (wv.radius + m.offset) * maxR;
+      if (r < 5 || wv.radius > 1.1) return;
+      const fade = wv.radius < 0.1 ? wv.radius / 0.1 : wv.radius > 0.85 ? (1.1 - wv.radius) / 0.25 : 1;
+      const x = cx + Math.cos(m.angle) * r;
+      const y = cy + Math.sin(m.angle) * r;
+      ctx.fillStyle = `hsla(${m.hue},65%,72%,${m.alpha * fade})`;
       ctx.beginPath();
-      ctx.arc(x, y, p.size, 0, Math.PI * 2);
+      ctx.arc(x, y, m.size, 0, Math.PI * 2);
       ctx.fill();
     });
   }
