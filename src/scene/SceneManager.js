@@ -9,6 +9,7 @@ import { simbadOtypeInfo, simbadDistAU, simbadMarkerRadius, queryLiveSIMBAD, COM
 import { initUFO, spawnUFO, updateUFO } from './ufo.js';
 import { initWarp, renderWarp, hideWarp } from './warpEffect.js';
 import { initComets, updateComets } from './comets.js';
+import { buildRocket } from './rocketModels.js';
 
 export function init(container) {
 'use strict';
@@ -179,7 +180,7 @@ function _applyNextTex(){
   const {mesh,data}=_texQueue.shift();
   const fn=_pTexFns[data.name];
   if(fn){
-    const big=data.name==='Earth'||data.name==='Jupiter';
+    const big=data.name==='Earth'||data.name==='Jupiter'||data.name==='Mars';
     const tex=_mkTex(big?512:256,big?256:128,fn);
     mesh.material.map=tex; mesh.material.needsUpdate=true;
   }
@@ -204,6 +205,24 @@ planetMeshes.forEach(({mesh,data})=>{
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(ac2),blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
   sp.scale.setScalar(data.rVis*3.4); mesh.add(sp);
 });
+
+// --- Earth cloud layer ---
+(()=>{
+  const earth=planetMeshes.find(p=>p.data.name==='Earth');
+  if(!earth) return;
+  const cloudTex=_mkTex(256,128,(u,v,nx,ny,nz)=>{
+    const n1=_sfbm(nx*4+10,ny*4+10,nz*4+10,4);
+    const n2=_sfbm(nx*8+20,ny*8,nz*8+20,3)*0.3;
+    const cloud=Math.max(0,n1+n2-0.42)*2.5;
+    const c=Math.min(255,(cloud*255)|0);
+    return [c,c,c];
+  });
+  const cloudGeo=new THREE.SphereGeometry(earth.data.rVis*1.015,32,32);
+  const cloudMat=new THREE.MeshStandardMaterial({map:cloudTex,transparent:true,opacity:0.45,depthWrite:false,roughness:1,metalness:0});
+  const cloudMesh=new THREE.Mesh(cloudGeo,cloudMat);
+  cloudMesh.userData._cloudSpin=true;
+  earth.mesh.add(cloudMesh);
+})();
 
 // --- Enhanced Saturn rings (custom geo with Cassini division) ---
 (()=>{
@@ -1844,23 +1863,32 @@ function _initSimViewer() {
   const atmo = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(aCanvas), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
   atmo.scale.setScalar(6); _simEarth.add(atmo);
 
-  // Rocket
-  const rGrp = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.18, 8), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.5, roughness: 0.4 }));
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.015, 0.05, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd }));
-  nose.position.y = 0.115;
-  rGrp.add(body, nose);
-  rGrp.position.set(0, 0.22, 0);
-  _simRocket = rGrp;
-  _simScene.add(rGrp);
+  // Rocket (built from selected model)
+  const rocketName = _getSimVal('sim-rocket') || 'Falcon 9';
+  _simRocket = buildRocket(rocketName);
+  _simRocket.position.set(0, 0.22, 0);
+  _simScene.add(_simRocket);
 
-  // Exhaust particles
-  const exGeo = new THREE.BufferGeometry();
-  const exPos = new Float32Array(60 * 3);
-  exGeo.setAttribute('position', new THREE.BufferAttribute(exPos, 3));
-  _simExhaust = new THREE.Points(exGeo, new THREE.PointsMaterial({ color: 0xff8800, size: 0.012, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
-  _simExhaust.visible = false;
-  _simScene.add(_simExhaust);
+  // Multi-layer exhaust system
+  // Layer 1: core flame (bright yellow-white)
+  const ex1Geo = new THREE.BufferGeometry();
+  const ex1Pos = new Float32Array(20 * 3);
+  ex1Geo.setAttribute('position', new THREE.BufferAttribute(ex1Pos, 3));
+  const ex1 = new THREE.Points(ex1Geo, new THREE.PointsMaterial({ color: 0xffeedd, size: 0.008, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
+  // Layer 2: outer flame (orange)
+  const ex2Geo = new THREE.BufferGeometry();
+  const ex2Pos = new Float32Array(40 * 3);
+  ex2Geo.setAttribute('position', new THREE.BufferAttribute(ex2Pos, 3));
+  const ex2 = new THREE.Points(ex2Geo, new THREE.PointsMaterial({ color: 0xff6600, size: 0.016, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
+  // Layer 3: smoke plume (only in atmosphere)
+  const ex3Geo = new THREE.BufferGeometry();
+  const ex3Pos = new Float32Array(30 * 3);
+  ex3Geo.setAttribute('position', new THREE.BufferAttribute(ex3Pos, 3));
+  const ex3 = new THREE.Points(ex3Geo, new THREE.PointsMaterial({ color: 0x886644, size: 0.028, transparent: true, opacity: 0.3, blending: THREE.NormalBlending, depthWrite: false }));
+  _simExhaust = { grp: new THREE.Group(), layers: [{pts:ex1,pos:ex1Pos,n:20,spread:0.015,lenMin:0.02,lenMax:0.08},{pts:ex2,pos:ex2Pos,n:40,spread:0.04,lenMin:0.04,lenMax:0.18},{pts:ex3,pos:ex3Pos,n:30,spread:0.06,lenMin:0.08,lenMax:0.30}] };
+  _simExhaust.grp.add(ex1, ex2, ex3);
+  _simExhaust.grp.visible = false;
+  _simScene.add(_simExhaust.grp);
 
   // Lights
   _simScene.add(new THREE.AmbientLight(0x223344, 0.4));
@@ -1898,7 +1926,7 @@ function _startLaunch() {
   if (_simRunning) return;
   _simRunning = true; _simT = 0; _simAlt = 0; _simVel = 0; _simFuel = 100; _simStage = 1; _simAccel = 0;
   if (_simRocket) _simRocket.position.set(0, 0.22, 0);
-  if (_simExhaust) _simExhaust.visible = true;
+  if (_simExhaust) _simExhaust.grp.visible = true;
   document.getElementById('sim-status').textContent = 'LAUNCH IN PROGRESS';
   document.getElementById('sim-launch-btn').textContent = 'LAUNCHING...';
   document.getElementById('sim-launch-btn').classList.add('counting');
@@ -1938,18 +1966,23 @@ function _simAnimate(now) {
       _simRocket.rotation.z = Math.min(_simT * 0.008, 0.35);
     }
 
-    // Exhaust particles
+    // Multi-layer exhaust
     if (_simExhaust && _simFuel > 0) {
-      const pos = _simExhaust.geometry.attributes.position.array;
       const rPos = _simRocket ? _simRocket.position : { x: 0, y: 0.22, z: 0 };
-      for (let i = 0; i < 60; i++) {
-        pos[i*3]   = rPos.x + (Math.random()-0.5)*0.03;
-        pos[i*3+1] = rPos.y - 0.09 - Math.random()*0.15;
-        pos[i*3+2] = rPos.z + (Math.random()-0.5)*0.03;
-      }
-      _simExhaust.geometry.attributes.position.needsUpdate = true;
+      _simExhaust.layers.forEach(layer => {
+        const p = layer.pos;
+        for (let i = 0; i < layer.n; i++) {
+          const age = Math.random();
+          p[i*3]   = rPos.x + (Math.random()-0.5)*layer.spread;
+          p[i*3+1] = rPos.y - 0.09 - age*(layer.lenMin + Math.random()*(layer.lenMax-layer.lenMin));
+          p[i*3+2] = rPos.z + (Math.random()-0.5)*layer.spread;
+        }
+        layer.pts.geometry.attributes.position.needsUpdate = true;
+      });
+      // Hide smoke layer above atmosphere
+      _simExhaust.layers[2].pts.visible = _simAlt < 80;
     }
-    if (_simExhaust && _simFuel <= 0) _simExhaust.visible = false;
+    if (_simExhaust && _simFuel <= 0) _simExhaust.grp.visible = false;
 
     // Camera follows rocket
     if (_simCam && _simRocket) {
@@ -1974,12 +2007,19 @@ function _simAnimate(now) {
   _simRenderer.render(_simScene, _simCam);
 }
 
-// Wire sim option buttons
+// Wire sim option buttons — rebuild rocket model when rocket changes
 document.querySelectorAll('.sim-options').forEach(group => {
   group.querySelectorAll('.sim-opt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       group.querySelectorAll('.sim-opt-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      // Rebuild rocket model if rocket selection changed
+      if (group.id === 'sim-rocket' && _simScene && _simRocket) {
+        _simScene.remove(_simRocket);
+        _simRocket = buildRocket(btn.dataset.val);
+        _simRocket.position.set(0, 0.22, 0);
+        _simScene.add(_simRocket);
+      }
     });
   });
 });
@@ -2035,6 +2075,8 @@ function animate(now) {
       const pos = getOrbitalPosition(data, simTime);
       mesh.position.copy(pos);
       mesh.rotation.y += dt * 0.5;
+      // Spin cloud layer slightly faster than planet
+      mesh.children.forEach(c => { if (c.userData._cloudSpin) c.rotation.y += dt * 0.08; });
     });
 
     // Update Sun rotation and pulse
