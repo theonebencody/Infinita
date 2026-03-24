@@ -565,18 +565,25 @@ function loadExternalData() {
 // ═══════════════════════════════════════════════
 function openSearch() {
   searchOpen = true;
+  document.querySelector('.search-overlay').classList.add('open');
   const panel = document.getElementById('search-panel');
   panel.classList.add('open');
   const input = document.getElementById('search-input');
   input.value = '';
   document.getElementById('search-results').innerHTML = '';
-  setTimeout(() => input.focus(), 10);
+  setTimeout(() => input.focus(), 50);
 }
 
 function closeSearch() {
   searchOpen = false;
+  document.querySelector('.search-overlay').classList.remove('open');
   document.getElementById('search-panel').classList.remove('open');
 }
+document.getElementById('search-close-btn').addEventListener('click', closeSearch);
+// Tap backdrop to close search
+document.querySelector('.search-overlay').addEventListener('click', e => {
+  if (e.target === document.querySelector('.search-overlay')) closeSearch();
+});
 
 function travelToMesh(mesh, scaleLevel, name, orbitR) {
   _pauseTimeForTravel();
@@ -1062,6 +1069,10 @@ function closeTravelPanel() {
   travelPanelOpen = false;
   document.getElementById('travel-panel').classList.remove('open');
 }
+document.getElementById('travel-close-btn').addEventListener('click', closeTravelPanel);
+document.getElementById('travel-panel').addEventListener('click', e => {
+  if (e.target === document.getElementById('travel-panel')) closeTravelPanel();
+});
 function setTravelDest(dest) {
   travelDest = dest;
   document.getElementById('travel-dest-name').textContent = dest.name;
@@ -1326,6 +1337,9 @@ function toggleControls() {
 document.getElementById('controls-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('controls-overlay')) toggleControls();
 });
+document.getElementById('controls-close-btn').addEventListener('click', () => {
+  controlsOpen = true; toggleControls(); // toggleControls will flip to false and close
+});
 
 document.addEventListener('keydown', e => {
   if (searchOpen)      { if (e.code === 'Escape') closeSearch();      return; }
@@ -1456,7 +1470,7 @@ if (isMobile) {
     for (let i = 0; i < e.changedTouches.length; i++) {
       const t = e.changedTouches[i];
       if (t.identifier === lookTouchId) {
-        if (!started || travelActive) return;
+        if (!started || travelActive || _arrivalOrbit.active) return;
         const dx = t.clientX - lookLastX;
         const dy = t.clientY - lookLastY;
         yaw -= dx * 0.004;
@@ -1536,10 +1550,6 @@ if (isMobile) {
     mobileCtrl.classList.remove('active');
     mobileSpeed.classList.remove('active');
   };
-
-  // Hook into the splash explore button to show mobile controls
-  const _splashExplore = document.getElementById('splash-explore-btn');
-  _splashExplore.addEventListener('click', _origShowHud);
 
   // Export applyJoystick so animate loop can call it
   window._mobileApplyJoystick = applyJoystick;
@@ -1715,14 +1725,17 @@ function updateHUD() {
 let started = false;
 let lastTime = 0;
 
-document.getElementById('splash-explore-btn').addEventListener('click', () => {
+document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
   started = true;
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('hud').classList.add('active');
+  if (isMobile && window._mobileShowControls) window._mobileShowControls();
   applyScale();
   lastTime = performance.now();
 });
-document.getElementById('splash-launches-btn').addEventListener('click', () => {
+document.getElementById('splash-launches-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
   document.getElementById('splash').classList.add('hidden');
   openLaunchHistory();
 });

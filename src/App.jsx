@@ -88,7 +88,7 @@ function App() {
         {/* Controls overlay */}
         <div className="controls-overlay" id="controls-overlay">
           <div className="controls-card">
-            <div className="controls-card-title">CONTROLS</div>
+            <div className="controls-card-title">CONTROLS <button className="panel-close-btn" id="controls-close-btn">{'\u2715'}</button></div>
             <div className="controls-grid">
 
               <div>
@@ -140,7 +140,7 @@ function App() {
         {/* Search overlay */}
         <div className="search-overlay">
           <div className="search-panel" id="search-panel">
-            <div className="search-title">Object Database Search</div>
+            <div className="search-title">Object Database Search <button className="panel-close-btn" id="search-close-btn">{'\u2715'}</button></div>
             <input type="text" className="search-input" id="search-input" placeholder="Search stars, exoplanets, planets..." autoComplete="off" spellCheck="false" />
             <div className="search-results" id="search-results"></div>
             <div className="search-hint">ESC / F to close {'\u00A0'}{'\u00B7'}{'\u00A0'} Enter or click to travel {'\u00A0'}{'\u00B7'}{'\u00A0'} Powered by SIMBAD (~15M objects)</div>
@@ -151,7 +151,7 @@ function App() {
       {/* Travel Panel */}
       <div className="travel-panel" id="travel-panel">
         <div className="travel-card">
-          <div className="travel-card-title">NAVIGATION COMPUTER</div>
+          <div className="travel-card-title">NAVIGATION COMPUTER <button className="panel-close-btn" id="travel-close-btn">{'\u2715'}</button></div>
           <div className="travel-section">
             <div className="travel-section-label">Destination</div>
             <input className="travel-dest-input" id="travel-dest-input" placeholder="Search star, planet, galaxy\u2026" autoComplete="off" spellCheck="false" />
@@ -251,12 +251,12 @@ function App() {
           <div className="joystick-knob" id="joystick-knob"></div>
         </div>
         <div className="mobile-action-bar">
-          <button className="mob-btn" id="mob-search" title="Search">F</button>
-          <button className="mob-btn" id="mob-nav" title="Navigation">T</button>
-          <button className="mob-btn" id="mob-explore" title="Explore">R</button>
-          <button className="mob-btn" id="mob-scale" title="Scale">TAB</button>
+          <button className="mob-btn" id="mob-search" title="Search">{'\uD83D\uDD0D'}</button>
+          <button className="mob-btn" id="mob-nav" title="Navigation">{'\u2316'}</button>
+          <button className="mob-btn" id="mob-explore" title="Explore">{'\u2B21'}</button>
+          <button className="mob-btn" id="mob-scale" title="Scale">{'\u29BE'}</button>
           <button className="mob-btn" id="mob-nearest" title="Nearest">G</button>
-          <button className="mob-btn" id="mob-time" title="Time">P</button>
+          <button className="mob-btn" id="mob-time" title="Time">{'\u23EF'}</button>
         </div>
       </div>
       <div className="mobile-speed-area" id="mobile-speed">
