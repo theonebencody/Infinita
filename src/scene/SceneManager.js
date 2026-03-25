@@ -2766,7 +2766,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
 
     // Stars
     stars.forEach(s => {
-      s.dist += s.speed * 0.0004;
+      s.dist += s.speed * 0.0012;
       s.twinklePhase += s.twinkleSpeed;
       if (s.dist > 1.1) { s.dist = 0; s.angle = Math.random() * Math.PI * 2; }
 
