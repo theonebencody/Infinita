@@ -360,35 +360,130 @@ STAR_DATA.forEach(s => {
 });
 
 // ═══════════════════════════════════════════════
-//  GALACTIC PLANE (for Galactic scale)
+//  MILKY WAY GALAXY MODEL (for Galactic scale)
 // ═══════════════════════════════════════════════
 const galaxyGroup = new THREE.Group();
 galaxyGroup.visible = false;
 scene.add(galaxyGroup);
 
-const galaxyStarCount = isMobile ? 6000 : 15000;
-const gPositions = new Float32Array(galaxyStarCount * 3);
-const gColors = new Float32Array(galaxyStarCount * 3);
-for (let i = 0; i < galaxyStarCount; i++) {
-  const arm = Math.floor(Math.random() * 4);
-  const armAngle = (arm / 4) * Math.PI * 2;
-  const dist = Math.random() * 50000 * 63241; // up to 50 kly in AU
-  const spiralAngle = armAngle + dist / (15000 * 63241) * Math.PI * 2;
-  const spread = (Math.random() - 0.5) * dist * 0.15;
-  const ySpread = (Math.random() - 0.5) * dist * 0.02;
-  gPositions[i * 3] = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI / 2) * spread;
-  gPositions[i * 3 + 1] = ySpread;
-  gPositions[i * 3 + 2] = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI / 2) * spread;
-  const roll = Math.random();
-  const temp = roll < 0.5 ? 3000 + Math.random() * 2000 : 5000 + Math.random() * 15000;
+const KLY = 63241; // 1 kly in AU
+const _gaussRand = () => { let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };
+
+// ── A. Spiral Disc (main body) ──
+const discCount = isMobile ? 8000 : 20000;
+const discPos = new Float32Array(discCount * 3);
+const discCol = new Float32Array(discCount * 3);
+const NUM_ARMS = 4;
+const ARM_WIND = 2.8; // winding tightness
+const R0 = 3000 * KLY; // scale radius
+for (let i = 0; i < discCount; i++) {
+  const isMajor = i < discCount * 0.7;
+  const armIdx = isMajor ? Math.floor(Math.random() * NUM_ARMS) : Math.floor(Math.random() * NUM_ARMS) + 0.5;
+  const armBase = (armIdx / NUM_ARMS) * Math.PI * 2;
+  const dist = Math.pow(Math.random(), 0.7) * 50000 * KLY;
+  const spiralAngle = armBase + Math.log(1 + dist / R0) * ARM_WIND;
+  const spreadSigma = dist * (isMajor ? 0.06 : 0.12);
+  const perpSpread = _gaussRand() * spreadSigma;
+  const ySpread = _gaussRand() * dist * 0.008;
+  discPos[i*3]   = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI/2) * perpSpread;
+  discPos[i*3+1] = ySpread;
+  discPos[i*3+2] = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI/2) * perpSpread;
+  // Color: blue-white in arms, warmer between
+  const inArm = Math.abs(perpSpread) < spreadSigma * 0.6;
+  const temp = inArm ? 7000 + Math.random() * 15000 : 3000 + Math.random() * 4000;
   const col = tempToColor(temp);
-  gColors[i * 3] = col.r; gColors[i * 3 + 1] = col.g; gColors[i * 3 + 2] = col.b;
+  discCol[i*3] = col.r; discCol[i*3+1] = col.g; discCol[i*3+2] = col.b;
 }
-const galaxyGeo = new THREE.BufferGeometry();
-galaxyGeo.setAttribute('position', new THREE.BufferAttribute(gPositions, 3));
-galaxyGeo.setAttribute('color', new THREE.BufferAttribute(gColors, 3));
-const galaxyMat = new THREE.PointsMaterial({ size: 8000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.7 });
-galaxyGroup.add(new THREE.Points(galaxyGeo, galaxyMat));
+const discGeo = new THREE.BufferGeometry();
+discGeo.setAttribute('position', new THREE.BufferAttribute(discPos, 3));
+discGeo.setAttribute('color', new THREE.BufferAttribute(discCol, 3));
+galaxyGroup.add(new THREE.Points(discGeo, new THREE.PointsMaterial({ size: 7000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.65 })));
+
+// ── B. Central Bulge (2000 points) ──
+const bulgeCount = isMobile ? 800 : 2000;
+const bulgePos = new Float32Array(bulgeCount * 3);
+const bulgeCol = new Float32Array(bulgeCount * 3);
+for (let i = 0; i < bulgeCount; i++) {
+  const r = 5000 * KLY * Math.pow(Math.random(), 2.5);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  bulgePos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  bulgePos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.6; // oblate
+  bulgePos[i*3+2] = r * Math.cos(phi);
+  const temp = 3500 + Math.random() * 2500; // warm old stars
+  const col = tempToColor(temp);
+  bulgeCol[i*3] = col.r; bulgeCol[i*3+1] = col.g; bulgeCol[i*3+2] = col.b;
+}
+const bulgeGeo = new THREE.BufferGeometry();
+bulgeGeo.setAttribute('position', new THREE.BufferAttribute(bulgePos, 3));
+bulgeGeo.setAttribute('color', new THREE.BufferAttribute(bulgeCol, 3));
+galaxyGroup.add(new THREE.Points(bulgeGeo, new THREE.PointsMaterial({ size: 15000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.8 })));
+
+// ── C. Core Glow Sprite ──
+const coreC = document.createElement('canvas'); coreC.width = 128; coreC.height = 128;
+const coreCtx = coreC.getContext('2d');
+const coreGrad = coreCtx.createRadialGradient(64,64,0,64,64,64);
+coreGrad.addColorStop(0, 'rgba(255,235,200,0.7)');
+coreGrad.addColorStop(0.2, 'rgba(255,210,150,0.35)');
+coreGrad.addColorStop(0.5, 'rgba(200,160,100,0.1)');
+coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
+coreCtx.fillStyle = coreGrad; coreCtx.fillRect(0,0,128,128);
+const coreSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(coreC), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
+coreSprite.scale.setScalar(2e7);
+galaxyGroup.add(coreSprite);
+
+// ── D. Dust Lanes (between arms) ──
+const dustCount = isMobile ? 1000 : 3000;
+const dustPos = new Float32Array(dustCount * 3);
+const dustCol = new Float32Array(dustCount * 3);
+for (let i = 0; i < dustCount; i++) {
+  const armIdx = Math.floor(Math.random() * NUM_ARMS);
+  const armBase = (armIdx / NUM_ARMS) * Math.PI * 2;
+  const dist = Math.pow(Math.random(), 0.6) * 45000 * KLY;
+  const spiralAngle = armBase + Math.log(1 + dist / R0) * ARM_WIND - 0.15; // offset inward
+  const perpSpread = _gaussRand() * dist * 0.03;
+  dustPos[i*3]   = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI/2) * perpSpread;
+  dustPos[i*3+1] = _gaussRand() * dist * 0.003;
+  dustPos[i*3+2] = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI/2) * perpSpread;
+  dustCol[i*3] = 0.12; dustCol[i*3+1] = 0.08; dustCol[i*3+2] = 0.05;
+}
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+dustGeo.setAttribute('color', new THREE.BufferAttribute(dustCol, 3));
+galaxyGroup.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 18000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.35, blending: THREE.NormalBlending })));
+
+// ── E. Halo (dim outer sphere) ──
+const haloCount = isMobile ? 400 : 1000;
+const haloPos = new Float32Array(haloCount * 3);
+const haloCol = new Float32Array(haloCount * 3);
+for (let i = 0; i < haloCount; i++) {
+  const r = 60000 * KLY * Math.pow(Math.random(), 1.5);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  haloPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  haloPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+  haloPos[i*3+2] = r * Math.cos(phi);
+  const col = tempToColor(4000 + Math.random() * 1500);
+  haloCol[i*3] = col.r * 0.4; haloCol[i*3+1] = col.g * 0.4; haloCol[i*3+2] = col.b * 0.4;
+}
+const haloGeo = new THREE.BufferGeometry();
+haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPos, 3));
+haloGeo.setAttribute('color', new THREE.BufferAttribute(haloCol, 3));
+galaxyGroup.add(new THREE.Points(haloGeo, new THREE.PointsMaterial({ size: 5000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.25 })));
+
+// ── F. "You Are Here" marker (Sun's position in the Orion Arm) ──
+const sunGalacticR = 26000 * KLY; // 26 kly from center
+const sunGalacticAngle = Math.PI * 0.85; // position in Orion Arm
+const youAreHere = new THREE.Group();
+const yahSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: (() => { const c=document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d'),g=ctx.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,'rgba(255,220,50,1)'); g.addColorStop(0.3,'rgba(255,200,50,0.5)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })(),
+  blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+}));
+yahSprite.scale.setScalar(8000);
+youAreHere.add(yahSprite);
+youAreHere.position.set(Math.cos(sunGalacticAngle) * sunGalacticR, 0, Math.sin(sunGalacticAngle) * sunGalacticR);
+galaxyGroup.add(youAreHere);
+labelsList.push({ el: createLabel('You Are Here ☉'), mesh: youAreHere, scaleLevel: 3 });
 
 // ═══════════════════════════════════════════════
 //  ATOMIC SCALE
@@ -1815,9 +1910,18 @@ function goToNearest() {
 // ═══════════════════════════════════════════════
 //  SCALE MANAGEMENT
 // ═══════════════════════════════════════════════
-function applyScale() {
-  const level = currentScale;
-  // Visibility
+// Scale transition system
+let _scaleTransition = null; // { from, to, progress, duration, fromNear, fromFar, fromFog, toNear, toFar, toFog, fromSpeed, toSpeed, targetPos }
+
+const _SCALE_PARAMS = [
+  { near: 0.001, far: 100, fog: 0.05, speed: 5, pos: [0, 0.5, 1.5] },          // 0: Atomic
+  { near: 0.0001, far: 5000, fog: 0.0008, speed: 10, pos: null },                // 1: Solar System
+  { near: 0.1, far: 5000000, fog: 0.0000001, speed: 25, pos: [0, 10000, 30000] }, // 2: Stellar
+  { near: 100, far: 5e9, fog: 0, speed: 32, pos: [0, 1e7, 3e7] },               // 3: Galactic
+  { near: 1e6, far: 1e14, fog: 0, speed: 38, pos: [0, 1e11, 3e11] }             // 4: Cosmic
+];
+
+function _setScaleVisibility(level) {
   sunGroup.visible = level <= 1;
   planetMeshes.forEach(p => p.mesh.visible = level <= 1);
   orbitLines.forEach(l => l.visible = level <= 1);
@@ -1831,38 +1935,76 @@ function applyScale() {
   cosmicGroup.visible = level === 4;
   lightSphere.visible = level === 1;
   _bgRefObjects.forEach(o => { o.marker.visible = level === o.scale; });
+}
 
-  // Lazy-load catalogs for the new scale level
+function applyScale() {
+  const level = currentScale;
+
+  // Lazy-load catalogs
   if (level === 2) loadGaiaStars();
   if (level === 4) loadNearbyGalaxies();
 
-  // Adjust camera & fog based on scale
-  if (level === 0) {
-    camera.near = 0.001; camera.far = 100;
-    scene.fog.density = 0.05;
-    camera.position.set(0, 0.5, 1.5);
-    speedLevel = 5; moveSpeed = getSpeedFromLevel(5);
-  } else if (level === 1) {
-    camera.near = 0.0001; camera.far = 5000;
-    scene.fog.density = 0.0008;
-    speedLevel = 10; moveSpeed = getSpeedFromLevel(10);
-  } else if (level === 2) {
-    camera.near = 0.1; camera.far = 5000000;
-    scene.fog.density = 0.0000001;
-    camera.position.set(0, 10000, 30000);
-    speedLevel = 25; moveSpeed = getSpeedFromLevel(25);
-  } else if (level === 3) {
-    camera.near = 100; camera.far = 5e9;
-    scene.fog.density = 0;
-    camera.position.set(0, 1e7, 3e7);
-    speedLevel = 32; moveSpeed = getSpeedFromLevel(32);
-  } else if (level === 4) {
-    camera.near = 1e6; camera.far = 1e14;
-    scene.fog.density = 0;
-    camera.position.set(0, 1e11, 3e11);
-    speedLevel = 38; moveSpeed = getSpeedFromLevel(38);
+  const params = _SCALE_PARAMS[level];
+  const prevParams = _scaleTransition ? _SCALE_PARAMS[_scaleTransition.from] : null;
+
+  // If there's a previous scale to transition from, animate
+  if (prevParams && !_scaleTransition) {
+    // Just do the instant transition for now — the cross-fade is below
   }
+
+  // Set visibility for new scale (show both during transition handled in updateTransition)
+  _setScaleVisibility(level);
+
+  // Start smooth camera parameter transition
+  const fromNear = camera.near, fromFar = camera.far, fromFog = scene.fog.density;
+  const fromSpeed = speedLevel;
+  _scaleTransition = {
+    from: -1, to: level,
+    progress: 0, duration: 1.8,
+    fromNear, fromFar, fromFog,
+    toNear: params.near, toFar: params.far, toFog: params.fog,
+    fromSpeed, toSpeed: params.speed,
+    targetPos: params.pos ? new THREE.Vector3(...params.pos) : null
+  };
+
+  // Immediately update near/far to max range to avoid clipping during transition
+  camera.near = Math.min(fromNear, params.near);
+  camera.far = Math.max(fromFar, params.far);
   camera.updateProjectionMatrix();
+}
+
+function _updateScaleTransition(dt) {
+  if (!_scaleTransition) return;
+  const tr = _scaleTransition;
+  tr.progress = Math.min(1, tr.progress + dt / tr.duration);
+  const t = tr.progress;
+  // Smoothstep easing
+  const e = t * t * (3 - 2 * t);
+
+  // Log-space interpolation for near/far (spans orders of magnitude)
+  camera.near = Math.exp(Math.log(tr.fromNear) * (1 - e) + Math.log(tr.toNear) * e);
+  camera.far = Math.exp(Math.log(Math.max(tr.fromFar, 1)) * (1 - e) + Math.log(Math.max(tr.toFar, 1)) * e);
+  scene.fog.density = tr.fromFog * (1 - e) + tr.toFog * e;
+  camera.updateProjectionMatrix();
+
+  // Smooth speed interpolation
+  speedLevel = Math.round(tr.fromSpeed * (1 - e) + tr.toSpeed * e);
+  moveSpeed = getSpeedFromLevel(speedLevel);
+
+  // Smooth camera position move (if target specified)
+  if (tr.targetPos) {
+    camera.position.lerp(tr.targetPos, Math.min(1, dt * 2.5));
+  }
+
+  if (t >= 1) {
+    camera.near = tr.toNear;
+    camera.far = tr.toFar;
+    scene.fog.density = tr.toFog;
+    camera.updateProjectionMatrix();
+    speedLevel = tr.toSpeed;
+    moveSpeed = getSpeedFromLevel(tr.toSpeed);
+    _scaleTransition = null;
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -3157,11 +3299,15 @@ function animate(now) {
   // Update body positions ref
   bodyPositions[0].pos.set(0, 0, 0);
 
+  _updateScaleTransition(dt);
   updateExplore(dt);
   updateTravel(dt);
   updateArrivalOrbit(dt);
   updateUFO(dt);
   updateComets(dt, simTime, currentScale);
+  if (galaxyGroup.visible) galaxyGroup.rotation.y += dt * 0.0008;
+  // Pulse "You Are Here" marker
+  if (youAreHere.visible) { yahSprite.scale.setScalar(8000 * (1 + 0.15 * Math.sin(performance.now() * 0.003))); }
   updateHUD();
   tickFacts(dt);
   _updateTicker(dt);
