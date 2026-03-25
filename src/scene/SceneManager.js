@@ -2047,6 +2047,9 @@ let _simRenderer = null, _simScene = null, _simCam = null;
 let _simRocket = null, _simExhaust = null, _simEarth = null;
 let _simT = 0, _simRunning = false, _simLastT = 0;
 let _simAlt = 0, _simVel = 0, _simAccel = 0, _simFuel = 100, _simStage = 1;
+let _simTrajectoryLine = null;
+let _simTickerTimeout = null;
+let _simCurrentProvider = 'SpaceX';
 
 const SIM_SITES = {
   KSC:   { lat: 28.57, lon: -80.65, name: 'Kennedy Space Center' },
@@ -2056,18 +2059,192 @@ const SIM_SITES = {
   Kourou: { lat: 5.23, lon: -52.77, name: 'Kourou, Fr. Guiana' }
 };
 
-const SIM_ROCKETS = {
-  'Falcon 9':     { thrust: 7600, mass: 549000, fuel: 411000, stages: 2, isp: 311 },
-  'Falcon Heavy': { thrust: 22800, mass: 1421000, fuel: 1100000, stages: 2, isp: 311 },
-  'Starship':     { thrust: 74000, mass: 5000000, fuel: 4600000, stages: 2, isp: 350 },
-  'SLS':          { thrust: 39000, mass: 2600000, fuel: 2100000, stages: 2, isp: 363 },
-  'New Glenn':    { thrust: 17100, mass: 590000, fuel: 450000, stages: 2, isp: 320 },
-  'Ariane 6':     { thrust: 8000, mass: 530000, fuel: 400000, stages: 2, isp: 340 }
+const PROVIDER_ROCKETS = {
+  'SpaceX': [
+    { name: 'Falcon 9', thrust: 7600, mass: 549000, fuel: 411000, stages: 2, isp: 311, height: 70, desc: 'Workhorse medium-lift reusable rocket' },
+    { name: 'Falcon Heavy', thrust: 22800, mass: 1421000, fuel: 1100000, stages: 2, isp: 311, height: 70, desc: 'World\'s most powerful operational rocket' },
+    { name: 'Starship', thrust: 74000, mass: 5000000, fuel: 4600000, stages: 2, isp: 350, height: 120, desc: 'Super heavy-lift next-gen launch system' },
+  ],
+  'NASA': [
+    { name: 'SLS', thrust: 39000, mass: 2600000, fuel: 2100000, stages: 2, isp: 363, height: 98, desc: 'Space Launch System for deep space' },
+    { name: 'Saturn V', thrust: 34000, mass: 2970000, fuel: 2200000, stages: 3, isp: 304, height: 111, desc: 'Apollo-era super heavy-lift vehicle' },
+  ],
+  'Blue Origin': [
+    { name: 'New Glenn', thrust: 17100, mass: 590000, fuel: 450000, stages: 2, isp: 320, height: 98, desc: 'Heavy-lift orbital rocket with reusable booster' },
+    { name: 'New Shepard', thrust: 490, mass: 75000, fuel: 55000, stages: 1, isp: 255, height: 18, desc: 'Suborbital tourism vehicle' },
+  ],
+  'ESA': [
+    { name: 'Ariane 6', thrust: 8000, mass: 530000, fuel: 400000, stages: 2, isp: 340, height: 63, desc: 'European heavy-lift launcher' },
+    { name: 'Vega-C', thrust: 3015, mass: 210000, fuel: 180000, stages: 4, isp: 280, height: 35, desc: 'European small satellite launcher' },
+  ],
+  'ISRO': [
+    { name: 'LVM3', thrust: 6847, mass: 640000, fuel: 500000, stages: 3, isp: 316, height: 43, desc: 'India\'s heaviest operational launcher' },
+    { name: 'PSLV', thrust: 4860, mass: 320000, fuel: 260000, stages: 4, isp: 290, height: 44, desc: 'Polar Satellite Launch Vehicle' },
+  ],
+  'Custom': [
+    { name: 'Falcon 9', thrust: 7600, mass: 549000, fuel: 411000, stages: 2, isp: 311, height: 70, desc: 'Default configuration' },
+  ]
 };
+
+const SIM_LAUNCH_MESSAGES = [
+  { time: -10, text: 'All systems nominal. Go for launch.' },
+  { time: -5, text: 'Main engine start sequence initiated.' },
+  { time: 0, text: 'LIFTOFF! We have liftoff!' },
+  { time: 10, text: 'Vehicle is supersonic.' },
+  { time: 60, text: 'Max Q \u2014 maximum dynamic pressure.' },
+  { time: 150, text: 'Main engine cutoff. Stage separation.' },
+  { time: 180, text: 'Second stage ignition confirmed.' },
+  { time: 300, text: 'Fairing separation.' },
+  { time: 500, text: 'Approaching orbital velocity.' },
+];
+const SIM_ORBIT_MESSAGE = 'Orbit insertion confirmed. Mission success!';
+
+// Build a flat lookup from provider rockets for physics
+function _getSelectedRocketData() {
+  const rocketName = _getSimVal('sim-rocket');
+  const rockets = PROVIDER_ROCKETS[_simCurrentProvider] || PROVIDER_ROCKETS['SpaceX'];
+  const found = rockets.find(r => r.name === rocketName);
+  if (found) return found;
+  // fallback
+  return PROVIDER_ROCKETS['SpaceX'][0];
+}
 
 function _getSimVal(groupId) {
   const active = document.querySelector(`#${groupId} .sim-opt-btn.active`);
   return active ? active.dataset.val : '';
+}
+
+function _updateRocketOptions(providerName) {
+  _simCurrentProvider = providerName;
+  const container = document.getElementById('sim-rocket');
+  if (!container) return;
+  const rockets = PROVIDER_ROCKETS[providerName] || PROVIDER_ROCKETS['SpaceX'];
+  container.innerHTML = '';
+  rockets.forEach((rocket, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'sim-opt-btn' + (idx === 0 ? ' active' : '');
+    btn.dataset.val = rocket.name;
+    btn.textContent = rocket.name;
+    btn.title = rocket.desc;
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.sim-opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Rebuild rocket model if viewer is active
+      if (_simScene && _simRocket) {
+        _simScene.remove(_simRocket);
+        _simRocket = buildRocket(btn.dataset.val);
+        _simRocket.position.set(0, 0.22, 0);
+        _simScene.add(_simRocket);
+      }
+    });
+    container.appendChild(btn);
+  });
+}
+
+function _rotateEarthToSite(siteKey) {
+  if (!_simEarth) return;
+  const site = SIM_SITES[siteKey];
+  if (!site) return;
+  // Convert lat/lon to rotation: we want the site to face the camera (+Z direction)
+  // Earth's default orientation has prime meridian facing +Z
+  // To rotate site to face camera, set Y rotation = -lon in radians, and tilt X = -lat
+  const lonRad = site.lon * (Math.PI / 180);
+  const latRad = site.lat * (Math.PI / 180);
+  // Y rotation puts the longitude facing the camera
+  _simEarth.rotation.y = -lonRad + Math.PI;
+  // X rotation tilts so the latitude faces the camera (relative to equator)
+  _simEarth.rotation.x = latRad;
+}
+
+function _showTickerMessage(text) {
+  const tickerEl = document.getElementById('sim-ticker-text');
+  if (!tickerEl) return;
+  tickerEl.classList.remove('typing');
+  tickerEl.textContent = text;
+  // Force reflow to restart animation
+  void tickerEl.offsetWidth;
+  tickerEl.classList.add('typing');
+}
+
+function _clearTicker() {
+  if (_simTickerTimeout) { clearTimeout(_simTickerTimeout); _simTickerTimeout = null; }
+  const tickerEl = document.getElementById('sim-ticker-text');
+  if (tickerEl) { tickerEl.textContent = ''; tickerEl.classList.remove('typing'); }
+}
+
+function _scheduleTickerMessages() {
+  _clearTicker();
+  // _simT starts at 0 at liftoff. Messages have times relative to T-0.
+  // We use a countdown approach: schedule messages based on sim time offsets.
+  // The countdown starts at T-10, so actual sim time for each message = message.time + 10
+  // Actually, _simT is incremented continuously from 0. Let's use real wall-clock scheduling
+  // since the sim time progresses in real-time (roughly).
+  let _tickerMsgIndex = 0;
+
+  function checkAndShow() {
+    if (!_simRunning && _tickerMsgIndex < SIM_LAUNCH_MESSAGES.length) {
+      // launch ended early
+      return;
+    }
+    if (_tickerMsgIndex >= SIM_LAUNCH_MESSAGES.length) return;
+
+    const msg = SIM_LAUNCH_MESSAGES[_tickerMsgIndex];
+    // Messages with time < 0 are countdown messages shown before T-0
+    // _simT starts at 0 and goes up. We offset: message shows at _simT = msg.time + 10
+    // (i.e., first 10 seconds are countdown)
+    const showAtSimT = msg.time + 10;
+
+    if (_simT >= showAtSimT) {
+      _showTickerMessage(msg.text);
+      _tickerMsgIndex++;
+      if (_tickerMsgIndex < SIM_LAUNCH_MESSAGES.length) {
+        _simTickerTimeout = setTimeout(checkAndShow, 500);
+      }
+    } else {
+      const waitMs = Math.max(100, (showAtSimT - _simT) * 1000 * 0.8);
+      _simTickerTimeout = setTimeout(checkAndShow, Math.min(waitMs, 2000));
+    }
+  }
+
+  checkAndShow();
+}
+
+function _createTrajectoryLine() {
+  // Remove existing trajectory if any
+  _removeTrajectoryLine();
+
+  if (!_simScene || !_simRocket) return;
+
+  // Create a curved trajectory line from launch position upward
+  const startY = 0.22; // launch surface
+  const endY = 4.0; // high above earth
+  const endX = 1.5; // offset for gravity turn
+
+  const start = new THREE.Vector3(0, startY, 0);
+  const control = new THREE.Vector3(0.2, (startY + endY) * 0.6, 0);
+  const end = new THREE.Vector3(endX, endY, 0);
+
+  const curve = new THREE.QuadraticBezierCurve3(start, control, end);
+  const points = curve.getPoints(64);
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const material = new THREE.LineBasicMaterial({
+    color: 0x00eeff,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  _simTrajectoryLine = new THREE.Line(geometry, material);
+  _simScene.add(_simTrajectoryLine);
+}
+
+function _removeTrajectoryLine() {
+  if (_simTrajectoryLine && _simScene) {
+    _simScene.remove(_simTrajectoryLine);
+    if (_simTrajectoryLine.geometry) _simTrajectoryLine.geometry.dispose();
+    if (_simTrajectoryLine.material) _simTrajectoryLine.material.dispose();
+    _simTrajectoryLine = null;
+  }
 }
 
 function openLaunchSim() {
@@ -2077,11 +2254,16 @@ function openLaunchSim() {
   _simT = 0; _simAlt = 0; _simVel = 0; _simFuel = 100; _simStage = 1;
   document.getElementById('sim-status').textContent = 'CONFIGURE MISSION';
   _updateSimTelemetry();
+  _clearTicker();
+  // Initialize rocket options for current provider
+  _updateRocketOptions(_simCurrentProvider);
   setTimeout(() => _initSimViewer(), 60);
 }
 
 function closeLaunchSim() {
   _simActive = false; _simRunning = false;
+  _clearTicker();
+  _removeTrajectoryLine();
   document.getElementById('launch-sim').classList.remove('open');
   document.getElementById('splash').classList.remove('hidden');
   if (_simRenderer) { _simRenderer.dispose(); _simRenderer = null; }
@@ -2108,6 +2290,10 @@ function _initSimViewer() {
   _simEarth = new THREE.Mesh(eGeo, new THREE.MeshStandardMaterial({ map: eTex, roughness: 0.8 }));
   _simEarth.position.set(0, -1.8, 0);
   _simScene.add(_simEarth);
+
+  // Rotate earth to selected launch site
+  const selectedSite = _getSimVal('sim-site') || 'KSC';
+  _rotateEarthToSite(selectedSite);
 
   // Atmosphere glow
   const aCanvas = document.createElement('canvas'); aCanvas.width = 128; aCanvas.height = 128;
@@ -2177,7 +2363,7 @@ function _updateSimTelemetry() {
   document.getElementById('sim-t-accel').textContent = `${_simAccel.toFixed(1)} g`;
   document.getElementById('sim-t-fuel').textContent = `${Math.max(0, _simFuel).toFixed(0)}%`;
   document.getElementById('sim-t-stage').textContent = _simStage;
-  document.getElementById('sim-t-status').textContent = !_simRunning ? 'READY' : _simFuel <= 0 ? 'MECO — COASTING' : _simStage === 1 ? 'POWERED FLIGHT' : 'STAGE 2 BURN';
+  document.getElementById('sim-t-status').textContent = !_simRunning ? 'READY' : _simFuel <= 0 ? 'MECO \u2014 COASTING' : _simStage === 1 ? 'POWERED FLIGHT' : 'STAGE 2 BURN';
 }
 
 function _startLaunch() {
@@ -2188,6 +2374,12 @@ function _startLaunch() {
   document.getElementById('sim-status').textContent = 'LAUNCH IN PROGRESS';
   document.getElementById('sim-launch-btn').textContent = 'LAUNCHING...';
   document.getElementById('sim-launch-btn').classList.add('counting');
+
+  // Create trajectory line
+  _createTrajectoryLine();
+
+  // Start ticker messages
+  _scheduleTickerMessages();
 }
 
 function _simAnimate(now) {
@@ -2197,8 +2389,7 @@ function _simAnimate(now) {
 
   if (_simRunning) {
     _simT += dt;
-    const rocketName = _getSimVal('sim-rocket');
-    const rData = SIM_ROCKETS[rocketName] || SIM_ROCKETS['Falcon 9'];
+    const rData = _getSelectedRocketData();
 
     // Simple physics
     if (_simFuel > 0) {
@@ -2222,6 +2413,11 @@ function _simAnimate(now) {
       _simRocket.position.y = rY;
       // Slight gravity turn
       _simRocket.rotation.z = Math.min(_simT * 0.008, 0.35);
+    }
+
+    // Update trajectory line opacity based on progress
+    if (_simTrajectoryLine) {
+      _simTrajectoryLine.material.opacity = 0.15 + Math.min(_simAlt / 400, 0.5);
     }
 
     // Multi-layer exhaust
@@ -2258,6 +2454,7 @@ function _simAnimate(now) {
       document.getElementById('sim-launch-btn').textContent = 'INITIATE LAUNCH SEQUENCE';
       document.getElementById('sim-launch-btn').classList.remove('counting');
       document.getElementById('sim-t-status').textContent = 'ORBIT INSERTION';
+      _showTickerMessage(SIM_ORBIT_MESSAGE);
     }
   }
 
@@ -2265,20 +2462,36 @@ function _simAnimate(now) {
   _simRenderer.render(_simScene, _simCam);
 }
 
-// Wire sim option buttons — rebuild rocket model when rocket changes
-document.querySelectorAll('.sim-options').forEach(group => {
-  group.querySelectorAll('.sim-opt-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      group.querySelectorAll('.sim-opt-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      // Rebuild rocket model if rocket selection changed
-      if (group.id === 'sim-rocket' && _simScene && _simRocket) {
-        _simScene.remove(_simRocket);
-        _simRocket = buildRocket(btn.dataset.val);
-        _simRocket.position.set(0, 0.22, 0);
-        _simScene.add(_simRocket);
-      }
-    });
+// Wire provider buttons to update rocket options
+document.getElementById('sim-provider').addEventListener('click', (e) => {
+  const btn = e.target.closest('.sim-opt-btn');
+  if (!btn) return;
+  document.querySelectorAll('#sim-provider .sim-opt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _updateRocketOptions(btn.dataset.val);
+  // Rebuild rocket model if viewer is active
+  const firstRocket = (PROVIDER_ROCKETS[btn.dataset.val] || PROVIDER_ROCKETS['SpaceX'])[0];
+  if (_simScene && _simRocket && firstRocket) {
+    _simScene.remove(_simRocket);
+    _simRocket = buildRocket(firstRocket.name);
+    _simRocket.position.set(0, 0.22, 0);
+    _simScene.add(_simRocket);
+  }
+});
+
+// Wire other sim option groups (destination, site) with delegated events
+['sim-dest', 'sim-site'].forEach(groupId => {
+  const group = document.getElementById(groupId);
+  if (!group) return;
+  group.addEventListener('click', (e) => {
+    const btn = e.target.closest('.sim-opt-btn');
+    if (!btn) return;
+    group.querySelectorAll('.sim-opt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // If launch site changed, rotate earth
+    if (groupId === 'sim-site') {
+      _rotateEarthToSite(btn.dataset.val);
+    }
   });
 });
 
@@ -2295,6 +2508,9 @@ document.getElementById('splash-sim-btn').addEventListener('click', (e) => {
   document.getElementById('splash').classList.add('hidden');
   openLaunchSim();
 });
+
+// Initialize rocket options for default provider on load
+_updateRocketOptions('SpaceX');
 
 // Sim canvas resize
 window.addEventListener('resize', () => {

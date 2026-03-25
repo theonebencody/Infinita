@@ -289,14 +289,7 @@ function App() {
 
             <div className="sim-section">
               <div className="sim-label">ROCKET</div>
-              <div className="sim-options" id="sim-rocket">
-                <button className="sim-opt-btn active" data-val="Falcon 9">Falcon 9</button>
-                <button className="sim-opt-btn" data-val="Falcon Heavy">Falcon Heavy</button>
-                <button className="sim-opt-btn" data-val="Starship">Starship</button>
-                <button className="sim-opt-btn" data-val="SLS">SLS</button>
-                <button className="sim-opt-btn" data-val="New Glenn">New Glenn</button>
-                <button className="sim-opt-btn" data-val="Ariane 6">Ariane 6</button>
-              </div>
+              <div className="sim-options" id="sim-rocket"></div>
             </div>
 
             <div className="sim-section">
@@ -345,6 +338,9 @@ function App() {
               <div className="sim-telem-row"><span className="sim-telem-label">FUEL</span><span className="sim-telem-val" id="sim-t-fuel">100%</span></div>
               <div className="sim-telem-row"><span className="sim-telem-label">STAGE</span><span className="sim-telem-val" id="sim-t-stage">1</span></div>
               <div className="sim-telem-row"><span className="sim-telem-label">STATUS</span><span className="sim-telem-val" id="sim-t-status">READY</span></div>
+            </div>
+            <div className="sim-ticker" id="sim-ticker">
+              <div className="sim-ticker-text" id="sim-ticker-text"></div>
             </div>
           </div>
         </div>

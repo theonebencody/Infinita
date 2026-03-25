@@ -371,3 +371,7 @@
   .sim-telemetry{top:8px;right:8px;padding:8px 10px;min-width:140px}
   .sim-telem-val{font-size:9px}
 }
+.sim-ticker{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,8,18,0.9));padding:12px 18px 10px;pointer-events:none}
+.sim-ticker-text{font-family:'Share Tech Mono',monospace;font-size:11px;color:rgba(0,238,255,0.75);letter-spacing:1px;white-space:nowrap;overflow:hidden}
+.sim-ticker-text.typing{animation:tickerType 0.5s steps(40) forwards}
+@keyframes tickerType{from{width:0}to{width:100%}}
