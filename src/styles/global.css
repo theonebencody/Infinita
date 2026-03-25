@@ -158,15 +158,17 @@
   /* ── Alien Flyby (intro) ── */
   .alien-flyby{position:fixed;inset:0;z-index:22;pointer-events:none;display:none;overflow:hidden}
   .alien-flyby.active{display:block}
-  .alien-flyby-img{position:absolute;width:80px;height:80px;object-fit:cover;object-position:center 20%;border-radius:50%;filter:brightness(1.2) contrast(1.1) drop-shadow(0 0 12px rgba(80,255,120,0.6)) drop-shadow(0 0 25px rgba(80,255,120,0.3));animation:alienZip 3s ease-in-out forwards}
+  .alien-flyby-img{position:absolute;width:90px;height:90px;object-fit:cover;object-position:center 20%;border-radius:50%;filter:brightness(1.2) contrast(1.1) drop-shadow(0 0 14px rgba(80,255,120,0.6)) drop-shadow(0 0 30px rgba(80,255,120,0.3));animation:alienZip 4.5s ease-in-out forwards}
   @keyframes alienZip{
-    0%{top:55%;left:-100px;transform:rotate(-15deg) scale(0.6);opacity:0}
-    10%{opacity:1}
-    30%{top:35%;transform:rotate(-5deg) scale(1)}
-    50%{top:40%;left:45%;transform:rotate(3deg) scale(1.1)}
-    70%{top:25%;transform:rotate(-8deg) scale(0.9)}
-    85%{opacity:1}
-    100%{top:30%;left:110%;transform:rotate(-20deg) scale(0.5);opacity:0}
+    0%{top:60%;left:-120px;transform:rotate(-15deg) scale(0.5);opacity:0}
+    8%{opacity:1}
+    25%{top:40%;left:30%;transform:rotate(-5deg) scale(1.2)}
+    40%{top:38%;left:42%;transform:rotate(2deg) scale(1.6)}
+    55%{top:38%;left:44%;transform:rotate(0deg) scale(1.65);opacity:1}
+    60%{top:38%;left:44%;transform:rotate(0deg) scale(1.65);opacity:1}
+    75%{top:30%;left:60%;transform:rotate(-10deg) scale(1.1)}
+    88%{opacity:1}
+    100%{top:25%;left:115%;transform:rotate(-25deg) scale(0.4);opacity:0}
   }
 
   #ufo-alert{position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:30;background:rgba(0,22,10,0.95);border:1px solid rgba(80,255,120,0.45);border-radius:5px;padding:8px 16px;display:none;align-items:center;gap:10px;pointer-events:none;white-space:nowrap;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}

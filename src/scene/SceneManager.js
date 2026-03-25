@@ -2480,7 +2480,7 @@ document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
           const flyby = document.getElementById('alien-flyby');
           if (flyby) {
             flyby.classList.add('active');
-            setTimeout(() => flyby.classList.remove('active'), 3500);
+            setTimeout(() => flyby.classList.remove('active'), 5000);
           }
         }, 400);
       }
