@@ -315,17 +315,10 @@
   .lh-highlight-expand-stats{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:rgba(0,238,255,0.6)}
   .lh-highlight-expand-stats span{color:#0ef;font-weight:700}
 
-  .lh-timeline-row{display:flex;gap:20px;align-items:flex-start}
-  .lh-timeline-col{flex:1;min-width:0}
-  .lh-gallery{width:320px;flex-shrink:0;position:sticky;top:20px}
-  .lh-gallery-frame{width:100%;aspect-ratio:3/4;border-radius:6px;overflow:hidden;border:1px solid rgba(0,238,255,0.12);background:#010208;position:relative}
-  .lh-gallery-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease;filter:brightness(0.85) contrast(1.1) saturate(1.1)}
-  .lh-gallery-img.active{opacity:1}
-  .lh-gallery-frame::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,5,15,0.7) 100%);pointer-events:none}
-  .lh-gallery-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
-  .lh-gallery-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,238,255,0.15);transition:all 0.3s;cursor:pointer}
-  .lh-gallery-dot.active{background:#0ef;box-shadow:0 0 6px rgba(0,238,255,0.5)}
-  @media(max-width:768px){.lh-timeline-row{flex-direction:column}.lh-gallery{width:100%;position:static}.lh-gallery-frame{aspect-ratio:16/9}}
+  .lh-timeline-wrap{position:relative;overflow:hidden}
+  .lh-timeline-bg-img{position:absolute;right:-5%;top:50%;transform:translateY(-50%);width:65%;max-width:500px;opacity:0.12;pointer-events:none;filter:brightness(0.8) contrast(1.2);z-index:0}
+  .lh-timeline-wrap .lh-timeline{position:relative;z-index:1}
+  .lh-timeline-wrap .lh-show-more-btn{position:relative;z-index:1}
 
   .lh-show-more-btn{display:block;width:100%;padding:12px;background:rgba(0,238,255,0.05);border:1px solid rgba(0,238,255,0.2);color:#0ef;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all 0.2s;text-align:center;margin-top:14px}
   .lh-show-more-btn:hover{background:rgba(0,238,255,0.12);border-color:rgba(0,238,255,0.45);box-shadow:0 0 20px rgba(0,238,255,0.1)}

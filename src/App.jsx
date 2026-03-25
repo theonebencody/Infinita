@@ -311,17 +311,10 @@ function App() {
           {/* Timeline + rocket gallery */}
           <div className="lh-section">
             <div className="lh-section-title">TIMELINE</div>
-            <div className="lh-timeline-row">
-              <div className="lh-timeline-col">
-                <div className="lh-timeline" id="lh-timeline"></div>
-                <button className="lh-show-more-btn" id="lh-timeline-more" style={{display:'none'}}>SHOW FULL TIMELINE</button>
-              </div>
-              <div className="lh-gallery" id="lh-gallery">
-                <div className="lh-gallery-frame">
-                  <img className="lh-gallery-img" id="lh-gallery-img" src="" alt="Historic rocket" />
-                </div>
-                <div className="lh-gallery-dots" id="lh-gallery-dots"></div>
-              </div>
+            <div className="lh-timeline-wrap">
+              <img src="/Infinita/images/astronaut.png" alt="" className="lh-timeline-bg-img" />
+              <div className="lh-timeline" id="lh-timeline"></div>
+              <button className="lh-show-more-btn" id="lh-timeline-more" style={{display:'none'}}>SHOW FULL TIMELINE</button>
             </div>
           </div>
 
