@@ -536,14 +536,17 @@ function updateLabels() {
     el.style.display = '';
     el.style.left = x + 'px';
     el.style.top  = y + 'px';
-    // Update distance display
+    // Update distance from Earth
     const distEl = el.querySelector('.obj-label-dist');
     if (distEl) {
-      const dAU = camera.position.distanceTo(_labelWorldPos);
+      const earthMesh = planetMeshes.find(p => p.data.name === 'Earth')?.mesh;
+      const earthPos = earthMesh ? earthMesh.position : new THREE.Vector3(1, 0, 0);
+      const dAU = earthPos.distanceTo(_labelWorldPos);
       const dLY = dAU / 63241;
-      if (dLY >= 0.01) distEl.textContent = dLY < 1000 ? dLY.toFixed(2) + ' ly' : dLY < 1e6 ? (dLY/1000).toFixed(1) + ' kly' : (dLY/1e6).toFixed(2) + ' Mly';
-      else if (dAU >= 0.001) distEl.textContent = dAU.toFixed(3) + ' AU';
-      else distEl.textContent = (dAU * AU).toFixed(0) + ' km';
+      if (dAU < 0.0001) distEl.textContent = 'Home';
+      else if (dLY >= 0.01) distEl.textContent = dLY < 1000 ? dLY.toFixed(2) + ' ly' : dLY < 1e6 ? (dLY/1000).toFixed(1) + ' kly' : (dLY/1e6).toFixed(2) + ' Mly';
+      else if (dAU >= 0.001) distEl.textContent = dAU.toFixed(3) + ' AU from Earth';
+      else distEl.textContent = (dAU * AU).toFixed(0) + ' km from Earth';
     }
   });
 }
@@ -2160,27 +2163,33 @@ document.getElementById('splash-launches-btn').addEventListener('click', (e) => 
 //  LAUNCH SIMULATOR  (dual-comparison mode)
 // ═══════════════════════════════════════════════
 
+// Research-accurate rocket specifications
+// thrust: sea-level thrust in kN, mass: liftoff mass in kg, fuel: propellant mass in kg
+// stages: number of stages, isp: sea-level specific impulse (s)
+// payloadLEO: max payload to LEO in kg, twr: thrust-to-weight ratio at liftoff
+// burnTime1: first stage burn time (s), burnTime2: upper stage burn time (s)
 const PROVIDER_ROCKETS = {
   'SpaceX': [
-    { name: 'Falcon 9', thrust: 7600, mass: 549000, fuel: 411000, stages: 2, isp: 311 },
-    { name: 'Falcon Heavy', thrust: 22800, mass: 1421000, fuel: 1100000, stages: 2, isp: 311 },
-    { name: 'Starship', thrust: 74000, mass: 5000000, fuel: 4600000, stages: 2, isp: 350 },
+    { name: 'Falcon 9',     thrust: 7607,  mass: 549054, fuel: 418700, stages: 2, isp: 282, payloadLEO: 22800,  twr: 1.41, burnTime1: 162, burnTime2: 397 },
+    { name: 'Falcon Heavy', thrust: 22819, mass: 1420788, fuel: 1155700, stages: 2, isp: 282, payloadLEO: 63800,  twr: 1.64, burnTime1: 154, burnTime2: 397 },
+    { name: 'Starship',     thrust: 74400, mass: 5000000, fuel: 4600000, stages: 2, isp: 327, payloadLEO: 150000, twr: 1.52, burnTime1: 170, burnTime2: 360 },
   ],
   'NASA': [
-    { name: 'SLS', thrust: 39000, mass: 2600000, fuel: 2100000, stages: 2, isp: 363 },
-    { name: 'Saturn V', thrust: 34000, mass: 2970000, fuel: 2200000, stages: 3, isp: 304 },
+    { name: 'SLS Block 1',  thrust: 39144, mass: 2608000, fuel: 2100000, stages: 2, isp: 269, payloadLEO: 95000,  twr: 1.53, burnTime1: 126, burnTime2: 480 },
+    { name: 'Saturn V',     thrust: 34020, mass: 2970000, fuel: 2160000, stages: 3, isp: 263, payloadLEO: 140000, twr: 1.17, burnTime1: 168, burnTime2: 360 },
+    { name: 'Space Shuttle', thrust: 30160, mass: 2040000, fuel: 1570000, stages: 2, isp: 266, payloadLEO: 27500,  twr: 1.51, burnTime1: 124, burnTime2: 510 },
   ],
   'Blue Origin': [
-    { name: 'New Glenn', thrust: 17100, mass: 590000, fuel: 450000, stages: 2, isp: 320 },
-    { name: 'New Shepard', thrust: 490, mass: 75000, fuel: 55000, stages: 1, isp: 255 },
+    { name: 'New Glenn',    thrust: 17100, mass: 590000, fuel: 450000, stages: 2, isp: 320, payloadLEO: 45000,  twr: 1.49, burnTime1: 180, burnTime2: 330 },
+    { name: 'New Shepard',  thrust: 490,   mass: 75000,  fuel: 55000,  stages: 1, isp: 255, payloadLEO: 0,      twr: 0.67, burnTime1: 110, burnTime2: 0 },
   ],
   'ESA': [
-    { name: 'Ariane 6', thrust: 8000, mass: 530000, fuel: 400000, stages: 2, isp: 340 },
-    { name: 'Vega-C', thrust: 3015, mass: 210000, fuel: 180000, stages: 4, isp: 280 },
+    { name: 'Ariane 6 (A64)', thrust: 8000, mass: 530000, fuel: 400000, stages: 2, isp: 278, payloadLEO: 21650, twr: 1.54, burnTime1: 140, burnTime2: 600 },
+    { name: 'Vega-C',       thrust: 3015, mass: 210000, fuel: 183000, stages: 4, isp: 280, payloadLEO: 2300,   twr: 1.46, burnTime1: 130, burnTime2: 90 },
   ],
   'ISRO': [
-    { name: 'LVM3', thrust: 6847, mass: 640000, fuel: 500000, stages: 3, isp: 316 },
-    { name: 'PSLV', thrust: 4860, mass: 320000, fuel: 260000, stages: 4, isp: 290 },
+    { name: 'LVM3 (GSLV Mk III)', thrust: 6847, mass: 640000, fuel: 515000, stages: 3, isp: 274, payloadLEO: 10000, twr: 1.09, burnTime1: 128, burnTime2: 300 },
+    { name: 'PSLV',         thrust: 4860, mass: 320000, fuel: 262000, stages: 4, isp: 269, payloadLEO: 3800,  twr: 1.55, burnTime1: 105, burnTime2: 83 },
   ]
 };
 
@@ -2204,7 +2213,8 @@ function _createSimInstance(prefix) {
     t: 0, alt: 0, vel: 0, accel: 0, fuel: 100, stage: 1,
     running: false, completed: false,
     orbitTime: 0, maxG: 0, maxVel: 0, fuelAtOrbit: 0,
-    lastT: 0
+    lastT: 0,
+    _msgMaxQ: false, _msgSonic: false, _msgFairing: false
   };
 }
 
@@ -2298,12 +2308,27 @@ function _initSimViewerForInstance(inst) {
   inst.cam.position.set(3, 2, 5);
   inst.cam.lookAt(0, 1, 0);
 
-  // Earth
-  const eGeo = new THREE.SphereGeometry(2, 48, 48);
-  const eTex = _mkTex(256, 128, _pTexFns.Earth);
-  inst.earth = new THREE.Mesh(eGeo, new THREE.MeshStandardMaterial({ map: eTex, roughness: 0.8 }));
+  // Earth — high detail with continent texture
+  const eGeo = new THREE.SphereGeometry(2, 64, 64);
+  const eTex = _mkTex(512, 256, _pTexFns.Earth);
+  inst.earth = new THREE.Mesh(eGeo, new THREE.MeshStandardMaterial({ map: eTex, roughness: 0.7, metalness: 0.05 }));
   inst.earth.position.set(0, -1.8, 0);
   inst.scene.add(inst.earth);
+
+  // Cloud layer over Earth
+  const cloudTex = _mkTex(256, 128, (u,v,nx,ny,nz) => {
+    const n1 = _sfbm(nx*4+10,ny*4+10,nz*4+10,4);
+    const n2 = _sfbm(nx*8+20,ny*8,nz*8+20,3)*0.3;
+    const cloud = Math.max(0, n1+n2-0.42)*2.5;
+    const c = Math.min(255,(cloud*255)|0);
+    return [c,c,c];
+  });
+  const cloudMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(2.03, 48, 48),
+    new THREE.MeshStandardMaterial({ map: cloudTex, transparent: true, opacity: 0.4, depthWrite: false, roughness: 1, metalness: 0 })
+  );
+  cloudMesh.userData._cloudSpin = true;
+  inst.earth.add(cloudMesh);
 
   // Rotate earth to selected launch site
   const selectedSite = _getSimVal('sim-site') || 'KSC';
@@ -2485,16 +2510,29 @@ function _stepInstance(inst, dt) {
   inst.t += dt;
   const rData = _getRocketData(inst.provider, inst.rocketName);
 
-  // Physics
+  // Realistic physics using burn times and TWR
+  const totalBurnTime = (rData.burnTime1 || 150) + (rData.burnTime2 || 300);
+  const stage1End = rData.burnTime1 || 150;
+  const fuelBurnRate = 100 / totalBurnTime; // % per second
+
   if (inst.fuel > 0) {
-    const thrustG = (rData.thrust * 1000) / (rData.mass * 9.81);
-    inst.accel = thrustG * (inst.fuel / 100) * 1.2;
-    inst.vel += inst.accel * 9.81 * dt;
-    inst.fuel -= dt * (100 / (rData.fuel / (rData.thrust * 1000 / (rData.isp * 9.81))));
+    // Current TWR decreases as fuel burns (vehicle gets lighter = higher TWR)
+    const fuelFrac = inst.fuel / 100;
+    const currentMass = rData.mass * (0.08 + 0.92 * fuelFrac); // dry mass ~8% + fuel
+    const thrustN = rData.thrust * 1000; // kN to N
+    const currentTWR = thrustN / (currentMass * 9.81);
+
+    // Gravity loss and drag (simplified)
+    const gravityLoss = inst.alt < 100 ? 9.81 : 9.81 * (6371 / (6371 + inst.alt)) ** 2;
+    const dragLoss = inst.alt < 50 ? Math.min(inst.vel * 0.0008, 2.5) : 0; // drag in atmosphere
+
+    inst.accel = Math.max(0, currentTWR - 1) + (inst.alt > 20 ? 0.3 : 0); // net acceleration in g
+    inst.vel += (inst.accel * 9.81 - dragLoss) * dt;
+    inst.fuel -= fuelBurnRate * dt;
     if (inst.fuel <= 0) { inst.fuel = 0; inst.accel = 0; }
   } else {
     inst.accel = 0;
-    inst.vel -= 0.5 * dt;
+    inst.vel = Math.max(0, inst.vel - 0.3 * dt); // gentle coast deceleration
   }
   inst.alt += inst.vel * dt / 1000;
 
@@ -2502,11 +2540,16 @@ function _stepInstance(inst, dt) {
   if (inst.accel > inst.maxG) inst.maxG = inst.accel;
   if (inst.vel > inst.maxVel) inst.maxVel = inst.vel;
 
-  // Stage separation
-  if (inst.stage === 1 && inst.fuel < 30 && inst.t > 10) {
+  // Stage separation at end of stage 1 burn
+  if (inst.stage === 1 && inst.t > stage1End * 0.95 && inst.fuel < (100 - fuelBurnRate * stage1End * 1.05)) {
     inst.stage = 2;
-    _showTicker(inst, 'Stage separation confirmed.');
+    _showTicker(inst, 'MECO — Stage separation confirmed. Stage 2 ignition.');
   }
+
+  // Milestone messages
+  if (!inst._msgMaxQ && inst.alt > 11 && inst.alt < 15) { inst._msgMaxQ = true; _showTicker(inst, 'Max Q — maximum dynamic pressure.'); }
+  if (!inst._msgSonic && inst.vel > 343 && inst.vel < 400) { inst._msgSonic = true; _showTicker(inst, 'Vehicle is supersonic.'); }
+  if (!inst._msgFairing && inst.alt > 100 && inst.alt < 120) { inst._msgFairing = true; _showTicker(inst, 'Fairing separation — payload exposed to space.'); }
 
   // Move rocket up
   if (inst.rocket) {
@@ -2689,8 +2732,8 @@ function _simAnimate(now) {
   }
 
   // Rotate earths slowly
-  if (_simA && _simA.earth) _simA.earth.rotation.y += dt * 0.02;
-  if (_simB && _simB.earth) _simB.earth.rotation.y += dt * 0.02;
+  if (_simA && _simA.earth) { _simA.earth.rotation.y += dt * 0.02; _simA.earth.children.forEach(c => { if (c.userData._cloudSpin) c.rotation.y += dt * 0.05; }); }
+  if (_simB && _simB.earth) { _simB.earth.rotation.y += dt * 0.02; _simB.earth.children.forEach(c => { if (c.userData._cloudSpin) c.rotation.y += dt * 0.05; }); }
 
   // Render
   if (_simA && _simA.renderer && _simA.scene && _simA.cam) {
@@ -2723,8 +2766,12 @@ function _checkCompletion() {
 
   // Build results
   var a = _simA, b = _simB;
-  var twrA = ((_getRocketData(a.provider, a.rocketName).thrust * 1000) / (_getRocketData(a.provider, a.rocketName).mass * 9.81)).toFixed(2);
-  var twrB = ((_getRocketData(b.provider, b.rocketName).thrust * 1000) / (_getRocketData(b.provider, b.rocketName).mass * 9.81)).toFixed(2);
+  var rDataA = _getRocketData(a.provider, a.rocketName);
+  var rDataB = _getRocketData(b.provider, b.rocketName);
+  var twrA = (rDataA.twr || (rDataA.thrust * 1000) / (rDataA.mass * 9.81)).toFixed(2);
+  var twrB = (rDataB.twr || (rDataB.thrust * 1000) / (rDataB.mass * 9.81)).toFixed(2);
+  var plA = rDataA.payloadLEO || 0;
+  var plB = rDataB.payloadLEO || 0;
 
   function winClass(aVal, bVal, lowerWins) {
     if (lowerWins) {
@@ -2742,18 +2789,19 @@ function _checkCompletion() {
   var gW      = winClass(a.maxG, b.maxG, true);
   var fuelW   = winClass(a.fuelAtOrbit, b.fuelAtOrbit, false);
   var twrW    = winClass(parseFloat(twrA), parseFloat(twrB), false);
+  var plW     = winClass(plA, plB, false);
 
   var aWins = 0, bWins = 0;
-  [timeW, velW, gW, fuelW, twrW].forEach(function(w) {
+  [timeW, velW, gW, fuelW, twrW, plW].forEach(function(w) {
     if (w[0] === 'win') aWins++;
     if (w[1] === 'win') bWins++;
   });
 
   var verdict = '';
   if (aWins > bWins) {
-    verdict = a.rocketName + ' wins overall with ' + aWins + ' of 5 categories.';
+    verdict = a.rocketName + ' wins overall with ' + aWins + ' of 6 categories.';
   } else if (bWins > aWins) {
-    verdict = b.rocketName + ' wins overall with ' + bWins + ' of 5 categories.';
+    verdict = b.rocketName + ' wins overall with ' + bWins + ' of 6 categories.';
   } else {
     verdict = 'It is a tie! Both rockets matched evenly across categories.';
   }
@@ -2777,6 +2825,9 @@ function _checkCompletion() {
     + '<tr><td>Thrust-to-weight</td>'
     + '<td class="' + twrW[0] + '">' + twrA + '</td>'
     + '<td class="' + twrW[1] + '">' + twrB + '</td></tr>'
+    + '<tr><td>Payload to LEO</td>'
+    + '<td class="' + plW[0] + '">' + (plA > 0 ? (plA/1000).toFixed(1) + ' t' : 'N/A') + '</td>'
+    + '<td class="' + plW[1] + '">' + (plB > 0 ? (plB/1000).toFixed(1) + ' t' : 'N/A') + '</td></tr>'
     + '</tbody></table>'
     + '<p class="sim-verdict">' + verdict + '</p>';
 
