@@ -1831,7 +1831,20 @@ document.addEventListener('keydown', e => {
     if (movKeys.includes(e.code)) { stopExploreMode(); }
   }
   if (e.code === 'Escape' && exploreMode) { stopExploreMode(); return; }
-  if (e.code === 'KeyR') { exploreMode ? stopExploreMode() : startExploreMode(); e.preventDefault(); return; }
+  if (e.code === 'KeyR') {
+    // Trigger alien flyby if R is pressed while tip is showing
+    if (_introPhase === 'tip') {
+      _introPhase = 'flyby';
+      const tip = document.getElementById('cruise-tip');
+      if (tip) tip.classList.remove('active');
+      const flyby = document.getElementById('alien-flyby');
+      if (flyby) {
+        flyby.classList.add('active');
+        setTimeout(() => { flyby.classList.remove('active'); _introPhase = 'done'; }, 3700);
+      }
+    }
+    exploreMode ? stopExploreMode() : startExploreMode(); e.preventDefault(); return;
+  }
   if (e.code === 'KeyT') { openTravelPanel(); e.preventDefault(); return; }
   if (e.code === 'KeyC') { toggleControls(); e.preventDefault(); return; }
   if (e.code === 'KeyF') { openSearch(); e.preventDefault(); return; }
@@ -2723,6 +2736,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
 //  ANIMATION LOOP
 // ═══════════════════════════════════════════════
 let started = false;
+let _introPhase = 'idle';
 let lastTime = 0;
 
 document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
@@ -2742,7 +2756,7 @@ document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
   // Show welcome — stays until user closes it
   const welcomeEl = document.getElementById('welcome-intro');
   welcomeEl.classList.add('active');
-  let _introPhase = 'welcome'; // welcome → controls → tip → done
+  _introPhase = 'welcome'; // welcome → controls → tip → done
   function _dismissWelcome() {
     if (!welcomeEl.classList.contains('active')) return;
     welcomeEl.classList.remove('active');
@@ -2754,21 +2768,12 @@ document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
     const _watchClose = setInterval(() => {
       if (!controlsOpen && _introPhase === 'controls') {
         clearInterval(_watchClose);
-        _introPhase = 'flyby';
-        // Alien flyby first, then show R tip after alien exits
-        const flyby = document.getElementById('alien-flyby');
-        if (flyby) {
-          flyby.classList.add('active');
-          setTimeout(() => {
-            flyby.classList.remove('active');
-            // Now show the R tip
-            _introPhase = 'tip';
-            const tip = document.getElementById('cruise-tip');
-            if (tip) {
-              tip.classList.add('active');
-              setTimeout(() => { tip.classList.remove('active'); _introPhase = 'done'; }, 5000);
-            }
-          }, 3700); // matches animation duration
+        // Show R tip — alien flyby triggers only if user presses R while tip is visible
+        _introPhase = 'tip';
+        const tip = document.getElementById('cruise-tip');
+        if (tip) {
+          tip.classList.add('active');
+          setTimeout(() => { tip.classList.remove('active'); if (_introPhase === 'tip') _introPhase = 'done'; }, 5000);
         }
       }
     }, 200);
