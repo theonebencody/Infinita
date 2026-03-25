@@ -409,6 +409,34 @@ starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 const starMat = new THREE.PointsMaterial({ size: 1.2, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.9 });
 scene.add(new THREE.Points(starGeo, starMat));
 
+// Infinite background star sphere — follows camera, always visible
+const bgStarCount = isMobile ? 4000 : 12000;
+const bgStarPos = new Float32Array(bgStarCount * 3);
+const bgStarCol = new Float32Array(bgStarCount * 3);
+for (let i = 0; i < bgStarCount; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 500; // constant distance — unit sphere scaled later
+  bgStarPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  bgStarPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+  bgStarPos[i*3+2] = r * Math.cos(phi);
+  const b = 0.3 + Math.random() * 0.7;
+  const tint = Math.random();
+  bgStarCol[i*3]   = tint < 0.1 ? b * 0.7 : b;
+  bgStarCol[i*3+1] = tint < 0.1 ? b * 0.8 : tint > 0.95 ? b * 0.85 : b;
+  bgStarCol[i*3+2] = tint < 0.1 ? b       : tint > 0.95 ? b * 0.7  : b;
+}
+const bgStarGeo = new THREE.BufferGeometry();
+bgStarGeo.setAttribute('position', new THREE.BufferAttribute(bgStarPos, 3));
+bgStarGeo.setAttribute('color', new THREE.BufferAttribute(bgStarCol, 3));
+const bgStarMesh = new THREE.Points(bgStarGeo, new THREE.PointsMaterial({
+  size: 0.6, vertexColors: true, sizeAttenuation: false,
+  transparent: true, opacity: 0.5, depthWrite: false, fog: false
+}));
+bgStarMesh.frustumCulled = false;
+bgStarMesh.renderOrder = -1;
+scene.add(bgStarMesh);
+
 // ═══════════════════════════════════════════════
 //  NAMED STARS (for Stellar scale)
 // ═══════════════════════════════════════════════
@@ -3709,6 +3737,8 @@ function animate(now) {
   _updateTicker(dt);
   _updateTrivia(dt);
   updateLabels();
+  // Keep background stars centered on camera so they're always visible
+  bgStarMesh.position.copy(camera.position);
   renderer.render(scene, camera);
 }
 
