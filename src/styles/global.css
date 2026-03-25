@@ -203,7 +203,7 @@
   .ufo-msg{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6f6}
   @keyframes ufo-pulse{0%{border-color:rgba(80,255,120,0.4);box-shadow:none}100%{border-color:rgba(80,255,120,0.9);box-shadow:0 0 18px rgba(80,255,120,0.25)}}
 
-  .splash-btn-disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+  .splash-btn-disabled{opacity:0.55;cursor:not-allowed;pointer-events:none}
 
   /* ── Fun Facts Panel ── */
   #facts-panel{position:fixed;right:16px;z-index:10;pointer-events:all;width:272px;transition:bottom 0.3s}

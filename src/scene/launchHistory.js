@@ -944,7 +944,7 @@ let _galleryIdx = 0;
 function _initSnowfall() {
   const container = document.getElementById('lh-snowfall');
   if (!container || container.children.length > 0) return;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 90; i++) {
     const flake = document.createElement('div');
     flake.className = 'lh-snowflake';
     const size = 1 + Math.random() * 3;
