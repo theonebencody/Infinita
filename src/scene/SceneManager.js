@@ -2222,6 +2222,43 @@ function updateHUD() {
 }
 
 // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  MATRIX RAIN (div-based, no canvas)
+// ═══════════════════════════════════════════════
+(function _initMatrixRain() {
+  const container = document.getElementById('matrix-rain');
+  if (!container) return;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ΑΒΓΔΘΛΞΠΣΦΨΩαβγδθλξπσφψω@#$%&*+=<>';
+  const NUM_COLS = 14;
+  for (let c = 0; c < NUM_COLS; c++) {
+    const col = document.createElement('div');
+    col.className = 'matrix-col';
+    col.style.setProperty('--dur', (8 + Math.random() * 12) + 's');
+    col.style.animationDelay = (-Math.random() * 20) + 's';
+    col.style.opacity = (0.3 + Math.random() * 0.5).toFixed(2);
+    // Fill with ~80 random characters (enough to scroll continuously)
+    let html = '';
+    for (let i = 0; i < 80; i++) {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      html += '<span>' + ch + '</span>';
+    }
+    col.innerHTML = html;
+    container.appendChild(col);
+  }
+  // Periodically randomize characters for living effect
+  setInterval(() => {
+    const cols = container.querySelectorAll('.matrix-col');
+    cols.forEach(col => {
+      const spans = col.querySelectorAll('span');
+      // Randomize ~10% of characters each tick
+      for (let i = 0; i < 8; i++) {
+        const idx = Math.floor(Math.random() * spans.length);
+        spans[idx].textContent = chars[Math.floor(Math.random() * chars.length)];
+      }
+    });
+  }, 500);
+})();
+
 //  AI TICKER — funny/informational scrolling messages
 // ═══════════════════════════════════════════════
 const _TICKER_MSGS = [
