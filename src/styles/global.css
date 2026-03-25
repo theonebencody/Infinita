@@ -50,7 +50,7 @@
 
   .nearest-body{padding:8px 12px;background:rgba(0,238,255,0.04);border-left:2px solid rgba(0,238,255,0.3);margin-top:6px}
 
-  #trivia-panel{position:fixed;right:16px;z-index:10;pointer-events:all;width:272px;transition:bottom 0.3s}
+  #trivia-panel{position:fixed;right:16px;bottom:16px;z-index:10;pointer-events:all;width:272px}
   #trivia-panel .trivia-question{font-size:11px;color:rgba(255,255,255,0.78);line-height:1.7;margin-bottom:8px;white-space:normal;word-wrap:break-word}
   #trivia-panel .trivia-answer{font-size:11px;color:#0ef;line-height:1.7;opacity:0;transition:opacity 0.5s;white-space:normal;word-wrap:break-word}
   #trivia-panel .trivia-answer.show{opacity:1}
@@ -194,7 +194,7 @@
   @keyframes ufo-pulse{0%{border-color:rgba(80,255,120,0.4);box-shadow:none}100%{border-color:rgba(80,255,120,0.9);box-shadow:0 0 18px rgba(80,255,120,0.25)}}
 
   /* ── Fun Facts Panel ── */
-  #facts-panel{position:fixed;right:16px;bottom:16px;z-index:10;pointer-events:all;width:272px}
+  #facts-panel{position:fixed;right:16px;z-index:10;pointer-events:all;width:272px;transition:bottom 0.3s}
   .facts-card{background:rgba(0,10,22,0.88);border:1px solid rgba(0,238,255,0.15);border-radius:4px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 4px 32px rgba(0,0,0,0.5)}
   .facts-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;cursor:pointer;border-bottom:1px solid rgba(0,238,255,0.08);user-select:none;transition:background 0.15s}
   .facts-hdr:hover{background:rgba(0,238,255,0.04)}

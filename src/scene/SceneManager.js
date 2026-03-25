@@ -2329,13 +2329,15 @@ function _positionTriviaPanel() {
   const factsPanel = document.getElementById('facts-panel');
   const triviaPanel = document.getElementById('trivia-panel');
   if (!factsPanel || !triviaPanel) return;
-  const factsH = factsPanel.offsetHeight;
-  triviaPanel.style.bottom = (16 + factsH + 6) + 'px';
+  const triviaH = triviaPanel.offsetHeight;
+  factsPanel.style.bottom = (16 + triviaH + 6) + 'px';
 }
-// Reposition when facts panel collapses/expands
-const _fpObserver = new MutationObserver(_positionTriviaPanel);
+// Reposition when trivia panel collapses/expands
+const _tpObserver = new MutationObserver(_positionTriviaPanel);
+const _tpEl = document.getElementById('trivia-panel');
+if (_tpEl) _tpObserver.observe(_tpEl, { attributes: true, attributeFilter: ['class'], subtree: true });
 const _fpEl = document.getElementById('facts-panel');
-if (_fpEl) _fpObserver.observe(_fpEl, { attributes: true, attributeFilter: ['class'], subtree: true });
+if (_fpEl) { const _fpObs = new MutationObserver(_positionTriviaPanel); _fpObs.observe(_fpEl, { attributes: true, attributeFilter: ['class'], subtree: true }); }
 setTimeout(_positionTriviaPanel, 100);
 // Show first question
 (function _initTrivia() {
