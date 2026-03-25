@@ -25,7 +25,7 @@ function App() {
           <div className="splash-buttons">
             <button className="splash-btn splash-btn-primary" id="splash-explore-btn">
               <div className="splash-btn-icon">{'\u2B21'}</div>
-              <div className="splash-btn-label">EXPLORE UNIVERSE</div>
+              <div className="splash-btn-label">EXPLORE UNIVERSE <span className="beta-tag">BETA</span></div>
               <div className="splash-btn-sub">Free-fly through space and time</div>
             </button>
             <button className="splash-btn" id="splash-launches-btn">
