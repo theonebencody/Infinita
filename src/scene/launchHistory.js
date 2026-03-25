@@ -8,6 +8,8 @@ let _lhFilter            = 'All';
 let _ehRenderer=null,_ehScene=null,_ehCam=null,_ehEarth=null;
 let _ehSites={};
 let _ehCamAngle=0,_ehLastT=0;
+let _ehLaunches=[]; // animated launch trajectories
+let _ehOrbits=[];   // orbiting objects
 
 let _getStarted = () => false;
 
@@ -38,6 +40,10 @@ export function openLaunchHistory() {
 
 export function closeLaunchHistory() {
   _launchHistoryActive = false;
+  // Clean up orbit labels
+  _ehOrbits.forEach(o => { if (o.label && o.label.parentElement) o.label.parentElement.removeChild(o.label); });
+  _ehOrbits = [];
+  _ehLaunches = [];
   if (_ehRenderer) { _ehRenderer.dispose(); _ehRenderer = null; }
   document.getElementById('launch-history').classList.remove('open');
   if (!_getStarted()) {
@@ -278,6 +284,93 @@ function _initEarthViewer(){
     mkSp.scale.setScalar(0.09); mkSp.position.copy(pos).multiplyScalar(1.015);
     _ehScene.add(mkSp); _ehSites[key]={sprite:mkSp,pos:pos.clone()};
   });
+
+  // ── Animated launch trajectories (rockets launching from sites) ──
+  _ehLaunches = [];
+  const launchSites = [];
+  const seenSites2 = new Set();
+  LAUNCH_DATA.forEach(m => {
+    const key = `${m.siteLat},${m.siteLon}`;
+    if (seenSites2.has(key)) return; seenSites2.add(key);
+    launchSites.push({ lat: m.siteLat, lon: m.siteLon });
+  });
+
+  // Create 4 cycling launch animations
+  for (let i = 0; i < 4; i++) {
+    const site = launchSites[i % launchSites.length];
+    const origin = _latlonTo3D(site.lat, site.lon).multiplyScalar(1.02);
+
+    // Trajectory curve: from surface up and out
+    const apex = origin.clone().multiplyScalar(2.2);
+    apex.x += (Math.random() - 0.5) * 0.5;
+    apex.z += (Math.random() - 0.5) * 0.5;
+
+    const curve = new THREE.QuadraticBezierCurve3(origin, apex, apex.clone().multiplyScalar(1.3));
+    const pts = curve.getPoints(40);
+    const trailPos = new Float32Array(40 * 3);
+    const trailCol = new Float32Array(40 * 3);
+    pts.forEach((p, j) => {
+      trailPos[j*3] = p.x; trailPos[j*3+1] = p.y; trailPos[j*3+2] = p.z;
+      const fade = 1 - j / 40;
+      trailCol[j*3] = fade; trailCol[j*3+1] = fade * 0.7; trailCol[j*3+2] = fade * 0.3;
+    });
+    const tGeo = new THREE.BufferGeometry();
+    tGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+    tGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 3));
+    const trail = new THREE.Line(tGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.5, depthWrite: false }));
+    _ehScene.add(trail);
+
+    // Small rocket dot at the head
+    const dotC = document.createElement('canvas'); dotC.width = 16; dotC.height = 16;
+    const dotCtx = dotC.getContext('2d'), dotG = dotCtx.createRadialGradient(8,8,0,8,8,8);
+    dotG.addColorStop(0, 'rgba(255,200,50,1)'); dotG.addColorStop(0.4, 'rgba(255,140,20,0.6)'); dotG.addColorStop(1, 'rgba(255,60,0,0)');
+    dotCtx.fillStyle = dotG; dotCtx.fillRect(0,0,16,16);
+    const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(dotC), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
+    dot.scale.setScalar(0.04);
+    _ehScene.add(dot);
+
+    _ehLaunches.push({ trail, dot, pts, progress: i * 0.25, site, speed: 0.12 + Math.random() * 0.08 });
+  }
+
+  // ── Orbiting objects (ISS, Hubble, etc.) ──
+  _ehOrbits = [];
+  const orbitDefs = [
+    { name: 'ISS', r: 1.15, speed: 0.4, color: 0xffffff, size: 0.025 },
+    { name: 'Hubble', r: 1.12, speed: 0.35, color: 0xaaccff, size: 0.018 },
+    { name: 'Apollo', r: 1.25, speed: 0.15, color: 0xffcc44, size: 0.02 },
+    { name: 'Starship', r: 1.18, speed: 0.3, color: 0xcccccc, size: 0.022 },
+    { name: 'Tiangong', r: 1.14, speed: 0.38, color: 0xff8844, size: 0.02 },
+  ];
+  orbitDefs.forEach((od, i) => {
+    // Orbit ring
+    const ringGeo = new THREE.RingGeometry(od.r - 0.002, od.r + 0.002, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: od.color, side: THREE.DoubleSide, transparent: true, opacity: 0.08 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2 + (i - 2) * 0.15; // slight inclination variety
+    ring.rotation.z = i * 0.3;
+    _ehScene.add(ring);
+
+    // Object sprite
+    const oc = document.createElement('canvas'); oc.width = 16; oc.height = 16;
+    const octx = oc.getContext('2d'), og = octx.createRadialGradient(8,8,0,8,8,8);
+    const c3 = new THREE.Color(od.color);
+    og.addColorStop(0, `rgba(${(c3.r*255)|0},${(c3.g*255)|0},${(c3.b*255)|0},1)`);
+    og.addColorStop(0.5, `rgba(${(c3.r*255)|0},${(c3.g*255)|0},${(c3.b*255)|0},0.4)`);
+    og.addColorStop(1, 'rgba(0,0,0,0)');
+    octx.fillStyle = og; octx.fillRect(0,0,16,16);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(oc), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
+    sp.scale.setScalar(od.size);
+    _ehScene.add(sp);
+
+    // Label
+    const labelDiv = document.createElement('div');
+    labelDiv.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:7px;color:rgba(0,238,255,0.5);letter-spacing:1px;pointer-events:none;white-space:nowrap';
+    labelDiv.textContent = od.name;
+    const container2 = document.getElementById('earth-canvas')?.parentElement;
+    if (container2) container2.appendChild(labelDiv);
+
+    _ehOrbits.push({ sprite: sp, ring, angle: i * 1.3, r: od.r, speed: od.speed, incX: ring.rotation.x, incZ: ring.rotation.z, label: labelDiv, name: od.name });
+  });
 }
 
 function _ehAnimate(now=0){
@@ -290,6 +383,82 @@ function _ehAnimate(now=0){
   _ehCam.position.set(Math.cos(_ehCamAngle)*cd,ce,Math.sin(_ehCamAngle)*cd);
   _ehCam.lookAt(0,0,0);
   _ehEarth.rotation.y+=dt*0.04;
+
+  // Animate launch trajectories
+  _ehLaunches.forEach(l => {
+    l.progress += l.speed * dt;
+    if (l.progress > 1.3) {
+      // Reset with a new random site
+      l.progress = 0;
+      const sites = [];
+      const seen3 = new Set();
+      LAUNCH_DATA.forEach(m => {
+        const k = `${m.siteLat},${m.siteLon}`;
+        if (!seen3.has(k)) { seen3.add(k); sites.push({ lat: m.siteLat, lon: m.siteLon }); }
+      });
+      const site = sites[Math.floor(Math.random() * sites.length)];
+      const origin = _latlonTo3D(site.lat, site.lon).multiplyScalar(1.02);
+      const apex = origin.clone().multiplyScalar(2.2);
+      apex.x += (Math.random() - 0.5) * 0.5;
+      apex.z += (Math.random() - 0.5) * 0.5;
+      const curve = new THREE.QuadraticBezierCurve3(origin, apex, apex.clone().multiplyScalar(1.3));
+      l.pts = curve.getPoints(40);
+      const p = l.trail.geometry.attributes.position.array;
+      const c = l.trail.geometry.attributes.color.array;
+      l.pts.forEach((pt, j) => {
+        p[j*3] = pt.x; p[j*3+1] = pt.y; p[j*3+2] = pt.z;
+        const fade = 1 - j / 40;
+        c[j*3] = fade; c[j*3+1] = fade * 0.7; c[j*3+2] = fade * 0.3;
+      });
+      l.trail.geometry.attributes.position.needsUpdate = true;
+      l.trail.geometry.attributes.color.needsUpdate = true;
+    }
+    // Draw partial trail up to current progress
+    const drawCount = Math.min(40, Math.floor(l.progress * 40));
+    l.trail.geometry.setDrawRange(0, Math.max(2, drawCount));
+    l.trail.material.opacity = l.progress > 1 ? Math.max(0, 1 - (l.progress - 1) * 3.3) : 0.5;
+    // Position dot at head
+    if (drawCount > 0 && drawCount <= 40 && l.progress <= 1) {
+      const pt = l.pts[Math.min(drawCount - 1, 39)];
+      l.dot.position.set(pt.x, pt.y, pt.z);
+      l.dot.visible = true;
+    } else {
+      l.dot.visible = false;
+    }
+  });
+
+  // Animate orbiting objects
+  const canvas = document.getElementById('earth-canvas');
+  _ehOrbits.forEach(o => {
+    o.angle += o.speed * dt;
+    // Orbit in inclined plane
+    const x = Math.cos(o.angle) * o.r;
+    const z = Math.sin(o.angle) * o.r;
+    // Apply inclination rotation
+    const cosI = Math.cos(o.incX - Math.PI/2), sinI = Math.sin(o.incX - Math.PI/2);
+    const cosZ = Math.cos(o.incZ), sinZ = Math.sin(o.incZ);
+    const y2 = z * sinI;
+    const z2 = z * cosI;
+    const x3 = x * cosZ - y2 * sinZ;
+    const y3 = x * sinZ + y2 * cosZ;
+    o.sprite.position.set(x3, y3, z2);
+
+    // Project to screen for label positioning
+    if (o.label && canvas) {
+      const proj = o.sprite.position.clone().project(_ehCam);
+      if (proj.z > 0 && proj.z < 1) {
+        const rect = canvas.getBoundingClientRect();
+        const sx = (proj.x + 1) * 0.5 * rect.width;
+        const sy = (-proj.y + 1) * 0.5 * rect.height;
+        o.label.style.left = sx + 'px';
+        o.label.style.top = (sy - 12) + 'px';
+        o.label.style.display = '';
+      } else {
+        o.label.style.display = 'none';
+      }
+    }
+  });
+
   _ehRenderer.render(_ehScene,_ehCam);
 }
 
