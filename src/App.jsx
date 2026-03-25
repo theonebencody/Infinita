@@ -93,7 +93,7 @@ function App() {
           </div>
         </div>
 
-        <div className="cruise-tip" id="cruise-tip">Press R for a sick automated cruise!</div>
+        <div className="cruise-tip" id="cruise-tip">Press R for a good time</div>
 
         <div className="hud-ticker" id="hud-ticker">
           <span className="hud-ticker-text" id="hud-ticker-text"></span>
