@@ -33,6 +33,51 @@ export function _mkTex(w,h,fn){
   ctx.putImageData(img,0,0); return new THREE.CanvasTexture(c);
 }
 
+// --- Real Earth texture loader (NASA Blue Marble, public domain) ---
+const _earthTexUrls = [
+  'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg'
+];
+let _realEarthTex = null;
+let _earthTexLoading = false;
+let _earthTexCallbacks = [];
+
+export function loadRealEarthTexture(callback) {
+  // If already loaded, return immediately
+  if (_realEarthTex) { callback(_realEarthTex); return; }
+  // Queue callback if loading
+  _earthTexCallbacks.push(callback);
+  if (_earthTexLoading) return;
+  _earthTexLoading = true;
+
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+
+  let urlIdx = 0;
+  function tryNext() {
+    if (urlIdx >= _earthTexUrls.length) {
+      // All URLs failed — callbacks get null (callers use procedural fallback)
+      _earthTexLoading = false;
+      _earthTexCallbacks.forEach(cb => cb(null));
+      _earthTexCallbacks = [];
+      return;
+    }
+    loader.load(
+      _earthTexUrls[urlIdx],
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        _realEarthTex = tex;
+        _earthTexLoading = false;
+        _earthTexCallbacks.forEach(cb => cb(tex));
+        _earthTexCallbacks = [];
+      },
+      undefined,
+      () => { urlIdx++; tryNext(); }
+    );
+  }
+  tryNext();
+}
+
 // --- Planet texture functions ---
 export const _pTexFns={
   Earth:(u,v,nx,ny,nz,lat)=>{

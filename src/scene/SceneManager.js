@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { AU, C_KMS, C_AU_S, YEAR_S, DAY_S, SCALE_LEVELS, PLANETS, SUN_RADIUS_VIS, SUN_TEMP, STAR_DATA } from './constants.js';
 import { solveKepler, getOrbitalPosition, tempToColor, spTypeToTemp } from './physics.js';
-import { _hash, _sN, _sfbm, _mkTex, _pTexFns } from './noiseUtils.js';
+import { _hash, _sN, _sfbm, _mkTex, _pTexFns, loadRealEarthTexture } from './noiseUtils.js';
 import { OBJECT_FACTS, _FACTS_ALIASES, SUGGESTIONS } from '../data/factsData.js';
 import { LAUNCH_DATA, ORG_COLORS, DEST_COLORS } from '../data/launchData.js';
 import { openLaunchHistory, closeLaunchHistory, initLaunchHistory } from './launchHistory.js';
@@ -218,6 +218,16 @@ function _applyNextTex(){
   requestAnimationFrame(_applyNextTex);
 }
 requestAnimationFrame(_applyNextTex);
+
+// Load real NASA Earth texture and swap when ready
+loadRealEarthTexture((tex) => {
+  if (!tex) return; // fallback to procedural
+  const earthPM = planetMeshes.find(p => p.data.name === 'Earth');
+  if (earthPM) {
+    earthPM.mesh.material.map = tex;
+    earthPM.mesh.material.needsUpdate = true;
+  }
+});
 
 // --- Atmosphere sprites ---
 const _atmoC={Earth:[100,160,255,0.18],Mars:[200,128,75,0.14],Venus:[220,188,78,0.24],

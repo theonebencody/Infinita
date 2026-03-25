@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { LAUNCH_DATA, ORG_COLORS, DEST_COLORS } from '../data/launchData.js';
-import { _mkTex, _sfbm, _pTexFns } from './noiseUtils.js';
+import { _mkTex, _sfbm, _pTexFns, loadRealEarthTexture } from './noiseUtils.js';
 
 let _launchHistoryActive = false;
 let _selectedMission     = null;
@@ -112,6 +112,14 @@ function _initEarthViewer(){
   _ehEarth=new THREE.Mesh(new THREE.SphereGeometry(1,64,64),
     new THREE.MeshStandardMaterial({map:earthTex,roughness:0.7,metalness:0.05}));
   _ehScene.add(_ehEarth);
+
+  // Swap in real NASA texture when loaded
+  loadRealEarthTexture((tex) => {
+    if (tex && _ehEarth) {
+      _ehEarth.material.map = tex;
+      _ehEarth.material.needsUpdate = true;
+    }
+  });
 
   // Cloud layer
   const cloudTex = _mkTex(256, 128, (u,v,nx,ny,nz) => {
