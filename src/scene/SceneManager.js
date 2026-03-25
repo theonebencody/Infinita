@@ -2475,6 +2475,8 @@ document.getElementById('splash-explore-btn').addEventListener('click', (e) => {
           tip.classList.add('active');
           setTimeout(() => { tip.classList.remove('active'); _introPhase = 'done'; }, 5000);
         }
+        // UFO flyby for flair
+        setTimeout(() => spawnUFO(), 300);
       }
     }, 200);
   }
