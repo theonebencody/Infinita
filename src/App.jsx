@@ -282,7 +282,7 @@ function App() {
 
           {/* Active Operations — the 3 planet visuals */}
           <div className="lh-section">
-            <div className="lh-section-title">ACTIVE OPERATIONS</div>
+            <div className="lh-section-title">FLIGHT OF THE HUMANS</div>
             <div className="lh-dual-globes">
               <div className="lh-globe-wrapper">
                 <div className="lh-globe-label">EARTH {'\u00B7'} LAUNCH OPS</div>
