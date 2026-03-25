@@ -35,7 +35,7 @@ function App() {
             </button>
             <button className="splash-btn" id="splash-sim-btn">
               <div className="splash-btn-icon">{'\u2622'}</div>
-              <div className="splash-btn-label">LAUNCH SIMULATOR <span className="beta-tag">BETA</span></div>
+              <div className="splash-btn-label">LAUNCH SIMULATOR <span className="beta-tag">NOT READY</span></div>
               <div className="splash-btn-sub">Design and simulate your own mission</div>
             </button>
           </div>
