@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { AU, C_KMS, C_AU_S, YEAR_S, DAY_S, SCALE_LEVELS, PLANETS, SUN_RADIUS_VIS, SUN_TEMP, STAR_DATA } from './constants.js';
+import { AU, C_KMS, C_AU_S, YEAR_S, DAY_S, SCALE_LEVELS, PLANETS, MOONS, SUN_RADIUS_VIS, SUN_TEMP, STAR_DATA } from './constants.js';
 import { solveKepler, getOrbitalPosition, tempToColor, spTypeToTemp } from './physics.js';
 import { _hash, _sN, _sfbm, _mkTex, _pTexFns, loadRealEarthTexture, loadRealTexture } from './noiseUtils.js';
 import { OBJECT_FACTS, _FACTS_ALIASES, SUGGESTIONS } from '../data/factsData.js';
@@ -125,6 +125,42 @@ PLANETS.forEach(p => {
   const orbitLine = new THREE.Line(orbitGeo, orbitMat);
   scene.add(orbitLine);
   orbitLines.push(orbitLine);
+});
+
+// ═══════════════════════════════════════════════
+//  MOONS
+// ═══════════════════════════════════════════════
+const moonMeshes = []; // { mesh, data, parentMesh, orbitR, angle }
+MOONS.forEach(m => {
+  const parentPM = planetMeshes.find(p => p.data.name === m.parent);
+  if (!parentPM) return;
+  const pVis = parentPM.data.rVis;
+  // Moon visual radius: proportional to real size relative to parent, but with a minimum
+  const moonRVis = Math.max(0.0015, pVis * Math.min(0.35, m.rReal / parentPM.data.rReal));
+  const orbitR = pVis * m.orbitMult;
+  const geo = new THREE.SphereGeometry(moonRVis, 16, 16);
+  const mat = new THREE.MeshStandardMaterial({ color: m.color, roughness: 0.8, metalness: 0.05 });
+  const mesh = new THREE.Mesh(geo, mat);
+  // Start at random orbital position
+  const startAngle = Math.random() * Math.PI * 2;
+  mesh.position.set(Math.cos(startAngle) * orbitR, 0, Math.sin(startAngle) * orbitR);
+  parentPM.mesh.add(mesh);
+  moonMeshes.push({ mesh, data: m, parentMesh: parentPM.mesh, orbitR, angle: startAngle, moonRVis });
+  bodyPositions.push({ name: m.name, pos: mesh.position, radius: moonRVis, rReal: m.rReal });
+
+  // Orbit ring around parent
+  const ringGeo = new THREE.RingGeometry(orbitR - 0.0003, orbitR + 0.0003, 64);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.08 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI / 2;
+  parentPM.mesh.add(ring);
+});
+
+// Load real Moon texture
+loadRealTexture('Moon', (tex) => {
+  if (!tex) return;
+  const moonEntry = moonMeshes.find(m => m.data.name === 'Moon');
+  if (moonEntry) { moonEntry.mesh.material.map = tex; moonEntry.mesh.material.needsUpdate = true; }
 });
 
 // ═══════════════════════════════════════════════
@@ -622,10 +658,14 @@ const _bgRefData = [
 
 function initLabels() {
   // Sun
-  labelsList.push({ el: createLabel('Sun'), mesh: sunMesh, scaleLevel: 1 });
+  labelsList.push({ el: createLabel('Sun'), mesh: sunMesh, scaleLevel: 0 });
   // Planets
   planetMeshes.forEach(({ mesh, data }) => {
-    labelsList.push({ el: createLabel(data.name), mesh, scaleLevel: 1 });
+    labelsList.push({ el: createLabel(data.name), mesh, scaleLevel: 0 });
+  });
+  // Moons
+  moonMeshes.forEach(m => {
+    labelsList.push({ el: createLabel(m.data.name), mesh: m.mesh, scaleLevel: 0 });
   });
   // Hardcoded named stars
   namedStarMeshes.forEach(m => {
@@ -3357,6 +3397,18 @@ function animate(now) {
       mesh.rotation.y += dt * 0.5;
       // Spin cloud layer slightly faster than planet
       mesh.children.forEach(c => { if (c.userData._cloudSpin) c.rotation.y += dt * 0.08; });
+    });
+
+    // Animate moons orbiting their parent planets
+    moonMeshes.forEach(m => {
+      const orbitalSpeed = (2 * Math.PI) / (m.data.T * DAY_S); // rad per sim-second
+      m.angle += orbitalSpeed * dt * DAY_S * (simTime > 0 ? 1 : 0);
+      const inc = (m.data.inc || 0) * Math.PI / 180;
+      m.mesh.position.set(
+        Math.cos(m.angle) * m.orbitR,
+        Math.sin(m.angle) * Math.sin(inc) * m.orbitR * 0.3,
+        Math.sin(m.angle) * m.orbitR
+      );
     });
 
     // Update Sun rotation and pulse
