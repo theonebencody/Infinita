@@ -246,8 +246,10 @@ function App() {
 
       {/* Alien flyby (intro only — no alert box) */}
       <div id="alien-flyby" className="alien-flyby">
-        <img src="/Infinita/images/marsattacks.jpg" alt="" className="alien-flyby-img" />
-        <div className="alien-yak">YAK YAK</div>
+        <div className="alien-flyby-wrapper">
+          <img src="/Infinita/images/marsattacks.jpg" alt="" className="alien-flyby-img" />
+          <div className="alien-yak">YAK YAK</div>
+        </div>
       </div>
 
       {/* UFO alert removed — intro flyby kept above */}
