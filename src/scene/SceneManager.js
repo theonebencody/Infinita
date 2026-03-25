@@ -431,7 +431,7 @@ bgStarGeo.setAttribute('position', new THREE.BufferAttribute(bgStarPos, 3));
 bgStarGeo.setAttribute('color', new THREE.BufferAttribute(bgStarCol, 3));
 const bgStarMesh = new THREE.Points(bgStarGeo, new THREE.PointsMaterial({
   size: 0.6, vertexColors: true, sizeAttenuation: false,
-  transparent: true, opacity: 0.7, depthWrite: false, fog: false
+  transparent: true, opacity: 0.85, depthWrite: false, fog: false
 }));
 bgStarMesh.frustumCulled = false;
 bgStarMesh.renderOrder = -1;
