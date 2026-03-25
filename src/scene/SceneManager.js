@@ -2314,8 +2314,8 @@ const _TRIVIA = [
 let _triviaIdx = Math.floor(Math.random() * _TRIVIA.length);
 let _triviaTimer = 0;
 let _triviaPhase = 'question'; // question → answer → pause → next
-const _TRIVIA_Q_TIME = 5;   // show question for 5s
-const _TRIVIA_A_TIME = 7;   // show answer for 7s
+const _TRIVIA_Q_TIME = 12;  // show question for 12s
+const _TRIVIA_A_TIME = 15;  // show answer for 15s
 let _triviaCollapsed = false;
 
 // Init trivia
