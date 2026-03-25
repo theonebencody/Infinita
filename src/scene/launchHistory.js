@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { LAUNCH_DATA, ORG_COLORS, DEST_COLORS } from '../data/launchData.js';
-import { _mkTex, _sfbm } from './noiseUtils.js';
+import { _mkTex, _sfbm, _pTexFns } from './noiseUtils.js';
 
 let _launchHistoryActive = false;
 let _selectedMission     = null;
@@ -91,20 +91,6 @@ function _latlonTo3D(lat,lon){
   return new THREE.Vector3(Math.cos(la)*Math.cos(lo),Math.sin(la),Math.cos(la)*Math.sin(lo));
 }
 
-function _buildEarthTexEV(){
-  return _mkTex(512,256,(u,v,nx,ny,nz,lat)=>{
-    const ld=lat*180/Math.PI, n=_sfbm(nx*4,ny*4,nz*4,4);
-    if(Math.abs(ld)>65+n*10) return [215,230,255];
-    if(n>0.52){
-      if(Math.abs(ld)<22) return [35+n*28,105+n*38,18];
-      if(Math.abs(ld)<45) return [40+n*38,88+n*48,22];
-      return [52+n*28,78+n*28,36];
-    }
-    const d=_sfbm(nx*12,ny*12,nz*12,2)*0.5;
-    return [8+d*18,42+d*52,102+d*62];
-  });
-}
-
 function _initEarthViewer(){
   if(_ehRenderer) return;
   const canvas=document.getElementById('earth-canvas');
@@ -119,11 +105,27 @@ function _initEarthViewer(){
   // Lighting
   _ehScene.add(new THREE.AmbientLight(0x223344,0.55));
   const sunL=new THREE.DirectionalLight(0xfff5dd,1.4); sunL.position.set(6,3,5); _ehScene.add(sunL);
+  const fillL=new THREE.DirectionalLight(0x334466,0.3); fillL.position.set(-5,2,-3); _ehScene.add(fillL);
 
-  // Earth
-  _ehEarth=new THREE.Mesh(new THREE.SphereGeometry(1,64,32),
-    new THREE.MeshStandardMaterial({map:_buildEarthTexEV(),roughness:0.75,metalness:0}));
+  // Earth — uses the same continent-based texture as the main scene
+  const earthTex = _mkTex(512, 256, _pTexFns.Earth);
+  _ehEarth=new THREE.Mesh(new THREE.SphereGeometry(1,64,64),
+    new THREE.MeshStandardMaterial({map:earthTex,roughness:0.7,metalness:0.05}));
   _ehScene.add(_ehEarth);
+
+  // Cloud layer
+  const cloudTex = _mkTex(256, 128, (u,v,nx,ny,nz) => {
+    const n1 = _sfbm(nx*4+10,ny*4+10,nz*4+10,4);
+    const n2 = _sfbm(nx*8+20,ny*8,nz*8+20,3)*0.3;
+    const cloud = Math.max(0, n1+n2-0.42)*2.5;
+    const c = Math.min(255,(cloud*255)|0);
+    return [c,c,c];
+  });
+  const cloudMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(1.015, 48, 48),
+    new THREE.MeshStandardMaterial({ map: cloudTex, transparent: true, opacity: 0.4, depthWrite: false, roughness: 1, metalness: 0 })
+  );
+  _ehEarth.add(cloudMesh);
 
   // Atmosphere sprite
   const ac=document.createElement('canvas'); ac.width=128; ac.height=128;
