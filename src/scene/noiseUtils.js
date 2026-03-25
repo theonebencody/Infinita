@@ -33,50 +33,66 @@ export function _mkTex(w,h,fn){
   ctx.putImageData(img,0,0); return new THREE.CanvasTexture(c);
 }
 
-// --- Real Earth texture loader (NASA Blue Marble, public domain) ---
-const _earthTexUrls = [
-  'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-  'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg'
-];
-let _realEarthTex = null;
-let _earthTexLoading = false;
-let _earthTexCallbacks = [];
+// --- Real texture loader for all solar system bodies (NASA/public domain) ---
+// Solar System Scope textures (CC BY 4.0) — high quality equirectangular maps
+const SSS = 'https://www.solarsystemscope.com/textures/download';
+const _REAL_TEX_URLS = {
+  Sun:     [`${SSS}/2k_sun.jpg`],
+  Mercury: [`${SSS}/2k_mercury.jpg`],
+  Venus:   [`${SSS}/2k_venus_atmosphere.jpg`],
+  Earth:   ['https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg', `${SSS}/2k_earth_daymap.jpg`],
+  Mars:    [`${SSS}/2k_mars.jpg`],
+  Jupiter: [`${SSS}/2k_jupiter.jpg`],
+  Saturn:  [`${SSS}/2k_saturn.jpg`],
+  Uranus:  [`${SSS}/2k_uranus.jpg`],
+  Neptune: [`${SSS}/2k_neptune.jpg`],
+  Moon:    [`${SSS}/2k_moon.jpg`],
+  SaturnRing: [`${SSS}/2k_saturn_ring_alpha.png`],
+};
 
-export function loadRealEarthTexture(callback) {
-  // If already loaded, return immediately
-  if (_realEarthTex) { callback(_realEarthTex); return; }
-  // Queue callback if loading
-  _earthTexCallbacks.push(callback);
-  if (_earthTexLoading) return;
-  _earthTexLoading = true;
+const _texCache = {};   // name → THREE.Texture
+const _texLoading = {}; // name → boolean
+const _texQueues = {};  // name → callback[]
 
-  const loader = new THREE.TextureLoader();
-  loader.setCrossOrigin('anonymous');
+const _texLoader = new THREE.TextureLoader();
+_texLoader.setCrossOrigin('anonymous');
 
-  let urlIdx = 0;
+export function loadRealTexture(name, callback) {
+  if (_texCache[name]) { callback(_texCache[name]); return; }
+  if (!_texQueues[name]) _texQueues[name] = [];
+  _texQueues[name].push(callback);
+  if (_texLoading[name]) return;
+  _texLoading[name] = true;
+
+  const urls = _REAL_TEX_URLS[name];
+  if (!urls || !urls.length) { _texLoading[name] = false; callback(null); return; }
+
+  let idx = 0;
   function tryNext() {
-    if (urlIdx >= _earthTexUrls.length) {
-      // All URLs failed — callbacks get null (callers use procedural fallback)
-      _earthTexLoading = false;
-      _earthTexCallbacks.forEach(cb => cb(null));
-      _earthTexCallbacks = [];
+    if (idx >= urls.length) {
+      _texLoading[name] = false;
+      (_texQueues[name] || []).forEach(cb => cb(null));
+      _texQueues[name] = [];
       return;
     }
-    loader.load(
-      _earthTexUrls[urlIdx],
+    _texLoader.load(
+      urls[idx],
       (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
-        _realEarthTex = tex;
-        _earthTexLoading = false;
-        _earthTexCallbacks.forEach(cb => cb(tex));
-        _earthTexCallbacks = [];
+        _texCache[name] = tex;
+        _texLoading[name] = false;
+        (_texQueues[name] || []).forEach(cb => cb(tex));
+        _texQueues[name] = [];
       },
       undefined,
-      () => { urlIdx++; tryNext(); }
+      () => { idx++; tryNext(); }
     );
   }
   tryNext();
 }
+
+// Backward compat wrapper
+export function loadRealEarthTexture(callback) { loadRealTexture('Earth', callback); }
 
 // --- Planet texture functions ---
 export const _pTexFns={
