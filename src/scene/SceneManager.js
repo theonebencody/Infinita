@@ -6,7 +6,7 @@ import { OBJECT_FACTS, _FACTS_ALIASES, SUGGESTIONS } from '../data/factsData.js'
 import { LAUNCH_DATA, ORG_COLORS, DEST_COLORS } from '../data/launchData.js';
 import { openLaunchHistory, closeLaunchHistory, initLaunchHistory } from './launchHistory.js';
 import { simbadOtypeInfo, simbadDistAU, simbadMarkerRadius, queryLiveSIMBAD, COMMON_ALIASES, formatDistFromAU, titleCase } from '../data/simbad.js';
-import { initUFO, spawnUFO, updateUFO } from './ufo.js';
+// UFO easter egg removed (intro flyby kept via CSS animation)
 import { initWarp, renderWarp, hideWarp } from './warpEffect.js';
 import { initComets, updateComets } from './comets.js';
 import { buildRocket } from './rocketModels.js';
@@ -1072,7 +1072,7 @@ function updateExplore(dt) {
       exploreOrbitAng = yaw + Math.PI * 0.5; // start orbit tangent to current heading
       document.getElementById('exp-status').textContent = 'ARRIVED';
       // Random UFO chance on arrival
-      if (Math.random() < 0.38) setTimeout(spawnUFO, 1200 + Math.random() * 2500);
+      // (UFO easter egg removed)
     }
   } else if (explorePhase === 'dwell') {
     exploreDwellT += dt;
@@ -3319,7 +3319,7 @@ document.getElementById('hud-back-btn').addEventListener('click', () => {
   if (_arrivalOrbit.active) _arrivalOrbit.active = false;
 });
 initLaunchHistory(() => started);
-initUFO(scene, camera, () => ({ currentScale, exploreMode, started }));
+// UFO system removed
 
 function animate(now) {
   requestAnimationFrame(animate);
@@ -3397,7 +3397,7 @@ function animate(now) {
   updateExplore(dt);
   updateTravel(dt);
   updateArrivalOrbit(dt);
-  updateUFO(dt);
+  // UFO removed
   updateComets(dt, simTime, currentScale);
   if (currentScale === 0) updateSatellites(simTime);
   if (galaxyGroup.visible) galaxyGroup.rotation.y += dt * 0.0008;

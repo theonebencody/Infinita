@@ -249,11 +249,7 @@ function App() {
         <img src="/Infinita/images/marsattacks.jpg" alt="" className="alien-flyby-img" />
       </div>
 
-      {/* UFO Alert */}
-      <div id="ufo-alert">
-        <img src="/Infinita/images/saucer.jpg" alt="" className="ufo-alert-img" />
-        <span className="ufo-msg">UNIDENTIFIED CRAFT DETECTED</span>
-      </div>
+      {/* UFO alert removed — intro flyby kept above */}
 
       {/* Launch History Overlay */}
       <div id="launch-history" className="lh-overlay">
