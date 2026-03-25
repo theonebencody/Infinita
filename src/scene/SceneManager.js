@@ -2268,6 +2268,119 @@ function updateHUD() {
 
 // ═══════════════════════════════════════════════
 // ═══════════════════════════════════════════════
+//  SPACE BACKGROUND (for flight profile page)
+// ═══════════════════════════════════════════════
+let _spaceBgAnimId = null;
+function _initSpaceBg() {
+  const container = document.getElementById('fp-space-bg');
+  if (!container || container.querySelector('canvas')) return;
+  const canvas = document.createElement('canvas');
+  container.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let w, h;
+
+  function resize() {
+    w = canvas.width = container.clientWidth || 800;
+    h = canvas.height = container.clientHeight || 600;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Stars
+  const stars = [];
+  for (let i = 0; i < 300; i++) {
+    stars.push({
+      x: Math.random() * 2000 - 500, y: Math.random() * 2000 - 500,
+      size: 0.3 + Math.random() * 1.5,
+      brightness: 0.3 + Math.random() * 0.7,
+      twinkle: Math.random() * Math.PI * 2,
+      speed: 0.02 + Math.random() * 0.08
+    });
+  }
+
+  // Nebula clouds — subtle colored blobs
+  const nebulae = [];
+  for (let i = 0; i < 6; i++) {
+    nebulae.push({
+      x: Math.random() * 2000 - 200, y: Math.random() * 1500 - 200,
+      r: 80 + Math.random() * 180,
+      hue: [220, 260, 280, 200, 310, 190][i],
+      alpha: 0.015 + Math.random() * 0.02,
+      dx: (Math.random() - 0.5) * 0.08,
+      dy: (Math.random() - 0.5) * 0.06
+    });
+  }
+
+  // Small planets/galaxies
+  const objects = [
+    { x: 0.15, y: 0.3, r: 6, color: 'rgba(200,120,60,0.4)', ring: false },   // small Mars-like
+    { x: 0.7, y: 0.2, r: 12, color: 'rgba(200,180,120,0.25)', ring: true },   // Saturn-like
+    { x: 0.4, y: 0.75, r: 4, color: 'rgba(100,150,255,0.35)', ring: false },  // blue dot
+    { x: 0.85, y: 0.6, r: 18, color: 'rgba(100,80,180,0.08)', ring: false },  // distant galaxy glow
+    { x: 0.25, y: 0.55, r: 14, color: 'rgba(60,100,200,0.06)', ring: false }, // another galaxy
+  ];
+
+  let t = 0;
+  function draw() {
+    _spaceBgAnimId = requestAnimationFrame(draw);
+    t += 0.001;
+    ctx.fillStyle = 'rgba(2,4,12,0.15)';
+    ctx.fillRect(0, 0, w, h);
+
+    // Nebulae
+    nebulae.forEach(n => {
+      n.x += n.dx; n.y += n.dy;
+      if (n.x > w + 200) n.x = -200;
+      if (n.x < -200) n.x = w + 200;
+      if (n.y > h + 200) n.y = -200;
+      if (n.y < -200) n.y = h + 200;
+      const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      grad.addColorStop(0, `hsla(${n.hue},50%,40%,${n.alpha})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Stars
+    stars.forEach(s => {
+      s.twinkle += 0.008;
+      const flicker = 0.5 + 0.5 * Math.sin(s.twinkle);
+      const sx = ((s.x + t * s.speed * 200) % (w + 100)) - 50;
+      const sy = ((s.y + t * s.speed * 80) % (h + 100)) - 50;
+      const a = s.brightness * flicker;
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, s.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Planets/galaxies
+    objects.forEach(o => {
+      const ox = o.x * w + Math.sin(t * 0.3 + o.x * 10) * 3;
+      const oy = o.y * h + Math.cos(t * 0.2 + o.y * 8) * 2;
+      ctx.fillStyle = o.color;
+      ctx.beginPath();
+      ctx.arc(ox, oy, o.r, 0, Math.PI * 2);
+      ctx.fill();
+      if (o.ring) {
+        ctx.strokeStyle = 'rgba(200,180,120,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(ox, oy, o.r * 2, o.r * 0.4, 0.3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+  }
+  draw();
+}
+
+function _stopSpaceBg() {
+  if (_spaceBgAnimId) { cancelAnimationFrame(_spaceBgAnimId); _spaceBgAnimId = null; }
+}
+
+// ═══════════════════════════════════════════════
 //  MATRIX RAIN (div-based, no canvas)
 // ═══════════════════════════════════════════════
 let _matrixInterval = null;
@@ -2811,6 +2924,7 @@ function openLaunchSim() {
   _fpActiveMilestone = -1;
   document.getElementById('launch-sim').classList.add('open');
   _initMatrixRain();
+  _initSpaceBg();
   _renderRocketDiagram();
   _renderMilestones();
   // Reset to T=0 state
@@ -2823,6 +2937,7 @@ function openLaunchSim() {
 function closeLaunchSim() {
   _fpActive = false;
   _fpPlaying = false;
+  _stopSpaceBg();
   document.getElementById('launch-sim').classList.remove('open');
   document.getElementById('splash').classList.remove('hidden');
 }
