@@ -3438,10 +3438,26 @@ function openLaunchSim() {
   var statusEl = document.getElementById('sim-status');
   if (statusEl) statusEl.textContent = 'CONFIGURE LAUNCH';
 
+  // Create simState for physics (no 3D renderer needed — using image display)
+  if (!_simState) {
+    _simState = {
+      renderer: null, scene: null, cam: null,
+      rocket: null, boosterGroup: null, shipGroup: null,
+      separatedBooster: null, exhaust: null, earth: null, trajLine: null,
+      t: 0, alt: 0, vel: 0, accel: 0, downrange: 0,
+      boosterFuel: 100, shipFuel: 100,
+      stage: 'booster', pitchAngle: 90,
+      running: false, completed: false,
+      countdownActive: false, countdownT: 10,
+      _msgMaxQ: false, _msgMECO: false, _msgSep: false,
+      _msgBoostback: false, _msgFairing: false, _msgSECO: false,
+    };
+  }
+
   // Initialize specs from current slider values
   _updateSpecs();
-
   _updateTelemetry();
+
   requestAnimationFrame(function(t) {
     _simLastT = t;
     _simAnimate(t);
@@ -3451,6 +3467,7 @@ function openLaunchSim() {
 function closeLaunchSim() {
   _simActive = false;
   _simRunning = false;
+  _simState = null;
   var overlay = document.getElementById('sim-img-overlay');
   if (overlay) { overlay.className = 'sim-img-overlay'; }
   document.getElementById('launch-sim').classList.remove('open');
