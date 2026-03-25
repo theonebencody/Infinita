@@ -3268,31 +3268,20 @@ function _startLaunch() {
   _simState._msgFairing = false;
   _simState._msgSECO = false;
 
-  // Reset 3D positions
-  if (_simState.rocket) {
-    _simState.rocket.position.set(0, 0.22, 0);
-    _simState.rocket.rotation.z = 0;
-  }
-  // If booster was separated, remove it and rebuild rocket
-  if (_simState.separatedBooster) {
-    _simState.scene.remove(_simState.separatedBooster);
-    _simState.separatedBooster = null;
-  }
-  if (_simState.scene && _simState.rocket) {
-    _simState.scene.remove(_simState.rocket);
-  }
-  var newRocket = _buildStarship(_simState.scene);
-  newRocket.position.set(0, 0.22, 0);
-  _simState.scene.add(newRocket);
-  _simState.rocket = newRocket;
-  _simState.boosterGroup = newRocket.children.find(function(c) { return c.name === 'booster'; });
-  _simState.shipGroup = newRocket.children.find(function(c) { return c.name === 'ship'; });
-
-  if (_simState.exhaust) _simState.exhaust.grp.visible = false;
-  if (_simState.trajLine) { _simState.trajLine.visible = true; _simState.trajLine.material.opacity = 0.15; }
-  if (_simState.cam) {
-    _simState.cam.position.set(3, 2, 5);
-    _simState.cam.lookAt(0, 1.5, 0);
+  // 3D reset (only if renderer exists — skipped in image-only mode)
+  if (_simState.scene) {
+    if (_simState.rocket) { _simState.rocket.position.set(0, 0.22, 0); _simState.rocket.rotation.z = 0; }
+    if (_simState.separatedBooster) { _simState.scene.remove(_simState.separatedBooster); _simState.separatedBooster = null; }
+    if (_simState.rocket) { _simState.scene.remove(_simState.rocket); }
+    var newRocket = _buildStarship(_simState.scene);
+    newRocket.position.set(0, 0.22, 0);
+    _simState.scene.add(newRocket);
+    _simState.rocket = newRocket;
+    _simState.boosterGroup = newRocket.children.find(function(c) { return c.name === 'booster'; });
+    _simState.shipGroup = newRocket.children.find(function(c) { return c.name === 'ship'; });
+    if (_simState.exhaust) _simState.exhaust.grp.visible = false;
+    if (_simState.trajLine) { _simState.trajLine.visible = true; _simState.trajLine.material.opacity = 0.15; }
+    if (_simState.cam) { _simState.cam.position.set(3, 2, 5); _simState.cam.lookAt(0, 1.5, 0); }
   }
 
   var statusEl = document.getElementById('sim-status');
