@@ -2229,7 +2229,13 @@ function updateHUD() {
   const container = document.getElementById('matrix-rain');
   if (!container) return;
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ΑΒΓΔΘΛΞΠΣΦΨΩαβγδθλξπσφψω@#$%&*+=<>';
-  const NUM_COLS = 15;
+  const NUM_COLS = 13;
+  const _insults = [
+    'NOOB','LMAO','U MAD','GG EZ','BRUH','LOL','NERD','OOPS',
+    'SCRUB','YIKES','FAIL','REKT','TRASH','PLEB','BASIC',
+    'WEAK','SALTY','OWNED','DERP','YAWN','MEH','CRINGE',
+    'SUS','RATIO','COPE','L','SIGH','CLOWN','GOOBER',
+  ];
   for (let c = 0; c < NUM_COLS; c++) {
     const col = document.createElement('div');
     col.className = 'matrix-col';
@@ -2257,6 +2263,14 @@ function updateHUD() {
       for (let i = 0; i < 8; i++) {
         const idx = Math.floor(Math.random() * spans.length);
         spans[idx].textContent = chars[Math.floor(Math.random() * chars.length)];
+      }
+      // ~3% chance per column per tick: sneak an insult vertically down a column
+      if (Math.random() < 0.03) {
+        const word = _insults[Math.floor(Math.random() * _insults.length)];
+        const startIdx = Math.floor(Math.random() * (spans.length - word.length));
+        for (let wi = 0; wi < word.length; wi++) {
+          spans[startIdx + wi].textContent = word[wi];
+        }
       }
     });
   }, 500);
