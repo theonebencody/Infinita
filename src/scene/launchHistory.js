@@ -15,6 +15,9 @@ let _ehScanRing=null, _ehScanRing2=null;
 let _mhRenderer=null,_mhScene=null,_mhCam=null,_mhMars=null;
 let _mhCamAngle=0,_mhLastT=0;
 let _mhLanders=[],_mhOrbits=[],_mhScanRing=null;
+// Solar system viewer
+let _ssRenderer=null,_ssScene=null,_ssCam=null;
+let _ssCamAngle=0,_ssPlanets=[];
 
 let _getStarted = () => false;
 
@@ -39,7 +42,7 @@ export function openLaunchHistory() {
   _launchHistoryActive = true;
   document.getElementById('launch-history').classList.add('open');
   _renderAll();
-  setTimeout(() => { _initEarthViewer(); _initMarsViewer(); }, 60);
+  setTimeout(() => { _initEarthViewer(); _initMarsViewer(); _initSolarSystemViewer(); }, 60);
   requestAnimationFrame(t => { _ehLastT=t; _mhLastT=t; _ehAnimate(t); });
 }
 
@@ -52,6 +55,9 @@ export function closeLaunchHistory() {
   _mhOrbits = []; _mhLanders = [];
   if (_ehRenderer) { _ehRenderer.dispose(); _ehRenderer = null; }
   if (_mhRenderer) { _mhRenderer.dispose(); _mhRenderer = null; }
+  _ssPlanets.forEach(p => { if (p.label && p.label.parentElement) p.label.parentElement.removeChild(p.label); });
+  _ssPlanets = [];
+  if (_ssRenderer) { _ssRenderer.dispose(); _ssRenderer = null; }
   document.getElementById('launch-history').classList.remove('open');
   if (!_getStarted()) {
     const sp = document.getElementById('splash');
@@ -566,6 +572,128 @@ function _initMarsViewer() {
   });
 }
 
+// ─── Solar System Viewer ────────────────────────────────────────
+function _initSolarSystemViewer() {
+  if (_ssRenderer) return;
+  const canvas = document.getElementById('solsys-canvas');
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  const w = container.clientWidth || 480, h = container.clientHeight || 300;
+  _ssRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  _ssRenderer.setSize(w, h, false);
+  _ssRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  _ssRenderer.setClearColor(0x030108, 1);
+  canvas.style.width = '100%'; canvas.style.height = '100%';
+  _ssScene = new THREE.Scene();
+  _ssCam = new THREE.PerspectiveCamera(50, w / h, 0.01, 500);
+  _ssCam.position.set(0, 5, 8);
+  _ssCam.lookAt(0, 0, 0);
+
+  // Lighting
+  _ssScene.add(new THREE.AmbientLight(0x111122, 0.3));
+  const sLight = new THREE.PointLight(0xffeedd, 1.5, 50); sLight.position.set(0, 0, 0); _ssScene.add(sLight);
+
+  // Sun — glowing center
+  const sunGeo = new THREE.SphereGeometry(0.3, 24, 24);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd44 });
+  _ssScene.add(new THREE.Mesh(sunGeo, sunMat));
+  // Sun glow
+  const sgC = document.createElement('canvas'); sgC.width = 64; sgC.height = 64;
+  const sgCtx = sgC.getContext('2d'), sgG = sgCtx.createRadialGradient(32,32,0,32,32,32);
+  sgG.addColorStop(0, 'rgba(255,220,80,0.6)'); sgG.addColorStop(0.3, 'rgba(255,180,40,0.2)'); sgG.addColorStop(1, 'rgba(0,0,0,0)');
+  sgCtx.fillStyle = sgG; sgCtx.fillRect(0,0,64,64);
+  const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(sgC), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, alphaTest: 0.01 }));
+  sunGlow.scale.setScalar(1.5); _ssScene.add(sunGlow);
+
+  // Planets
+  const planetDefs = [
+    { name: 'Mercury', r: 0.05, orbit: 0.7, speed: 4.1, color: 0x888877 },
+    { name: 'Venus',   r: 0.08, orbit: 1.1, speed: 1.6, color: 0xddbb77 },
+    { name: 'Earth',   r: 0.09, orbit: 1.5, speed: 1.0, color: 0x4488ff },
+    { name: 'Mars',    r: 0.06, orbit: 2.0, speed: 0.53, color: 0xcc5522 },
+    { name: 'Jupiter', r: 0.18, orbit: 3.0, speed: 0.08, color: 0xcc9966 },
+    { name: 'Saturn',  r: 0.15, orbit: 4.0, speed: 0.034, color: 0xddcc88 },
+    { name: 'Uranus',  r: 0.1,  orbit: 5.0, speed: 0.012, color: 0x66bbcc },
+    { name: 'Neptune', r: 0.09, orbit: 5.8, speed: 0.006, color: 0x4455bb },
+  ];
+
+  _ssPlanets = [];
+  planetDefs.forEach(pd => {
+    // Orbit ring — neon
+    const orbitGeo = new THREE.RingGeometry(pd.orbit - 0.01, pd.orbit + 0.01, 96);
+    const orbitMat = new THREE.MeshBasicMaterial({ color: 0x2244aa, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
+    const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
+    orbitMesh.rotation.x = Math.PI / 2;
+    _ssScene.add(orbitMesh);
+
+    // Planet sphere — glowing
+    const pGeo = new THREE.SphereGeometry(pd.r, 16, 16);
+    const pMat = new THREE.MeshPhongMaterial({ color: pd.color, emissive: new THREE.Color(pd.color).multiplyScalar(0.3), shininess: 30 });
+    const pMesh = new THREE.Mesh(pGeo, pMat);
+    _ssScene.add(pMesh);
+
+    // Planet glow sprite
+    const gc = document.createElement('canvas'); gc.width = 32; gc.height = 32;
+    const gctx = gc.getContext('2d'), gg = gctx.createRadialGradient(16,16,0,16,16,16);
+    const c3 = new THREE.Color(pd.color);
+    gg.addColorStop(0, `rgba(${(c3.r*255)|0},${(c3.g*255)|0},${(c3.b*255)|0},0.5)`);
+    gg.addColorStop(0.5, `rgba(${(c3.r*255)|0},${(c3.g*255)|0},${(c3.b*255)|0},0.1)`);
+    gg.addColorStop(1, 'rgba(0,0,0,0)');
+    gctx.fillStyle = gg; gctx.fillRect(0,0,32,32);
+    const gSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(gc), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, alphaTest: 0.01 }));
+    gSp.scale.setScalar(pd.r * 4);
+    pMesh.add(gSp);
+
+    // Saturn rings
+    if (pd.name === 'Saturn') {
+      const sRingGeo = new THREE.RingGeometry(pd.r * 1.4, pd.r * 2.2, 32);
+      const sRingMat = new THREE.MeshBasicMaterial({ color: 0xddcc88, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+      const sRing = new THREE.Mesh(sRingGeo, sRingMat);
+      sRing.rotation.x = Math.PI * 0.45;
+      pMesh.add(sRing);
+    }
+
+    // Label
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:6px;color:rgba(100,150,255,0.5);letter-spacing:1px;pointer-events:none;white-space:nowrap';
+    lbl.textContent = pd.name;
+    const cont = document.getElementById('solsys-canvas')?.parentElement;
+    if (cont) cont.appendChild(lbl);
+
+    _ssPlanets.push({ mesh: pMesh, orbit: pd.orbit, speed: pd.speed, angle: Math.random() * Math.PI * 2, label: lbl, name: pd.name });
+  });
+
+  // Stars
+  const ssp = new Float32Array(800*3), ssc = new Float32Array(800*3);
+  for (let i = 0; i < 800; i++) {
+    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1), r = 40+Math.random()*80;
+    ssp[i*3] = r*Math.sin(ph)*Math.cos(th); ssp[i*3+1] = r*Math.sin(ph)*Math.sin(th); ssp[i*3+2] = r*Math.cos(ph);
+    const b = 0.3+Math.random()*0.7; ssc[i*3] = b*0.8; ssc[i*3+1] = b*0.85; ssc[i*3+2] = b;
+  }
+  const ssGeo = new THREE.BufferGeometry();
+  ssGeo.setAttribute('position', new THREE.BufferAttribute(ssp, 3));
+  ssGeo.setAttribute('color', new THREE.BufferAttribute(ssc, 3));
+  _ssScene.add(new THREE.Points(ssGeo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.7 })));
+
+  // Trajectory lines — a couple of mission paths
+  const trajDefs = [
+    { from: 1.5, to: 2.0, color: 0x00eeff, label: 'Mars Mission' },   // Earth to Mars
+    { from: 1.5, to: 3.0, color: 0xff8844, label: 'Jupiter Probe' },  // Earth to Jupiter
+  ];
+  trajDefs.forEach(td => {
+    const pts = [];
+    for (let i = 0; i <= 30; i++) {
+      const t = i / 30;
+      const r = td.from + (td.to - td.from) * t;
+      const a = t * Math.PI * 0.8;
+      pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(t * Math.PI) * 0.3, Math.sin(a) * r));
+    }
+    const tGeo = new THREE.BufferGeometry().setFromPoints(pts);
+    const tLine = new THREE.Line(tGeo, new THREE.LineBasicMaterial({ color: td.color, transparent: true, opacity: 0.25, depthWrite: false }));
+    _ssScene.add(tLine);
+  });
+}
+
 function _ehAnimate(now=0){
   if(!_launchHistoryActive) return;
   requestAnimationFrame(_ehAnimate);
@@ -721,6 +849,33 @@ function _ehAnimate(now=0){
 
     _mhRenderer.render(_mhScene, _mhCam);
   }
+
+  // ── Solar system animation ──
+  if (_ssRenderer && _ssScene && _ssCam) {
+    _ssCamAngle += dt * 0.04;
+    _ssCam.position.set(Math.cos(_ssCamAngle) * 9, 4 + Math.sin(_ssCamAngle * 0.3) * 1.5, Math.sin(_ssCamAngle) * 9);
+    _ssCam.lookAt(0, 0, 0);
+
+    const ssCanvas = document.getElementById('solsys-canvas');
+    _ssPlanets.forEach(p => {
+      p.angle += p.speed * dt * 0.3;
+      p.mesh.position.set(Math.cos(p.angle) * p.orbit, 0, Math.sin(p.angle) * p.orbit);
+      p.mesh.rotation.y += dt * 0.5;
+
+      // Project label
+      if (p.label && ssCanvas) {
+        const proj = p.mesh.position.clone().project(_ssCam);
+        if (proj.z > 0 && proj.z < 1) {
+          const rect = ssCanvas.getBoundingClientRect();
+          p.label.style.left = ((proj.x+1)*0.5*rect.width) + 'px';
+          p.label.style.top = ((-proj.y+1)*0.5*rect.height - 10) + 'px';
+          p.label.style.display = '';
+        } else { p.label.style.display = 'none'; }
+      }
+    });
+
+    _ssRenderer.render(_ssScene, _ssCam);
+  }
 }
 
 export function initLaunchHistory(getStarted) {
@@ -736,12 +891,19 @@ export function initLaunchHistory(getStarted) {
   document.getElementById('lh-back-btn').addEventListener('click',closeLaunchHistory);
 
   window.addEventListener('resize',()=>{
-    if(_ehRenderer&&_launchHistoryActive){
-      const canvas=document.getElementById('earth-canvas');
+    if (!_launchHistoryActive) return;
+    // Resize all three canvases
+    [
+      { r: _ehRenderer, c: _ehCam, id: 'earth-canvas' },
+      { r: _mhRenderer, c: _mhCam, id: 'mars-canvas' },
+      { r: _ssRenderer, c: _ssCam, id: 'solsys-canvas' },
+    ].forEach(({ r, c, id }) => {
+      if (!r) return;
+      const canvas = document.getElementById(id);
       if (!canvas) return;
-      const container=canvas.parentElement;
-      const w=container.clientWidth,h=container.clientHeight;
-      if(w&&h){ _ehRenderer.setSize(w,h,false); _ehCam.aspect=w/h; _ehCam.updateProjectionMatrix(); }
-    }
+      const ct = canvas.parentElement;
+      const w = ct.clientWidth, h = ct.clientHeight;
+      if (w && h) { r.setSize(w, h, false); c.aspect = w / h; c.updateProjectionMatrix(); }
+    });
   });
 }

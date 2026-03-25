@@ -295,6 +295,12 @@ function App() {
                   <canvas id="mars-canvas"></canvas>
                 </div>
               </div>
+              <div className="lh-globe-wrapper">
+                <div className="lh-globe-label">SOLAR SYSTEM {'\u00B7'} OVERVIEW</div>
+                <div className="lh-globe-container">
+                  <canvas id="solsys-canvas"></canvas>
+                </div>
+              </div>
             </div>
           </div>
 
