@@ -1264,16 +1264,16 @@ function tickFacts(dt) {
 
 function getLocalMatches(q) {
   const allObjs = [
-    { name: 'Sun', distLY: 0, typeLabel: 'Star', mesh: sunMesh, scaleLevel: 1 },
+    { name: 'Sun', distLY: 0, typeLabel: 'Star', mesh: sunMesh, scaleLevel: 0 },
     ...PLANETS.map(p => ({
       name: p.name, distLY: 0, typeLabel: 'Planet',
-      mesh: planetMeshes.find(pm => pm.data.name === p.name)?.mesh, scaleLevel: 1
+      mesh: planetMeshes.find(pm => pm.data.name === p.name)?.mesh, scaleLevel: 0
     })),
     ...STAR_DATA.map(s => ({
       name: s.name, distLY: s.dist, typeLabel: 'Star',
       mesh: namedStarMeshes.find(m => m.userData.name === s.name), scaleLevel: 1
     })),
-    ...searchableObjects.map(o => ({ ...o, scaleLevel: o.typeLabel === 'Planet' ? 1 : 2 }))
+    ...searchableObjects.map(o => ({ ...o, scaleLevel: o.typeLabel === 'Planet' ? 0 : o.typeLabel === 'Star' ? 1 : 2 }))
   ];
   const seen = new Set();
   const results = [];
@@ -1468,7 +1468,8 @@ async function doTravelSearch(query) {
   if (!q) return;
   getLocalMatches(q).forEach(obj => {
     renderTravelResult(obj.name, obj.typeLabel, obj.distLY, () => {
-      setTravelDest({ position: obj.mesh.position.clone(), name: obj.name, distLY: obj.distLY, scaleLevel: obj.scaleLevel });
+      const meshR = obj.mesh?.geometry?.parameters?.radius || 0.05;
+      setTravelDest({ position: obj.mesh.position.clone(), name: obj.name, distLY: obj.distLY, scaleLevel: obj.scaleLevel, radius: meshR });
     });
   });
   if (q.length < 2) return;
@@ -1580,7 +1581,7 @@ function updateTravel(dt) {
   const objR = travelDest.radius || 0.3;
   const stopR = exploreMode
     ? Math.max(0.5, objR * (exploreDest?.vMult || 8))  // match dwell orbit radius
-    : Math.max(0.3, objR * 6);                          // nav computer: 6× object radius
+    : Math.max(objR * 4, objR * 6);                      // nav computer: 6× object radius, min 4×
   const _stopDir = new THREE.Vector3().subVectors(travelDest.position, travelOrigin).normalize();
   const stopPt = travelDest.position.clone().addScaledVector(_stopDir, -stopR);
 
