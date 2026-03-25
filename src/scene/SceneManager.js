@@ -2256,11 +2256,12 @@ function updateHUD() {
 // ═══════════════════════════════════════════════
 //  MATRIX RAIN (div-based, no canvas)
 // ═══════════════════════════════════════════════
-(function _initMatrixRain() {
+let _matrixInterval = null;
+function _initMatrixRain() {
   const container = document.getElementById('matrix-rain');
-  if (!container) return;
+  if (!container || container.children.length > 0) return;
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ΑΒΓΔΘΛΞΠΣΦΨΩαβγδθλξπσφψω@#$%&*+=<>';
-  const NUM_COLS = 13;
+  const NUM_COLS = 30;
   const _insults = [
     'NOOB','LMAO','U MAD','GG EZ','BRUH','LOL','NERD','OOPS',
     'SCRUB','YIKES','FAIL','REKT','TRASH','PLEB','BASIC',
@@ -2313,7 +2314,7 @@ function updateHUD() {
       }
     });
   }, 500);
-})();
+}
 
 //  AI TICKER — funny/informational scrolling messages
 // ═══════════════════════════════════════════════
@@ -3540,7 +3541,8 @@ function openLaunchSim() {
     };
   }
 
-  // Initialize specs from current slider values
+  // Initialize matrix rain background + specs
+  _initMatrixRain();
   _updateSpecs();
   _updateTelemetry();
 

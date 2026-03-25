@@ -81,8 +81,6 @@ function App() {
           </div>
         </div>
 
-        <div className="matrix-rain" id="matrix-rain"></div>
-
         <div className="hud-bl">
           <button className="lh-back-btn" id="hud-back-btn" style={{marginBottom:'8px',pointerEvents:'all'}}>{'\u2190'} BACK</button>
           <button className="mission-report-btn" id="mission-report-btn" style={{pointerEvents:'all'}}>{'\u2263'} ASTRO REPORT</button>
@@ -337,6 +335,7 @@ function App() {
 
       {/* Launch Simulator Overlay */}
       <div id="launch-sim" className="lh-overlay">
+        <div className="matrix-rain" id="matrix-rain"></div>
         <div className="lh-header">
           <button className="lh-back-btn" id="sim-back-btn">{'\u2190'} BACK</button>
           <div className="lh-title">STARSHIP LAUNCH SIMULATOR</div>
