@@ -328,7 +328,6 @@ function App() {
 
       {/* Launch Simulator Overlay */}
       <div id="launch-sim" className="lh-overlay">
-        <div className="matrix-rain" id="matrix-rain"></div>
         <div className="fp-header">
           <button className="lh-back-btn" id="sim-back-btn">{'\u2190'} BACK</button>
           <div className="fp-title">STARSHIP FLIGHT PROFILE</div>
@@ -360,6 +359,7 @@ function App() {
             <div className="fp-rocket-indicator" id="fp-rocket-dot">{'\u25B2'}</div>
           </div>
           <div className="fp-callout-panel" id="fp-callout-panel">
+            <div className="matrix-rain" id="matrix-rain"></div>
             <img src="/Infinita/images/starship.jpg" alt="Starship" className="fp-hero-img" />
             <div className="fp-callout-card" id="fp-callout">
               <div className="fp-callout-label" id="fp-callout-label">READY</div>
