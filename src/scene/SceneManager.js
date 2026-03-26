@@ -2891,11 +2891,55 @@ function closeLaunchSim() {
 }
 
 
-// ── _renderRocketDiagram ─────────────────────────
+// ── Flight Phase Images ─────────────────────────
+const _FP_PHASE_IMAGES = [
+  { id: 'prelaunch', minT: -999, maxT: 0, src: '/Infinita/images/generated/fp-phase-prelaunch.png', label: 'PRE-LAUNCH' },
+  { id: 'liftoff',   minT: 0,   maxT: 62, src: '/Infinita/images/generated/fp-phase-liftoff.png', label: 'LIFTOFF' },
+  { id: 'maxq',      minT: 62,  maxT: 170, src: '/Infinita/images/generated/fp-phase-maxq.png', label: 'MAX Q — ASCENT' },
+  { id: 'hotstage',  minT: 170, maxT: 176, src: '/Infinita/images/generated/fp-phase-hotstage.png', label: 'HOT-STAGING' },
+  { id: 'separation',minT: 176, maxT: 181, src: '/Infinita/images/generated/fp-phase-separation.png', label: 'STAGE SEPARATION' },
+  { id: 'boostback', minT: 181, maxT: 300, src: '/Infinita/images/generated/fp-phase-boostback.png', label: 'BOOSTBACK BURN' },
+  { id: 'ship',      minT: 300, maxT: 530, src: '/Infinita/images/generated/fp-phase-ship.png', label: 'SHIP — ORBIT BURN' },
+  { id: 'orbit',     minT: 530, maxT: 9999, src: '/Infinita/images/generated/fp-phase-orbit.png', label: 'ORBIT ACHIEVED' },
+];
+let _fpCurrentPhase = '';
+
+function _getPhaseForTime(t) {
+  for (var i = _FP_PHASE_IMAGES.length - 1; i >= 0; i--) {
+    if (t >= _FP_PHASE_IMAGES[i].minT) return _FP_PHASE_IMAGES[i];
+  }
+  return _FP_PHASE_IMAGES[0];
+}
+
+function _updatePhaseImage(t) {
+  var phase = _getPhaseForTime(t);
+  if (phase.id === _fpCurrentPhase) return;
+  _fpCurrentPhase = phase.id;
+  var img = document.getElementById('fp-phase-img');
+  var label = document.getElementById('fp-phase-label');
+  if (img) {
+    img.style.opacity = '0';
+    setTimeout(function() {
+      img.src = phase.src;
+      img.onload = function() { img.style.opacity = '1'; };
+      if (img.complete) img.style.opacity = '1';
+    }, 300);
+  }
+  if (label) label.textContent = phase.label;
+}
+
 function _renderRocketDiagram() {
   var panel = document.getElementById('fp-rocket-panel');
   if (!panel) return;
-  // SVG Starship diagram — booster bottom 58.7%, ship top 41.3%
+  // Phase-based image display instead of SVG
+  _fpCurrentPhase = '';
+  panel.innerHTML = '<div class="fp-phase-display">' +
+    '<img id="fp-phase-img" class="fp-phase-img" src="' + _FP_PHASE_IMAGES[0].src + '" alt="Flight phase" />' +
+    '<div id="fp-phase-label" class="fp-phase-img-label">' + _FP_PHASE_IMAGES[0].label + '</div>' +
+    '</div>';
+  _fpCurrentPhase = 'prelaunch';
+  return;
+  // Old SVG code below (kept for reference but unreachable)
   var svgNS = 'http://www.w3.org/2000/svg';
   var svgW = 80, svgH = 500;
   var svg = document.createElementNS(svgNS, 'svg');
@@ -3196,6 +3240,9 @@ function _updateFP(state) {
   var s = state;
   var maxAlt = STARSHIP_PROFILE.maxAlt;
   var milestones = STARSHIP_PROFILE.milestones;
+
+  // Update phase image based on current time
+  _updatePhaseImage(_fpTime);
 
   // Update rocket indicator position (sqrt scale)
   var rocketDot = document.getElementById('fp-rocket-dot');
