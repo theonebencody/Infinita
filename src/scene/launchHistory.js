@@ -434,7 +434,7 @@ function _renderTimeline(data) {
       .sort((a, b) => b.firsts.length - a.firsts.length)
       .slice(0, 5);
 
-    html += `<div class="lh-era-card" data-era="${era.label}">` +
+    html += `<div class="lh-era-card collapsed" data-era="${era.label}">` +
       `<div class="lh-era-header" style="border-left-color:${era.color}">` +
         `<div class="lh-era-title" style="color:${era.color}">${era.label}</div>` +
         `<div class="lh-era-range">${era.range[0]}\u2013${era.range[1]}</div>` +
