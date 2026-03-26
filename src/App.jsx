@@ -21,11 +21,11 @@ function App() {
         <canvas id="splash-bg" className="splash-bg-canvas"></canvas>
         <div className="splash-inner">
           <div className="splash-title">INFINITA</div>
-          <div className="splash-sub">Life on Earth is finite. Life beyond is infinite</div>
+          <div className="splash-sub">Life on Earth is finite. Life beyond is infinite.</div>
           <div className="splash-buttons">
             <button className="splash-btn splash-btn-primary" id="splash-explore-btn">
               <div className="splash-btn-icon">{'\u2B21'}</div>
-              <div className="splash-btn-label">EXPLORE UNIVERSE <span className="beta-tag">LIMITED</span></div>
+              <div className="splash-btn-label">EXPLORE UNIVERSE</div>
               <div className="splash-btn-sub">Free-fly through space and time</div>
             </button>
             <button className="splash-btn" id="splash-launches-btn">
@@ -40,7 +40,7 @@ function App() {
             </button>
             <button className="splash-btn" id="splash-planner-btn">
               <div className="splash-btn-icon">{'\uD83D\uDDFA'}</div>
-              <div className="splash-btn-label">MISSION PLANNER <span className="beta-tag">BETA</span></div>
+              <div className="splash-btn-label">MISSION PLANNER <span className="beta-tag">NOT READY</span></div>
               <div className="splash-btn-sub">Plan your journey across the cosmos</div>
             </button>
           </div>
