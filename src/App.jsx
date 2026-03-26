@@ -312,11 +312,14 @@ function App() {
             </div>
           </div>
 
-          {/* Organizations — collapsed cards that expand on click */}
+          {/* Organizations — condensed table with detail links */}
           <div className="lh-section">
             <div className="lh-section-title">ORGANIZATIONS</div>
             <div className="lh-company-grid" id="lh-company-grid"></div>
           </div>
+
+          {/* Organization Detail Overlay (appears over launch history) */}
+          <div className="lh-org-detail" id="lh-org-detail"></div>
 
           {/* Timeline + rocket gallery */}
           <div className="lh-section">

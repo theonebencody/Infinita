@@ -339,11 +339,79 @@
   .lh-show-more-btn:hover{background:rgba(0,238,255,0.12);border-color:rgba(0,238,255,0.45);box-shadow:0 0 20px rgba(0,238,255,0.1)}
   .lh-catalog-btn{font-size:13px;padding:16px;letter-spacing:4px;margin-top:0;margin-bottom:14px}
 
-  .lh-company-card{cursor:pointer}
-  .lh-company-expand{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,238,255,0.06)}
-  .lh-company-card.expanded .lh-company-expand{display:block}
-  .lh-company-mission{padding:4px 0;font-size:11px;color:rgba(255,255,255,0.55);display:flex;gap:8px;align-items:baseline}
-  .lh-company-mission span{color:#0ef;font-size:10px;flex-shrink:0}
+  /* ── Condensed Org Table ── */
+  .lh-org-table{display:flex;flex-direction:column;gap:0}
+  .lh-org-row{display:flex;align-items:center;gap:0;padding:10px 14px;border-bottom:1px solid rgba(0,238,255,0.04);transition:background 0.12s}
+  .lh-org-row:hover{background:rgba(0,238,255,0.03)}
+  .lh-org-header-row{background:rgba(0,238,255,0.03);border-bottom:1px solid rgba(0,238,255,0.1);padding:8px 14px}
+  .lh-org-header-row span{font-size:8px;letter-spacing:2px;color:rgba(0,238,255,0.35);text-transform:uppercase}
+  .lh-org-col{display:inline-block}
+  .lh-org-col-name{flex:2;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;min-width:100px}
+  .lh-org-col-num{flex:1;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#0ef;text-align:center;min-width:50px}
+  .lh-org-col-years{flex:1;font-size:10px;color:rgba(0,238,255,0.5);text-align:center;min-width:70px}
+  .lh-org-col-link{flex:0 0 auto;min-width:60px;text-align:right}
+  .lh-org-detail-link{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:#0ef;cursor:pointer;text-decoration:none;transition:color 0.15s,text-shadow 0.15s;padding:4px 8px;border:1px solid rgba(0,238,255,0.2);border-radius:2px}
+  .lh-org-detail-link:hover{color:#fff;text-shadow:0 0 10px rgba(0,238,255,0.5);border-color:rgba(0,238,255,0.5);background:rgba(0,238,255,0.06)}
+
+  /* ── Organization Detail Overlay ── */
+  .lh-org-detail{position:absolute;inset:0;z-index:10;background:rgba(0,2,8,0.98);display:none;flex-direction:column;overflow:hidden}
+  .lh-org-detail.open{display:flex}
+  .lh-od-header{padding:14px 22px;border-bottom:2px solid #0ef;display:flex;align-items:center;gap:16px;flex-shrink:0}
+  .lh-od-back{background:transparent;border:1px solid rgba(0,238,255,0.2);color:rgba(0,238,255,0.6);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border-radius:2px;transition:all 0.15s;white-space:nowrap}
+  .lh-od-back:hover{border-color:rgba(0,238,255,0.55);color:#0ef}
+  .lh-od-title{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;letter-spacing:4px;flex:1;text-align:center}
+  .lh-od-body{flex:1;overflow-y:auto;padding:20px 28px 40px}
+  .lh-od-body::-webkit-scrollbar{width:5px}
+  .lh-od-body::-webkit-scrollbar-thumb{background:rgba(0,238,255,0.15);border-radius:3px}
+
+  .lh-od-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:24px}
+  .lh-od-stat{background:rgba(0,15,30,0.6);border:1px solid rgba(0,238,255,0.1);border-radius:4px;padding:14px 12px;text-align:center}
+  .lh-od-stat-val{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;margin-bottom:4px}
+  .lh-od-stat-lbl{font-size:9px;letter-spacing:2px;color:rgba(0,238,255,0.4);text-transform:uppercase}
+
+  .lh-od-section{margin-bottom:22px}
+  .lh-od-section-title{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(0,238,255,0.5);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid rgba(0,238,255,0.08)}
+
+  /* Bar chart */
+  .lh-od-bars{display:flex;flex-direction:column;gap:3px}
+  .lh-od-bar-row{display:flex;align-items:center;gap:8px}
+  .lh-od-bar-year{font-size:10px;color:rgba(0,238,255,0.4);min-width:36px;text-align:right;font-family:'Share Tech Mono',monospace}
+  .lh-od-bar-track{flex:1;height:12px;background:rgba(0,238,255,0.04);border-radius:2px;overflow:hidden}
+  .lh-od-bar-fill{height:100%;border-radius:2px;transition:width 0.4s ease;min-width:2px}
+  .lh-od-bar-val{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#0ef;min-width:24px}
+
+  /* Rocket fleet */
+  .lh-od-rockets{display:flex;flex-direction:column;gap:0}
+  .lh-od-rocket{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,238,255,0.03);font-size:11px}
+  .lh-od-rocket-name{color:rgba(255,255,255,0.65)}
+  .lh-od-rocket-count{font-family:'Orbitron',sans-serif;font-size:10px;color:#0ef;font-weight:700}
+
+  /* Destinations */
+  .lh-od-dests{display:flex;flex-wrap:wrap;gap:6px}
+  .lh-od-dest{font-size:9px;letter-spacing:1px;padding:4px 10px;border:1px solid;border-radius:3px;background:rgba(0,0,0,0.3)}
+
+  /* Firsts */
+  .lh-od-first{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,238,255,0.04)}
+  .lh-od-first-year{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#0ef;min-width:40px}
+  .lh-od-first-name{font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:2px}
+  .lh-od-first-tag{font-size:10px;color:#fb4;letter-spacing:0.5px}
+
+  /* Missions log */
+  .lh-od-missions-list{max-height:5000px;opacity:1;overflow:hidden;transition:max-height 0.4s ease,opacity 0.3s ease}
+  .lh-od-toggle-chevron{font-size:10px;color:rgba(0,238,255,0.3);transition:transform 0.3s;margin-left:6px}
+  .lh-od-mission-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,238,255,0.02);font-size:10px}
+  .lh-od-mission-status{flex:0 0 12px}
+  .lh-od-mission-date{flex:0 0 90px;color:rgba(0,238,255,0.35);font-size:9px}
+  .lh-od-mission-name{flex:2;color:rgba(255,255,255,0.65);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lh-od-mission-rocket{flex:1;color:rgba(0,238,255,0.4);font-size:9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lh-od-mission-dest{flex:0 0 60px;color:rgba(0,238,255,0.5);font-size:9px;text-align:right}
+
+  @media(max-width:768px){
+    .lh-org-col-years,.lh-org-header-row .lh-org-col-years{display:none}
+    .lh-od-stats{grid-template-columns:repeat(2,1fr)}
+    .lh-od-body{padding:14px 12px 30px}
+    .lh-od-mission-rocket{display:none}
+  }
 
   /* ── Era Timeline ── */
   .lh-era-card{margin-bottom:10px;border-radius:4px;overflow:hidden;background:rgba(0,10,22,0.5);border:1px solid rgba(0,238,255,0.06)}

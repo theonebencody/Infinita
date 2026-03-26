@@ -164,30 +164,51 @@ function _renderHighlights(data) {
   el.innerHTML = html;
 }
 
-// ─── Company Comparison Grid ─────────────────────────────────────
-function _renderCompanyGrid(data) {
-  const el = document.getElementById('lh-company-grid');
-  if (!el) return;
+// ─── Company Comparison Grid (Condensed) ─────────────────────────
+let _orgDataCache = {};
+let _orgMissionsCache = {};
 
-  const orgs = {};
-  const orgMissions = {};
+function _buildOrgData(data) {
+  _orgDataCache = {};
+  _orgMissionsCache = {};
   data.forEach(m => {
-    if (!orgs[m.org]) { orgs[m.org] = { launches: 0, success: 0, failed: 0, mass: 0, firsts: [], rockets: new Set(), years: [] }; orgMissions[m.org] = []; }
-    const o = orgs[m.org];
+    if (!_orgDataCache[m.org]) {
+      _orgDataCache[m.org] = { launches: 0, success: 0, failed: 0, mass: 0, firsts: [], rockets: new Set(), years: [], destinations: new Set() };
+      _orgMissionsCache[m.org] = [];
+    }
+    const o = _orgDataCache[m.org];
     o.launches++;
     if (m.status === 'success') o.success++;
     else if (m.status === 'failed') o.failed++;
     o.mass += (m.mass || 0);
     if (m.rocket) o.rockets.add(m.rocket);
     o.years.push(parseInt(m.date.slice(0, 4)));
+    if (m.destination) o.destinations.add(m.destination);
     if (m.firsts) m.firsts.forEach(f => o.firsts.push(f));
-    orgMissions[m.org].push(m);
+    _orgMissionsCache[m.org].push(m);
   });
+}
+
+function _renderCompanyGrid(data) {
+  const el = document.getElementById('lh-company-grid');
+  if (!el) return;
+
+  _buildOrgData(data);
 
   // Sort orgs by launch count descending
-  const sortedOrgs = Object.entries(orgs).sort((a, b) => b[1].launches - a[1].launches);
+  const sortedOrgs = Object.entries(_orgDataCache).sort((a, b) => b[1].launches - a[1].launches);
 
-  let html = '';
+  let html = '<div class="lh-org-table">';
+  // Header
+  html += '<div class="lh-org-row lh-org-header-row">' +
+    '<span class="lh-org-col lh-org-col-name">Organization</span>' +
+    '<span class="lh-org-col lh-org-col-num">Launches</span>' +
+    '<span class="lh-org-col lh-org-col-num">Rate</span>' +
+    '<span class="lh-org-col lh-org-col-num">Mass</span>' +
+    '<span class="lh-org-col lh-org-col-years">Active</span>' +
+    '<span class="lh-org-col lh-org-col-link"></span>' +
+    '</div>';
+
   for (const [orgName, o] of sortedOrgs) {
     const oc = _getOC(orgName);
     const massTonnes = (o.mass / 1000).toFixed(1);
@@ -195,34 +216,160 @@ function _renderCompanyGrid(data) {
     const minY = Math.min(...o.years);
     const maxY = Math.max(...o.years);
     const yearRange = minY === maxY ? `${minY}` : `${minY}\u2013${maxY}`;
-    const rocketList = [...o.rockets].slice(0, 4).join(', ') + (o.rockets.size > 4 ? ` +${o.rockets.size - 4}` : '');
 
-    // Show top 5 notable missions (prefer ones with firsts, then recent)
-    const notable = orgMissions[orgName]
-      .sort((a, b) => (b.firsts?.length || 0) - (a.firsts?.length || 0) || b.date.localeCompare(a.date))
-      .slice(0, 5);
-    const missionsHtml = notable.map(m => {
-      const year = m.date.slice(0, 4);
-      const first = m.firsts?.length ? `<span style="color:#fb4;margin-left:6px">\u2605</span>` : '';
-      return `<div class="lh-company-mission"><span style="color:rgba(0,238,255,0.4);min-width:36px">${year}</span> ${m.name}${first}</div>`;
-    }).join('');
-    const remainCount = orgMissions[orgName].length - 5;
-    const moreNote = remainCount > 0 ? `<div class="lh-company-mission" style="color:rgba(0,238,255,0.25);font-style:italic">+ ${remainCount} more missions</div>` : '';
-
-    html += `<div class="lh-company-card" style="border-left-color:${oc.css}" data-org="${orgName}">` +
-      `<div class="lh-company-name">${orgName}</div>` +
-      `<div class="lh-company-stat">Launches <span>${o.launches}</span></div>` +
-      `<div class="lh-company-stat">Success Rate <span>${rate}%</span></div>` +
-      `<div class="lh-company-stat">Mass to Orbit <span>${massTonnes} t</span></div>` +
-      `<div class="lh-company-stat">Active <span>${yearRange}</span></div>` +
-      `<div class="lh-company-stat" style="font-size:9px">Rockets <span style="font-size:9px">${rocketList}</span></div>` +
-      `<div class="lh-company-expand">` +
-        `<div style="font-size:8px;letter-spacing:2px;color:rgba(0,238,255,0.35);margin-bottom:6px;text-transform:uppercase">Notable Missions</div>` +
-        missionsHtml + moreNote +
-      `</div>` +
+    html += `<div class="lh-org-row" data-org="${orgName}">` +
+      `<span class="lh-org-col lh-org-col-name" style="color:${oc.css}">${orgName}</span>` +
+      `<span class="lh-org-col lh-org-col-num">${o.launches}</span>` +
+      `<span class="lh-org-col lh-org-col-num">${rate}%</span>` +
+      `<span class="lh-org-col lh-org-col-num">${massTonnes}t</span>` +
+      `<span class="lh-org-col lh-org-col-years">${yearRange}</span>` +
+      `<a class="lh-org-col lh-org-col-link lh-org-detail-link" data-org="${orgName}">VIEW \u2192</a>` +
       `</div>`;
   }
+  html += '</div>';
   el.innerHTML = html;
+}
+
+// ─── Organization Detail Page ───────────────────────────────────
+function _openOrgDetail(orgName) {
+  const overlay = document.getElementById('lh-org-detail');
+  if (!overlay) return;
+
+  const o = _orgDataCache[orgName];
+  const missions = _orgMissionsCache[orgName];
+  if (!o || !missions) return;
+
+  const oc = _getOC(orgName);
+  const massTonnes = (o.mass / 1000).toFixed(1);
+  const rate = o.launches > 0 ? Math.round((o.success / o.launches) * 100) : 0;
+  const minY = Math.min(...o.years);
+  const maxY = Math.max(...o.years);
+  const yearRange = minY === maxY ? `${minY}` : `${minY}\u2013${maxY}`;
+  const rocketList = [...o.rockets];
+  const destList = [...o.destinations];
+
+  // Year-by-year launch counts
+  const yearCounts = {};
+  o.years.forEach(y => { yearCounts[y] = (yearCounts[y] || 0) + 1; });
+  const yearEntries = Object.entries(yearCounts).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+  const peakYear = yearEntries.reduce((best, e) => e[1] > best[1] ? e : best, ['', 0]);
+
+  // Missions sorted by date (newest first)
+  const sorted = [...missions].sort((a, b) => b.date.localeCompare(a.date));
+  // Notable missions (with firsts)
+  const notable = sorted.filter(m => m.firsts && m.firsts.length > 0);
+
+  // Build rocket breakdown
+  const rocketCounts = {};
+  missions.forEach(m => { rocketCounts[m.rocket] = (rocketCounts[m.rocket] || 0) + 1; });
+  const rocketEntries = Object.entries(rocketCounts).sort((a, b) => b[1] - a[1]);
+
+  // Build bar chart for launches by year
+  const maxCount = Math.max(...yearEntries.map(e => e[1]), 1);
+  const barHtml = yearEntries.map(([y, c]) => {
+    const pct = Math.round((c / maxCount) * 100);
+    return `<div class="lh-od-bar-row"><span class="lh-od-bar-year">${y}</span><div class="lh-od-bar-track"><div class="lh-od-bar-fill" style="width:${pct}%;background:${oc.css}"></div></div><span class="lh-od-bar-val">${c}</span></div>`;
+  }).join('');
+
+  let html = `<div class="lh-od-header" style="border-bottom-color:${oc.css}">` +
+    `<button class="lh-od-back" id="lh-od-back">\u2190 BACK</button>` +
+    `<div class="lh-od-title" style="color:${oc.css}">${orgName}</div>` +
+    `</div>`;
+
+  html += `<div class="lh-od-body">`;
+
+  // Stats row
+  html += `<div class="lh-od-stats">` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:${oc.css}">${o.launches}</div><div class="lh-od-stat-lbl">Launches</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:${oc.css}">${rate}%</div><div class="lh-od-stat-lbl">Success Rate</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:${oc.css}">${massTonnes}t</div><div class="lh-od-stat-lbl">Mass to Orbit</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:${oc.css}">${yearRange}</div><div class="lh-od-stat-lbl">Active</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:${oc.css}">${o.firsts.length}</div><div class="lh-od-stat-lbl">Firsts</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:${oc.css}">${peakYear[0]}</div><div class="lh-od-stat-lbl">Peak Year (${peakYear[1]})</div></div>` +
+    `</div>`;
+
+  // Launches by year bar chart
+  html += `<div class="lh-od-section">` +
+    `<div class="lh-od-section-title">LAUNCHES BY YEAR</div>` +
+    `<div class="lh-od-bars">${barHtml}</div>` +
+    `</div>`;
+
+  // Rocket fleet
+  html += `<div class="lh-od-section">` +
+    `<div class="lh-od-section-title">ROCKET FLEET</div>` +
+    `<div class="lh-od-rockets">`;
+  rocketEntries.forEach(([rocket, count]) => {
+    html += `<div class="lh-od-rocket"><span class="lh-od-rocket-name">${rocket}</span><span class="lh-od-rocket-count">${count} flights</span></div>`;
+  });
+  html += `</div></div>`;
+
+  // Destinations
+  html += `<div class="lh-od-section">` +
+    `<div class="lh-od-section-title">DESTINATIONS</div>` +
+    `<div class="lh-od-dests">`;
+  destList.forEach(d => {
+    const dc = DEST_COLORS[d] || '#0ef';
+    const count = missions.filter(m => m.destination === d).length;
+    html += `<span class="lh-od-dest" style="border-color:${dc};color:${dc}">${d} (${count})</span>`;
+  });
+  html += `</div></div>`;
+
+  // Notable firsts
+  if (notable.length > 0) {
+    html += `<div class="lh-od-section">` +
+      `<div class="lh-od-section-title">HISTORIC FIRSTS</div>`;
+    notable.forEach(m => {
+      const year = m.date.slice(0, 4);
+      html += `<div class="lh-od-first">` +
+        `<span class="lh-od-first-year">${year}</span>` +
+        `<div><div class="lh-od-first-name">${m.name}</div>` +
+        m.firsts.map(f => `<div class="lh-od-first-tag">\u2605 ${f}</div>`).join('') +
+        `</div></div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Full mission log (collapsible)
+  html += `<div class="lh-od-section">` +
+    `<div class="lh-od-section-title lh-od-missions-toggle" style="cursor:pointer">ALL MISSIONS <span class="lh-od-toggle-chevron">\u25BC</span></div>` +
+    `<div class="lh-od-missions-list">`;
+  sorted.forEach(m => {
+    const d = new Date(m.date + 'T00:00:00Z');
+    const ds = d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+    const statusDot = m.status === 'success' ? '\u25CF' : m.status === 'failed' ? '\u25CF' : '\u25CB';
+    const statusColor = m.status === 'success' ? '#4fa' : m.status === 'failed' ? '#f66' : '#fb4';
+    html += `<div class="lh-od-mission-row">` +
+      `<span class="lh-od-mission-status" style="color:${statusColor}">${statusDot}</span>` +
+      `<span class="lh-od-mission-date">${ds}</span>` +
+      `<span class="lh-od-mission-name">${m.name}</span>` +
+      `<span class="lh-od-mission-rocket">${m.rocket}</span>` +
+      `<span class="lh-od-mission-dest">${m.destination || '\u2014'}</span>` +
+      `</div>`;
+  });
+  html += `</div></div>`;
+
+  html += `</div>`; // close lh-od-body
+
+  overlay.innerHTML = html;
+  overlay.classList.add('open');
+
+  // Wire back button
+  document.getElementById('lh-od-back').addEventListener('click', () => {
+    overlay.classList.remove('open');
+  });
+
+  // Wire missions toggle
+  const missionsToggle = overlay.querySelector('.lh-od-missions-toggle');
+  if (missionsToggle) {
+    const missionsList = overlay.querySelector('.lh-od-missions-list');
+    const chevron = missionsToggle.querySelector('.lh-od-toggle-chevron');
+    missionsToggle.addEventListener('click', () => {
+      const collapsed = missionsList.style.maxHeight === '0px';
+      missionsList.style.maxHeight = collapsed ? '5000px' : '0px';
+      missionsList.style.opacity = collapsed ? '1' : '0';
+      if (chevron) chevron.style.transform = collapsed ? '' : 'rotate(-90deg)';
+    });
+  }
 }
 
 // ─── Timeline by Era ─────────────────────────────────────────────
@@ -1165,12 +1312,16 @@ export function initLaunchHistory(getStarted) {
     });
   }
 
-  // Company card expand/collapse
+  // Organization detail links (event delegation)
   const compGrid = document.getElementById('lh-company-grid');
   if (compGrid) {
     compGrid.addEventListener('click', (e) => {
-      const card = e.target.closest('.lh-company-card');
-      if (card) card.classList.toggle('expanded');
+      const link = e.target.closest('.lh-org-detail-link');
+      if (link) {
+        e.preventDefault();
+        const orgName = link.dataset.org;
+        if (orgName) _openOrgDetail(orgName);
+      }
     });
   }
 
