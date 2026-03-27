@@ -8,10 +8,10 @@ export function simbadOtypeInfo(otype) {
   if (/^HII|^Neb|^MoC|^Cld|^DNe|^glb/.test(t)) return { label: 'Nebula', color: 0x6688ff, scale: 3 };
   if (/^GlCl/.test(t))                  return { label: 'Globular Cluster',  color: 0xffaa44, scale: 3 };
   if (/^OpCl|^Cl\*|^As\*/.test(t))     return { label: 'Star Cluster',      color: 0xffdd77, scale: 3 };
-  if (/^GrG|^CGG|^ClG/.test(t))        return { label: 'Galaxy Cluster',    color: 0x7788ee, scale: 4 };
+  if (/^GrG|^CGG|^ClG/.test(t))        return { label: 'Galaxy Cluster',    color: 0x7788ee, scale: 3 };
   if (/^G$|^GiG|^GiC|^GiP|^rG|^SBG|^EmG|^IG|^PaG|^LSB|^BCG/.test(t))
-                                         return { label: 'Galaxy',           color: 0x8899ff, scale: 4 };
-  if (/^QSO|^AGN|^Sy|^BLL|^Bla/.test(t)) return { label: 'Quasar / AGN',   color: 0x44ccff, scale: 4 };
+                                         return { label: 'Galaxy',           color: 0x8899ff, scale: 3 };
+  if (/^QSO|^AGN|^Sy|^BLL|^Bla/.test(t)) return { label: 'Quasar / AGN',   color: 0x44ccff, scale: 3 };
   if (/^\*\*|^SB\*/.test(t))           return { label: 'Double Star',       color: 0xfff0c0, scale: 2 };
   if (!t || /^\*|^Star|^sg\*|^s\*|^WD\*|^HB\*|^HS\*|^Be\*/.test(t))
                                          return { label: 'Star',             color: 0xfff5d0, scale: 2 };
@@ -23,14 +23,14 @@ export function simbadDistAU(plx, z, typeInfo) {
   if (plx && plx > 0)  return (1000 / plx) * 3.26156 * 63241;
   if (z  && z  > 0 && z < 10) return (z * 299792.458 / 70) * 3.26156e6 * 63241;
   // Nearby galaxy with blueshift (e.g. M31 z~-0.001): use Local Group nominal distance
-  if (z  && z  < 0 && z > -0.01 && typeInfo.scale === 4) return 2.5e6 * 63241;
-  if (typeInfo.scale === 4) return 50e6  * 63241;  // nominal 50 Mly for distant galaxies
+  if (z  && z  < 0 && z > -0.01 && typeInfo.label === 'Galaxy') return 2.5e6 * 63241;
+  if (typeInfo.label === 'Galaxy' || typeInfo.label === 'Galaxy Cluster' || typeInfo.label === 'Quasar / AGN') return 50e6 * 63241;
   if (typeInfo.scale === 3) return 5000  * 63241;  // nominal 5 kly for nebulae
   return 300 * 63241;                               // nominal 300 ly for stars
 }
 
-export function simbadMarkerRadius(scale) {
-  if (scale === 4) return 8e8;
+export function simbadMarkerRadius(scale, label) {
+  if (label === 'Galaxy' || label === 'Galaxy Cluster' || label === 'Quasar / AGN') return 8e8;
   if (scale === 3) return 2500;
   return 0.04;
 }

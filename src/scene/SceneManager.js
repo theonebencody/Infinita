@@ -1180,7 +1180,7 @@ function travelToSIMBADResult(result, skipTravel = false) {
   const typeInfo = simbadOtypeInfo(otype);
   const distAU   = simbadDistAU(plx, z, typeInfo);
   const pos      = raDecToVec3(ra, dec, distAU);
-  const r        = simbadMarkerRadius(typeInfo.scale);
+  const r        = simbadMarkerRadius(typeInfo.scale, typeInfo.label);
   const col      = sp ? tempToColor(spTypeToTemp(sp)) : typeInfo.color;
   const isGalaxy = typeInfo.label === 'Galaxy';
 
@@ -1224,17 +1224,17 @@ function travelToSIMBADResult(result, skipTravel = false) {
       new THREE.MeshBasicMaterial({ visible: false })
     );
     mesh.position.copy(pos);
-    mesh.userData = { name, type: typeInfo.label, distAU };
+    mesh.userData = { name, type: typeInfo.label, distAU, _scaleLevel: typeInfo.scale };
     scene.add(mesh);
     liveStarMeshes.push(mesh);
   } else if (isGalaxy && _galaxyModels[name]) {
-    // Already exists — just reuse
+    // Already exists — just reuse the existing model's target mesh
     mesh = new THREE.Mesh(
       new THREE.SphereGeometry(r * 0.01, 4, 4),
       new THREE.MeshBasicMaterial({ visible: false })
     );
     mesh.position.copy(pos);
-    mesh.userData = { name, type: typeInfo.label, distAU };
+    mesh.userData = { name, type: typeInfo.label, distAU, _scaleLevel: typeInfo.scale };
     scene.add(mesh);
     liveStarMeshes.push(mesh);
   } else {
@@ -1243,7 +1243,7 @@ function travelToSIMBADResult(result, skipTravel = false) {
       new THREE.MeshBasicMaterial({ color: col })
     );
     mesh.position.copy(pos);
-    mesh.userData = { name, type: typeInfo.label, distAU };
+    mesh.userData = { name, type: typeInfo.label, distAU, _scaleLevel: typeInfo.scale };
     scene.add(mesh);
     liveStarMeshes.push(mesh);
   }
@@ -2279,11 +2279,12 @@ function _setScaleVisibility(level) {
   orbitLines.forEach(l => l.visible = level <= 0);
   atomGroup.visible = false; // atomic scale removed
   namedStarMeshes.forEach(m => m.visible = level === 1);
-  liveStarMeshes.forEach(m => m.visible = level === 1);
+  liveStarMeshes.forEach(m => m.visible = level === (m.userData._scaleLevel || 1));
   exoplanetMarkers.forEach(m => m.visible = level === 1);
   deepSkyMeshes.forEach(m => m.visible = level === 2);
   galaxyGroup.visible = level === 2;
   galaxyCatalogMeshes.forEach(m => m.visible = level === 3);
+  Object.values(_galaxyModels).forEach(g => g.visible = level === 3);
   cosmicGroup.visible = level === 3;
   lightSphere.visible = level === 0;
   _bgRefObjects.forEach(o => { o.marker.visible = level === o.scale; });
