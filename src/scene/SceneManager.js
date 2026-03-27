@@ -1040,6 +1040,19 @@ function travelToMesh(mesh, scaleLevel, name, orbitR) {
 
 // simbadMarkerRadius imported from simbad.js
 
+// ── Soft circle texture for galaxy particles ──
+const _galaxyParticleTex = (() => {
+  const c = document.createElement('canvas'); c.width = 32; c.height = 32;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.3, 'rgba(255,255,255,0.6)');
+  g.addColorStop(0.7, 'rgba(255,255,255,0.15)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(c);
+})();
+
 // ── Procedural galaxy model builder (for external viewing at Cosmic scale) ──
 function _buildGalaxyModel(opts = {}) {
   const group = new THREE.Group();
@@ -1101,7 +1114,8 @@ function _buildGalaxyModel(opts = {}) {
   dG.setAttribute('position', new THREE.BufferAttribute(dP, 3));
   dG.setAttribute('color', new THREE.BufferAttribute(dC, 3));
   group.add(new THREE.Points(dG, new THREE.PointsMaterial({
-    size: pSize, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.7
+    size: pSize, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.7,
+    map: _galaxyParticleTex, blending: THREE.AdditiveBlending, depthWrite: false
   })));
 
   // B. Central Bulge — denser, warmer
@@ -1122,7 +1136,8 @@ function _buildGalaxyModel(opts = {}) {
   bG.setAttribute('position', new THREE.BufferAttribute(bP, 3));
   bG.setAttribute('color', new THREE.BufferAttribute(bC, 3));
   group.add(new THREE.Points(bG, new THREE.PointsMaterial({
-    size: pSize * 1.8, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.85
+    size: pSize * 1.8, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.85,
+    map: _galaxyParticleTex, blending: THREE.AdditiveBlending, depthWrite: false
   })));
 
   // C. Core Glow — large sprite visible from far away
@@ -1154,30 +1169,6 @@ function _buildGalaxyModel(opts = {}) {
   }));
   haloSp.scale.setScalar(R * 2.5); // halo much larger than galaxy
   group.add(haloSp);
-
-  // E. Dust Lanes (spiral only)
-  if (!isElliptical && arms > 0) {
-    const dustN = isMobile ? 800 : 2500;
-    const dustP = new Float32Array(dustN * 3);
-    const dustC = new Float32Array(dustN * 3);
-    for (let i = 0; i < dustN; i++) {
-      const armIdx = Math.floor(Math.random() * arms);
-      const armBase = (armIdx / arms) * Math.PI * 2;
-      const dist = Math.pow(Math.random(), 0.6) * R * 0.9;
-      const spiralAngle = armBase + Math.log(1 + dist / R0) * wind - 0.15;
-      const spread = _gaussRand() * dist * 0.03;
-      dustP[i * 3] = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI / 2) * spread;
-      dustP[i * 3 + 1] = _gaussRand() * dist * 0.003;
-      dustP[i * 3 + 2] = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI / 2) * spread;
-      dustC[i * 3] = 0.08; dustC[i * 3 + 1] = 0.05; dustC[i * 3 + 2] = 0.03;
-    }
-    const dustG = new THREE.BufferGeometry();
-    dustG.setAttribute('position', new THREE.BufferAttribute(dustP, 3));
-    dustG.setAttribute('color', new THREE.BufferAttribute(dustC, 3));
-    group.add(new THREE.Points(dustG, new THREE.PointsMaterial({
-      size: pSize * 2, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.35, blending: THREE.NormalBlending
-    })));
-  }
 
   // Apply tilt
   group.rotation.x = tilt;
@@ -1876,14 +1867,28 @@ document.getElementById('travel-instant-btn').addEventListener('click', () => {
   if (travelDest.scaleLevel !== undefined && currentScale !== travelDest.scaleLevel) {
     currentScale = travelDest.scaleLevel; applyScale();
   }
-  // Teleport camera to viewing position — stop at 3x galaxy radius for nice framing
+  // Teleport camera to viewing position
   const objR = travelDest.radius || 0.05;
-  const stopR = objR * 3;
-  const dir = new THREE.Vector3().subVectors(travelDest.position, camera.position).normalize();
-  camera.position.copy(travelDest.position).addScaledVector(dir, -stopR);
-  // Face the destination
-  yaw = Math.atan2(-dir.x, -dir.z);
-  pitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+  const isGalaxyDest = _GALAXY_NAMES.test((travelDest.name || '').toLowerCase());
+  if (isGalaxyDest) {
+    // Position camera above and in front for a nice angled view of the spiral
+    const viewDist = objR * 3.5;
+    camera.position.set(
+      travelDest.position.x + viewDist * 0.7,
+      travelDest.position.y + viewDist * 0.6,
+      travelDest.position.z + viewDist * 0.5
+    );
+    // Face the galaxy center
+    const toTarget = new THREE.Vector3().subVectors(travelDest.position, camera.position).normalize();
+    yaw = Math.atan2(-toTarget.x, -toTarget.z);
+    pitch = Math.asin(Math.max(-1, Math.min(1, toTarget.y)));
+  } else {
+    const stopR = Math.max(objR * 4, objR * 6);
+    const dir = new THREE.Vector3().subVectors(travelDest.position, camera.position).normalize();
+    camera.position.copy(travelDest.position).addScaledVector(dir, -stopR);
+    yaw = Math.atan2(-dir.x, -dir.z);
+    pitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+  }
 });
 document.getElementById('travel-abort-btn').addEventListener('click', abortTravel);
 
