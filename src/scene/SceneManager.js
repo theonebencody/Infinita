@@ -507,7 +507,7 @@ for (let i = 0; i < discCount; i++) {
 const discGeo = new THREE.BufferGeometry();
 discGeo.setAttribute('position', new THREE.BufferAttribute(discPos, 3));
 discGeo.setAttribute('color', new THREE.BufferAttribute(discCol, 3));
-galaxyGroup.add(new THREE.Points(discGeo, new THREE.PointsMaterial({ size: 7000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.65 })));
+galaxyGroup.add(new THREE.Points(discGeo, new THREE.PointsMaterial({ size: 25000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.75 })));
 
 // ── B. Central Bulge (2000 points) ──
 const bulgeCount = isMobile ? 800 : 2000;
@@ -527,7 +527,7 @@ for (let i = 0; i < bulgeCount; i++) {
 const bulgeGeo = new THREE.BufferGeometry();
 bulgeGeo.setAttribute('position', new THREE.BufferAttribute(bulgePos, 3));
 bulgeGeo.setAttribute('color', new THREE.BufferAttribute(bulgeCol, 3));
-galaxyGroup.add(new THREE.Points(bulgeGeo, new THREE.PointsMaterial({ size: 15000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.8 })));
+galaxyGroup.add(new THREE.Points(bulgeGeo, new THREE.PointsMaterial({ size: 35000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.85 })));
 
 // ── C. Core Glow Sprite ──
 const coreC = document.createElement('canvas'); coreC.width = 128; coreC.height = 128;
@@ -539,7 +539,7 @@ coreGrad.addColorStop(0.5, 'rgba(200,160,100,0.1)');
 coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
 coreCtx.fillStyle = coreGrad; coreCtx.fillRect(0,0,128,128);
 const coreSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(coreC), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, alphaTest: 0.01 }));
-coreSprite.scale.setScalar(2e7);
+coreSprite.scale.setScalar(5e7);
 galaxyGroup.add(coreSprite);
 
 // ── D. Dust Lanes (between arms) ──
@@ -560,7 +560,7 @@ for (let i = 0; i < dustCount; i++) {
 const dustGeo = new THREE.BufferGeometry();
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
 dustGeo.setAttribute('color', new THREE.BufferAttribute(dustCol, 3));
-galaxyGroup.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 18000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.35, blending: THREE.NormalBlending })));
+galaxyGroup.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 40000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.3, blending: THREE.NormalBlending })));
 
 // ── E. Halo (dim outer sphere) ──
 const haloCount = isMobile ? 400 : 1000;
@@ -579,7 +579,7 @@ for (let i = 0; i < haloCount; i++) {
 const haloGeo = new THREE.BufferGeometry();
 haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPos, 3));
 haloGeo.setAttribute('color', new THREE.BufferAttribute(haloCol, 3));
-galaxyGroup.add(new THREE.Points(haloGeo, new THREE.PointsMaterial({ size: 5000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.25 })));
+galaxyGroup.add(new THREE.Points(haloGeo, new THREE.PointsMaterial({ size: 15000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.3 })));
 
 // ── F. "You Are Here" marker (Sun's position in the Orion Arm) ──
 const sunGalacticR = 26000 * KLY; // 26 kly from center
@@ -1225,7 +1225,8 @@ function _ensureGalaxyModel(dest) {
   if (/milky\s*way/i.test(nameLower)) {
     dest.scaleLevel = 2;
     dest.radius = 50000 * 63241; // ~50 kly radius in AU
-    // Don't set _viewingGalaxy — the Milky Way is viewed from inside at scale 2
+    // Set viewing flag to hide deep sky clutter
+    _viewingGalaxy = { position: new THREE.Vector3(0, 0, 0), radius: dest.radius };
     return;
   }
 
@@ -1932,11 +1933,15 @@ document.getElementById('travel-instant-btn').addEventListener('click', () => {
   const isMilkyWay = /milky\s*way/i.test(travelDest.name || '');
   const isGalaxyDest = !isMilkyWay && (travelDest.galaxyType || _viewingGalaxy);
   if (isMilkyWay) {
-    // Milky Way: position above the galactic plane looking down at the spiral
+    // Milky Way: position above and slightly off-center for dramatic view
+    // The MW model uses particles sized for viewing from ~26kly (Sun's position)
+    // so we need to stay relatively close — elevated above the disc
     const KLY = 63241;
-    camera.position.set(0, 80000 * KLY, 30000 * KLY);
-    yaw = Math.PI;
-    pitch = -1.1; // looking down
+    camera.position.set(15000 * KLY, 25000 * KLY, 20000 * KLY);
+    // Look toward the galactic center
+    const toCenter = new THREE.Vector3(0, 0, 0).sub(camera.position).normalize();
+    yaw = Math.atan2(-toCenter.x, -toCenter.z);
+    pitch = Math.asin(Math.max(-1, Math.min(1, toCenter.y)));
     roll = 0;
   } else if (isGalaxyDest) {
     // External galaxy: position in front, close enough to fill the view
@@ -2422,6 +2427,8 @@ function _setScaleVisibility(level) {
   exoplanetMarkers.forEach(m => m.visible = level === 1);
   deepSkyMeshes.forEach(m => m.visible = (level === 2 || level === 3) && !_viewingGalaxy);
   galaxyGroup.visible = level === 2;
+  // Hide background stars mesh when viewing Milky Way from above (they clutter the view)
+  if (bgStarMesh) bgStarMesh.visible = !_viewingGalaxy;
   galaxyCatalogMeshes.forEach(m => m.visible = level === 3 && !_viewingGalaxy);
   Object.values(_galaxyModels).forEach(g => g.visible = level === 3);
   cosmicGroup.visible = level === 3 && !_viewingGalaxy;
