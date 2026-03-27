@@ -1202,6 +1202,7 @@ function travelToSIMBADResult(result, skipTravel = false) {
     const galaxyGroup = _buildGalaxyModel(galaxyOpts);
     galaxyGroup.position.copy(pos);
     galaxyGroup.userData = { name, type: 'Galaxy', distAU };
+    galaxyGroup.visible = true; // ensure visible immediately
     scene.add(galaxyGroup);
     _galaxyModels[name] = galaxyGroup;
 
@@ -1249,7 +1250,7 @@ function travelToSIMBADResult(result, skipTravel = false) {
   }
 
   labelsList.push({ el: createLabel(name), mesh, scaleLevel: typeInfo.scale });
-  if (!skipTravel) travelToMesh(mesh, typeInfo.scale, name, isGalaxy ? r * 2 : r * 4);
+  if (!skipTravel) travelToMesh(mesh, typeInfo.scale, name, isGalaxy ? r * 15 : r * 4);
   closeSearch();
 }
 
@@ -1777,7 +1778,8 @@ async function doTravelSearch(query) {
           const dLY  = dAU / 63241;
           renderTravelResult(r.name, ti.label, dLY, () => {
             const pos = raDecToVec3(r.ra, r.dec, dAU);
-            setTravelDest({ position: pos, name: r.name, distLY: dLY, scaleLevel: ti.scale, simbadResult: r });
+            const mR = simbadMarkerRadius(ti.scale, ti.label);
+            setTravelDest({ position: pos, name: r.name, distLY: dLY, scaleLevel: ti.scale, simbadResult: r, radius: mR });
           });
         });
     } catch(e) {}
@@ -1808,6 +1810,8 @@ document.getElementById('travel-instant-btn').addEventListener('click', () => {
   if (travelDest.scaleLevel !== undefined && currentScale !== travelDest.scaleLevel) {
     currentScale = travelDest.scaleLevel; applyScale();
   }
+  // Create the object at destination (galaxy model, star mesh, etc.)
+  if (travelDest.simbadResult) travelToSIMBADResult(travelDest.simbadResult, true);
   // Teleport camera directly to viewing position
   const objR = travelDest.radius || 0.05;
   const stopR = Math.max(objR * 4, objR * 6);
@@ -1827,7 +1831,8 @@ function abortTravel(arrived) {
   _resumeTimeAfterTravel();
   if (arrived && travelDest && !exploreMode) {
     // Cinematic orbit around the destination for non-explore arrivals
-    const r = Math.max(0.3, (travelDest.radius || 0.3) * 6);
+    const isGalaxyArrival = travelDest.simbadResult && simbadOtypeInfo(travelDest.simbadResult.otype).label === 'Galaxy';
+    const r = isGalaxyArrival ? (travelDest.radius || 8e8) * 20 : Math.max(0.3, (travelDest.radius || 0.3) * 6);
     _arrivalOrbit.active = true;
     _arrivalOrbit.target = travelDest.position.clone();
     _arrivalOrbit.r      = r;
