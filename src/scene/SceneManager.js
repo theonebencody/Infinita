@@ -533,13 +533,13 @@ galaxyGroup.add(new THREE.Points(bulgeGeo, new THREE.PointsMaterial({ size: 3500
 const coreC = document.createElement('canvas'); coreC.width = 128; coreC.height = 128;
 const coreCtx = coreC.getContext('2d');
 const coreGrad = coreCtx.createRadialGradient(64,64,0,64,64,64);
-coreGrad.addColorStop(0, 'rgba(255,235,200,0.7)');
-coreGrad.addColorStop(0.2, 'rgba(255,210,150,0.35)');
-coreGrad.addColorStop(0.5, 'rgba(200,160,100,0.1)');
+coreGrad.addColorStop(0, 'rgba(255,235,200,0.3)');
+coreGrad.addColorStop(0.2, 'rgba(255,210,150,0.15)');
+coreGrad.addColorStop(0.5, 'rgba(200,160,100,0.04)');
 coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
 coreCtx.fillStyle = coreGrad; coreCtx.fillRect(0,0,128,128);
 const coreSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(coreC), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, alphaTest: 0.01 }));
-coreSprite.scale.setScalar(5e7);
+coreSprite.scale.setScalar(3e7);
 galaxyGroup.add(coreSprite);
 
 // ── D. Dust Lanes (between arms) ──
