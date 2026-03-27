@@ -913,7 +913,8 @@ function loadDeepSkyObjects() {
     if (obj.mag < 9) {
       labelsList.push({ el: createLabel(displayName), mesh: sprite, scaleLevel: obj.type === 'galaxy' ? 3 : 2 });
     }
-    searchableObjects.push({ name: displayName, distLY, typeLabel: typeLabels[obj.type] || 'Deep Sky', mesh: sprite });
+    const objScale = obj.type === 'galaxy' ? 3 : 2;
+    searchableObjects.push({ name: displayName, distLY, typeLabel: typeLabels[obj.type] || 'Deep Sky', mesh: sprite, scaleLevel: objScale });
   });
 }
 
@@ -1175,6 +1176,51 @@ function _buildGalaxyModel(opts = {}) {
 // Track generated galaxy models so we don't create duplicates
 const _galaxyModels = {};
 
+// Galaxy name patterns for local matches (nav computer, explore mode)
+const _GALAXY_NAMES = /andromeda|m31|triangulum|m33|whirlpool|m51|sombrero|m104|pinwheel|m101|bode|m81|cigar|m82|magellanic|centaurus/i;
+
+function _ensureGalaxyModel(dest) {
+  if (!dest || !dest.name || !dest.position) return;
+  const nameLower = dest.name.toLowerCase();
+  if (!_GALAXY_NAMES.test(nameLower)) return;
+  if (_galaxyModels[dest.name]) return; // already built
+
+  const isAndromeda = /andromeda|m31/i.test(nameLower);
+  const isTriangulum = /triangulum|m33/i.test(nameLower);
+  const isWhirlpool = /whirlpool|m51/i.test(nameLower);
+  const isSombrero = /sombrero|m104/i.test(nameLower);
+
+  const galaxyOpts = isAndromeda
+    ? { scale: 2.2, tilt: 1.35, arms: 2, wind: 2.0 }
+    : isTriangulum
+    ? { scale: 0.6, tilt: 0.3, arms: 2, wind: 3.0 }
+    : isWhirlpool
+    ? { scale: 0.8, tilt: 0.4, arms: 2, wind: 3.5 }
+    : isSombrero
+    ? { scale: 1.0, tilt: 1.48, arms: 0, elliptical: true }
+    : { scale: 0.5 + Math.random() * 1.5, tilt: Math.random() * 1.2, arms: 2, wind: 2 + Math.random() * 2 };
+
+  const group = _buildGalaxyModel(galaxyOpts);
+  group.position.copy(dest.position);
+  group.visible = true;
+  scene.add(group);
+  _galaxyModels[dest.name] = group;
+
+  // Andromeda companions
+  if (isAndromeda) {
+    const KLY = 63241;
+    const m32 = _buildGalaxyModel({ scale: 0.12, tilt: 0.2, elliptical: true });
+    m32.position.set(-15000 * KLY, -5000 * KLY, 8000 * KLY);
+    group.add(m32);
+    const m110 = _buildGalaxyModel({ scale: 0.2, tilt: 0.8, elliptical: true });
+    m110.position.set(40000 * KLY, 12000 * KLY, -30000 * KLY);
+    group.add(m110);
+  }
+
+  // Update radius on dest so camera stops at proper distance
+  dest.radius = 8e8;
+}
+
 function travelToSIMBADResult(result, skipTravel = false) {
   const { name, ra, dec, plx, z, otype, sp } = result;
   const typeInfo = simbadOtypeInfo(otype);
@@ -1183,7 +1229,6 @@ function travelToSIMBADResult(result, skipTravel = false) {
   const r        = simbadMarkerRadius(typeInfo.scale, typeInfo.label);
   const col      = sp ? tempToColor(spTypeToTemp(sp)) : typeInfo.color;
   const isGalaxy = typeInfo.label === 'Galaxy';
-  console.log('[SIMBAD Travel]', name, 'otype:', otype, 'label:', typeInfo.label, 'scale:', typeInfo.scale, 'isGalaxy:', isGalaxy, 'dist AU:', distAU, 'pos:', pos.x.toExponential(2), pos.y.toExponential(2), pos.z.toExponential(2), 'r:', r, 'cam pos:', camera.position.x.toExponential(2), camera.position.y.toExponential(2), camera.position.z.toExponential(2), 'currentScale:', currentScale);
 
   let mesh;
   if (isGalaxy && !_galaxyModels[name]) {
@@ -1806,21 +1851,22 @@ document.getElementById('travel-engage-btn').addEventListener('click', () => {
 });
 document.getElementById('travel-instant-btn').addEventListener('click', () => {
   if (!travelDest) return;
-  console.log('[INSTANT] travelDest:', travelDest.name, 'scale:', travelDest.scaleLevel, 'radius:', travelDest.radius, 'hasSimbad:', !!travelDest.simbadResult, 'pos:', travelDest.position?.x?.toExponential?.(2), travelDest.position?.y?.toExponential?.(2), travelDest.position?.z?.toExponential?.(2));
   closeTravelPanel();
   // Switch scale
   if (travelDest.scaleLevel !== undefined && currentScale !== travelDest.scaleLevel) {
     currentScale = travelDest.scaleLevel; applyScale();
   }
-  // Create the object at destination (galaxy model, star mesh, etc.)
-  if (travelDest.simbadResult) travelToSIMBADResult(travelDest.simbadResult, true);
+  // Create galaxy model or SIMBAD object at destination
+  if (travelDest.simbadResult) {
+    travelToSIMBADResult(travelDest.simbadResult, true);
+  } else {
+    _ensureGalaxyModel(travelDest);
+  }
   // Teleport camera directly to viewing position
   const objR = travelDest.radius || 0.05;
   const stopR = Math.max(objR * 4, objR * 6);
-  console.log('[INSTANT] objR:', objR, 'stopR:', stopR, 'camera.far:', camera.far, 'currentScale:', currentScale);
   const dir = new THREE.Vector3().subVectors(travelDest.position, camera.position).normalize();
   camera.position.copy(travelDest.position).addScaledVector(dir, -stopR);
-  console.log('[INSTANT] final cam pos:', camera.position.x.toExponential(2), camera.position.y.toExponential(2), camera.position.z.toExponential(2), 'galaxy models:', Object.keys(_galaxyModels));
   // Face the destination
   yaw = Math.atan2(-dir.x, -dir.z);
   pitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
@@ -1929,7 +1975,7 @@ function updateTravel(dt) {
 
     if (p >= 1) {
       camera.position.copy(stopPt);
-      if (travelDest.simbadResult) travelToSIMBADResult(travelDest.simbadResult, true);
+      if (travelDest.simbadResult) travelToSIMBADResult(travelDest.simbadResult, true); else _ensureGalaxyModel(travelDest);
       if (travelDest.scaleLevel !== undefined && currentScale !== travelDest.scaleLevel) {
         currentScale = travelDest.scaleLevel; applyScale();
       }
@@ -1977,7 +2023,7 @@ function updateTravel(dt) {
     // Arrival
     if (camera.position.distanceTo(stopPt) < step * 0.5 || camera.position.distanceTo(stopPt) < 0.0001) {
       camera.position.copy(stopPt);
-      if (travelDest.simbadResult) travelToSIMBADResult(travelDest.simbadResult, true);
+      if (travelDest.simbadResult) travelToSIMBADResult(travelDest.simbadResult, true); else _ensureGalaxyModel(travelDest);
       if (travelDest.scaleLevel !== undefined && currentScale !== travelDest.scaleLevel) {
         currentScale = travelDest.scaleLevel; applyScale();
       }
@@ -2290,7 +2336,7 @@ function _setScaleVisibility(level) {
   namedStarMeshes.forEach(m => m.visible = level === 1);
   liveStarMeshes.forEach(m => m.visible = level === (m.userData._scaleLevel || 1));
   exoplanetMarkers.forEach(m => m.visible = level === 1);
-  deepSkyMeshes.forEach(m => m.visible = level === 2);
+  deepSkyMeshes.forEach(m => m.visible = (level === 2 || level === 3));
   galaxyGroup.visible = level === 2;
   galaxyCatalogMeshes.forEach(m => m.visible = level === 3);
   Object.values(_galaxyModels).forEach(g => g.visible = level === 3);
