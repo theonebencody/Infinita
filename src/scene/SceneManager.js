@@ -1039,6 +1039,142 @@ function travelToMesh(mesh, scaleLevel, name, orbitR) {
 
 // simbadMarkerRadius imported from simbad.js
 
+// ── Procedural galaxy model builder ──────────────────────────────
+function _buildGalaxyModel(opts = {}) {
+  const group = new THREE.Group();
+  const scale = opts.scale || 1;          // size multiplier
+  const tilt = opts.tilt || 0.4;          // inclination angle (radians)
+  const arms = opts.arms || 2;            // number of spiral arms
+  const wind = opts.wind || 2.5;          // arm winding tightness
+  const isElliptical = opts.elliptical || false;
+  const hue = opts.hue || 'blue';         // 'blue' (spiral) or 'warm' (elliptical)
+
+  const KLY = 63241;
+  const R = 50000 * KLY * scale;          // galaxy radius in AU
+  const bulgeR = 5000 * KLY * scale;
+
+  // A. Spiral Disc (or elliptical body)
+  const discN = isMobile ? 4000 : 12000;
+  const dP = new Float32Array(discN * 3);
+  const dC = new Float32Array(discN * 3);
+  const R0 = 3000 * KLY * scale;
+
+  for (let i = 0; i < discN; i++) {
+    let x, y, z2;
+    if (isElliptical) {
+      const r2 = Math.pow(Math.random(), 1.5) * R;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      x = r2 * Math.sin(ph) * Math.cos(th);
+      y = r2 * Math.sin(ph) * Math.sin(th) * 0.65;
+      z2 = r2 * Math.cos(ph);
+    } else {
+      const inArm = i < discN * 0.7;
+      const armIdx = inArm ? Math.floor(Math.random() * arms) : Math.floor(Math.random() * arms) + 0.5;
+      const armBase = (armIdx / arms) * Math.PI * 2;
+      const dist = Math.pow(Math.random(), 0.7) * R;
+      const spiralAngle = armBase + Math.log(1 + dist / R0) * wind;
+      const spread = _gaussRand() * dist * (inArm ? 0.06 : 0.12);
+      x = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI / 2) * spread;
+      y = _gaussRand() * dist * 0.008;
+      z2 = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI / 2) * spread;
+    }
+    dP[i * 3] = x; dP[i * 3 + 1] = y; dP[i * 3 + 2] = z2;
+
+    // Color: warm golden center → blue-white spiral arms (like real galaxies)
+    const distFromCenter = Math.sqrt(x * x + z2 * z2) / R;
+    let temp;
+    if (isElliptical) {
+      temp = 3500 + Math.random() * 2000;
+    } else {
+      const inArm = i < discN * 0.7;
+      if (distFromCenter < 0.15) {
+        temp = 3500 + Math.random() * 2000; // warm golden core
+      } else if (inArm) {
+        temp = 7000 + Math.random() * 18000; // hot blue-white in arms
+      } else {
+        temp = 3500 + Math.random() * 3500; // warm between arms
+      }
+    }
+    const c = tempToColor(temp);
+    dC[i * 3] = c.r; dC[i * 3 + 1] = c.g; dC[i * 3 + 2] = c.b;
+  }
+  const dG = new THREE.BufferGeometry();
+  dG.setAttribute('position', new THREE.BufferAttribute(dP, 3));
+  dG.setAttribute('color', new THREE.BufferAttribute(dC, 3));
+  group.add(new THREE.Points(dG, new THREE.PointsMaterial({
+    size: 7000 * scale, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.6
+  })));
+
+  // B. Central Bulge
+  const bN = isMobile ? 500 : 1500;
+  const bP = new Float32Array(bN * 3);
+  const bC = new Float32Array(bN * 3);
+  for (let i = 0; i < bN; i++) {
+    const r2 = bulgeR * Math.pow(Math.random(), 2.5);
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    bP[i * 3] = r2 * Math.sin(ph) * Math.cos(th);
+    bP[i * 3 + 1] = r2 * Math.sin(ph) * Math.sin(th) * 0.55;
+    bP[i * 3 + 2] = r2 * Math.cos(ph);
+    const c = tempToColor(3500 + Math.random() * 2500);
+    bC[i * 3] = c.r; bC[i * 3 + 1] = c.g; bC[i * 3 + 2] = c.b;
+  }
+  const bG = new THREE.BufferGeometry();
+  bG.setAttribute('position', new THREE.BufferAttribute(bP, 3));
+  bG.setAttribute('color', new THREE.BufferAttribute(bC, 3));
+  group.add(new THREE.Points(bG, new THREE.PointsMaterial({
+    size: 12000 * scale, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.8
+  })));
+
+  // C. Core Glow
+  const cc = document.createElement('canvas'); cc.width = 128; cc.height = 128;
+  const cctx = cc.getContext('2d');
+  const cg = cctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  cg.addColorStop(0, 'rgba(255,235,200,0.7)');
+  cg.addColorStop(0.2, 'rgba(255,210,150,0.3)');
+  cg.addColorStop(0.5, 'rgba(200,160,100,0.08)');
+  cg.addColorStop(1, 'rgba(0,0,0,0)');
+  cctx.fillStyle = cg; cctx.fillRect(0, 0, 128, 128);
+  const coreSp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(cc), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+  }));
+  coreSp.scale.setScalar(1.5e7 * scale);
+  group.add(coreSp);
+
+  // D. Dust Lanes (spiral only)
+  if (!isElliptical) {
+    const dustN = isMobile ? 600 : 2000;
+    const dustP = new Float32Array(dustN * 3);
+    const dustC = new Float32Array(dustN * 3);
+    for (let i = 0; i < dustN; i++) {
+      const armIdx = Math.floor(Math.random() * arms);
+      const armBase = (armIdx / arms) * Math.PI * 2;
+      const dist = Math.pow(Math.random(), 0.6) * R * 0.9;
+      const spiralAngle = armBase + Math.log(1 + dist / R0) * wind - 0.15;
+      const spread = _gaussRand() * dist * 0.03;
+      dustP[i * 3] = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI / 2) * spread;
+      dustP[i * 3 + 1] = _gaussRand() * dist * 0.003;
+      dustP[i * 3 + 2] = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI / 2) * spread;
+      dustC[i * 3] = 0.1; dustC[i * 3 + 1] = 0.07; dustC[i * 3 + 2] = 0.04;
+    }
+    const dustG = new THREE.BufferGeometry();
+    dustG.setAttribute('position', new THREE.BufferAttribute(dustP, 3));
+    dustG.setAttribute('color', new THREE.BufferAttribute(dustC, 3));
+    group.add(new THREE.Points(dustG, new THREE.PointsMaterial({
+      size: 15000 * scale, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.3, blending: THREE.NormalBlending
+    })));
+  }
+
+  // Apply tilt
+  group.rotation.x = tilt;
+
+  return group;
+}
+
+// Track generated galaxy models so we don't create duplicates
+const _galaxyModels = {};
+
 function travelToSIMBADResult(result, skipTravel = false) {
   const { name, ra, dec, plx, z, otype, sp } = result;
   const typeInfo = simbadOtypeInfo(otype);
@@ -1046,16 +1182,74 @@ function travelToSIMBADResult(result, skipTravel = false) {
   const pos      = raDecToVec3(ra, dec, distAU);
   const r        = simbadMarkerRadius(typeInfo.scale);
   const col      = sp ? tempToColor(spTypeToTemp(sp)) : typeInfo.color;
-  const mesh     = new THREE.Mesh(
-    new THREE.SphereGeometry(r, 12, 12),
-    new THREE.MeshBasicMaterial({ color: col })
-  );
-  mesh.position.copy(pos);
-  mesh.userData  = { name, type: typeInfo.label, distAU };
-  scene.add(mesh);
-  liveStarMeshes.push(mesh);
+  const isGalaxy = typeInfo.label === 'Galaxy';
+
+  let mesh;
+  if (isGalaxy && !_galaxyModels[name]) {
+    // Build a procedural galaxy model instead of a plain sphere
+    const nameLower = (name || '').toLowerCase();
+    // Andromeda (M31): large barred spiral, ~77° inclination, 2 main arms
+    const isAndromeda = /andromeda|m\s*31/i.test(nameLower);
+    // Triangulum (M33): face-on spiral
+    const isTriangulum = /triangulum|m\s*33/i.test(nameLower);
+
+    const galaxyOpts = isAndromeda
+      ? { scale: 2.2, tilt: 1.35, arms: 2, wind: 2.0, hue: 'blue' }   // 77° tilt, large
+      : isTriangulum
+      ? { scale: 0.6, tilt: 0.3, arms: 2, wind: 3.0, hue: 'blue' }    // face-on, smaller
+      : { scale: 0.5 + Math.random() * 1.5, tilt: Math.random() * 1.2, arms: 2 + Math.floor(Math.random() * 3), wind: 2 + Math.random() * 2 };
+
+    const galaxyGroup = _buildGalaxyModel(galaxyOpts);
+    galaxyGroup.position.copy(pos);
+    galaxyGroup.userData = { name, type: 'Galaxy', distAU };
+    scene.add(galaxyGroup);
+    _galaxyModels[name] = galaxyGroup;
+
+    // Add companion galaxies for Andromeda
+    if (isAndromeda) {
+      const KLY = 63241;
+      // M32 — compact elliptical, south of core, ~22 kly from M31 center
+      const m32 = _buildGalaxyModel({ scale: 0.12, tilt: 0.2, elliptical: true });
+      m32.position.set(-15000 * KLY, -5000 * KLY, 8000 * KLY);
+      galaxyGroup.add(m32);
+      // M110 — dwarf elliptical, northwest, ~120 kly from M31 center
+      const m110 = _buildGalaxyModel({ scale: 0.2, tilt: 0.8, elliptical: true });
+      m110.position.set(40000 * KLY, 12000 * KLY, -30000 * KLY);
+      galaxyGroup.add(m110);
+    }
+
+    // Use a small invisible sphere as the travel target (for camera/label positioning)
+    mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(r * 0.01, 4, 4),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    mesh.position.copy(pos);
+    mesh.userData = { name, type: typeInfo.label, distAU };
+    scene.add(mesh);
+    liveStarMeshes.push(mesh);
+  } else if (isGalaxy && _galaxyModels[name]) {
+    // Already exists — just reuse
+    mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(r * 0.01, 4, 4),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    mesh.position.copy(pos);
+    mesh.userData = { name, type: typeInfo.label, distAU };
+    scene.add(mesh);
+    liveStarMeshes.push(mesh);
+  } else {
+    mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(r, 12, 12),
+      new THREE.MeshBasicMaterial({ color: col })
+    );
+    mesh.position.copy(pos);
+    mesh.userData = { name, type: typeInfo.label, distAU };
+    scene.add(mesh);
+    liveStarMeshes.push(mesh);
+  }
+
   labelsList.push({ el: createLabel(name), mesh, scaleLevel: typeInfo.scale });
-  if (!skipTravel) travelToMesh(mesh, typeInfo.scale, name, r * 4);
+  if (!skipTravel) travelToMesh(mesh, typeInfo.scale, name, isGalaxy ? r * 2 : r * 4);
   closeSearch();
 }
 
