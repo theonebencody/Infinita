@@ -1182,6 +1182,8 @@ function _buildGalaxyModel(opts = {}) {
 
 // Track generated galaxy models so we don't create duplicates
 const _galaxyModels = {};
+// Track sprites hidden because camera is near a galaxy model
+const _hiddenNearGalaxy = new Set();
 
 // Galaxy name patterns for local matches (nav computer, explore mode)
 const _GALAXY_NAMES = /andromeda|m31|triangulum|m33|whirlpool|m51|sombrero|m104|pinwheel|m101|bode|m81|cigar|m82|magellanic|centaurus/i;
@@ -1229,14 +1231,13 @@ function _ensureGalaxyModel(dest) {
   dest.radius = galaxyR;
   dest.scaleLevel = 3;
 
-  // Hide catalog galaxy sprites and deep sky sprites near the destination
-  // so they don't appear as ugly blocks around the camera
+  // Mark catalog/deep sky sprites near the destination to stay hidden
   const hideRadius = galaxyR * 10;
   galaxyCatalogMeshes.forEach(s => {
-    if (s.position.distanceTo(dest.position) < hideRadius) s.visible = false;
+    if (s.position.distanceTo(dest.position) < hideRadius) { s.visible = false; _hiddenNearGalaxy.add(s); }
   });
   deepSkyMeshes.forEach(s => {
-    if (s.position.distanceTo(dest.position) < hideRadius) s.visible = false;
+    if (s.position.distanceTo(dest.position) < hideRadius) { s.visible = false; _hiddenNearGalaxy.add(s); }
   });
 }
 
@@ -1271,11 +1272,11 @@ function travelToSIMBADResult(result, skipTravel = false) {
     scene.add(galaxyGroup);
     _galaxyModels[name] = galaxyGroup;
 
-    // Hide nearby catalog/deep sky sprites so they don't block the view
+    // Mark nearby catalog/deep sky sprites to stay hidden
     const galaxyR = 50000 * 63241 * (galaxyOpts.scale || 1);
     const hideR = galaxyR * 10;
-    galaxyCatalogMeshes.forEach(s => { if (s.position.distanceTo(pos) < hideR) s.visible = false; });
-    deepSkyMeshes.forEach(s => { if (s.position.distanceTo(pos) < hideR) s.visible = false; });
+    galaxyCatalogMeshes.forEach(s => { if (s.position.distanceTo(pos) < hideR) { s.visible = false; _hiddenNearGalaxy.add(s); } });
+    deepSkyMeshes.forEach(s => { if (s.position.distanceTo(pos) < hideR) { s.visible = false; _hiddenNearGalaxy.add(s); } });
 
     // Add companion galaxies for Andromeda
     if (isAndromeda) {
@@ -2373,9 +2374,9 @@ function _setScaleVisibility(level) {
   namedStarMeshes.forEach(m => m.visible = level === 1);
   liveStarMeshes.forEach(m => m.visible = level === (m.userData._scaleLevel || 1));
   exoplanetMarkers.forEach(m => m.visible = level === 1);
-  deepSkyMeshes.forEach(m => m.visible = (level === 2 || level === 3));
+  deepSkyMeshes.forEach(m => m.visible = (level === 2 || level === 3) && !_hiddenNearGalaxy.has(m));
   galaxyGroup.visible = level === 2;
-  galaxyCatalogMeshes.forEach(m => m.visible = level === 3);
+  galaxyCatalogMeshes.forEach(m => m.visible = level === 3 && !_hiddenNearGalaxy.has(m));
   Object.values(_galaxyModels).forEach(g => g.visible = level === 3);
   cosmicGroup.visible = level === 3;
   lightSphere.visible = level === 0;
@@ -3748,6 +3749,7 @@ document.getElementById('hud-back-btn').addEventListener('click', () => {
   if (exploreMode) stopExploreMode();
   if (travelActive) abortTravel();
   if (_arrivalOrbit.active) _arrivalOrbit.active = false;
+  _hiddenNearGalaxy.clear();
 });
 initLaunchHistory(() => started);
 // UFO system removed
