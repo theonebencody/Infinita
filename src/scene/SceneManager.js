@@ -59,7 +59,7 @@ const sunGroup = new THREE.Group();
 scene.add(sunGroup);
 
 const sunGeo = new THREE.SphereGeometry(SUN_RADIUS_VIS, 64, 64);
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xffddaa });
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc878 });
 const sunMesh = new THREE.Mesh(sunGeo, sunMat);
 sunGroup.add(sunMesh);
 
@@ -91,17 +91,24 @@ for (let i = 0; i < 3; i++) {
 
 // ── Solar Flares — animated arcs that erupt and fade ──
 const _solarFlares = [];
-const _FLARE_COUNT = 6;
+const _FLARE_COUNT = 8;
 for (let i = 0; i < _FLARE_COUNT; i++) {
-  const fc = document.createElement('canvas'); fc.width = 64; fc.height = 64;
+  const fc = document.createElement('canvas'); fc.width = 64; fc.height = 128;
   const fctx = fc.getContext('2d');
-  // Elongated arc shape
-  const fg = fctx.createRadialGradient(32, 48, 0, 32, 32, 30);
-  fg.addColorStop(0, 'rgba(255,180,60,0.8)');
-  fg.addColorStop(0.3, 'rgba(255,120,20,0.4)');
-  fg.addColorStop(0.6, 'rgba(255,60,10,0.1)');
+  // Tall elongated flame shape — bright red-orange base fading to faint tip
+  const fg = fctx.createLinearGradient(32, 128, 32, 0);
+  fg.addColorStop(0, 'rgba(255,140,30,0.9)');
+  fg.addColorStop(0.2, 'rgba(255,90,15,0.6)');
+  fg.addColorStop(0.5, 'rgba(255,50,5,0.25)');
+  fg.addColorStop(0.8, 'rgba(200,30,0,0.06)');
   fg.addColorStop(1, 'rgba(0,0,0,0)');
-  fctx.fillStyle = fg; fctx.fillRect(0, 0, 64, 64);
+  fctx.fillStyle = fg; fctx.fillRect(8, 0, 48, 128);
+  // Add hot bright core at base
+  const cg = fctx.createRadialGradient(32, 115, 0, 32, 115, 20);
+  cg.addColorStop(0, 'rgba(255,220,120,0.8)');
+  cg.addColorStop(0.5, 'rgba(255,160,40,0.3)');
+  cg.addColorStop(1, 'rgba(0,0,0,0)');
+  fctx.fillStyle = cg; fctx.fillRect(0, 90, 64, 38);
   const flareMat = new THREE.SpriteMaterial({
     map: new THREE.CanvasTexture(fc), blending: THREE.AdditiveBlending,
     transparent: true, depthWrite: false, opacity: 0
@@ -369,15 +376,27 @@ scene.add(new THREE.Points(kuiperGeo, new THREE.PointsMaterial({
 
 // Noise utilities, textures, planet texture functions imported from noiseUtils.js
 
-// --- Sun granulation texture ---
+// --- Sun granulation texture — deep orange-red with prominent sunspots ---
 (()=>{
-  const tex=_mkTex(256,128,(u,v,nx,ny,nz)=>{
-    const n=_sfbm(nx*6,ny*6,nz*6,4);
-    const cell=n>0.54?1:0.72+n*0.52;
-    const spotLat=Math.abs(ny)<0.38,spotN=_sfbm(nx*2+7,ny*2,nz*2,2);
-    const spot=spotLat&&spotN>0.62?0.68:1;
-    const b=cell*spot;
-    return [255,(185+b*70)|0,(85+b*55)|0];
+  const tex=_mkTex(512,256,(u,v,nx,ny,nz)=>{
+    // Granulation cells — convection pattern
+    const n=_sfbm(nx*8,ny*8,nz*8,5);
+    const cell=n>0.52?1:0.65+n*0.67;
+    // Sunspots — darker regions in equatorial band
+    const spotLat=Math.abs(ny)<0.42;
+    const spotN=_sfbm(nx*2.5+7,ny*2.5,nz*2.5,3);
+    const spotN2=_sfbm(nx*4+13,ny*4+5,nz*4,2);
+    const isSpot=spotLat && spotN>0.58;
+    const isSmallSpot=spotLat && spotN2>0.68;
+    const spot=isSpot?0.45:(isSmallSpot?0.6:1);
+    // Penumbra around spots
+    const penumbra=isSpot?(0.45+spotN*0.3):(isSmallSpot?(0.6+spotN2*0.2):1);
+    const b=cell*Math.min(spot,penumbra);
+    // Limb darkening — edges of sphere are dimmer
+    const limb=0.6+0.4*Math.sqrt(Math.max(0,1-nx*nx-ny*ny-nz*nz+0.5));
+    const bl=b*limb;
+    // Color: deep orange-red base (not yellow)
+    return [(255*bl)|0,(140*bl+20)|0,(45*bl+10)|0];
   });
   sunMat.map=tex; sunMat.needsUpdate=true;
 })();
@@ -4188,26 +4207,28 @@ function animate(now) {
         f.baseY = f.sprite.position.y;
       }
       if (f.active) {
-        f.progress += dt * (0.3 + Math.random() * 0.1);
+        f.progress += dt * (0.15 + Math.random() * 0.08); // slower eruption
         if (f.progress >= 1) {
           f.active = false;
           f.mat.opacity = 0;
         } else {
-          // Arc upward then fade
+          // Arc upward then fade — dramatic loop shape
           const rise = Math.sin(f.progress * Math.PI);
-          const fade = f.progress < 0.3 ? f.progress / 0.3 : 1 - (f.progress - 0.3) / 0.7;
-          f.mat.opacity = fade * 0.7;
+          const fade = f.progress < 0.25 ? f.progress / 0.25 : Math.pow(1 - (f.progress - 0.25) / 0.75, 0.5);
+          f.mat.opacity = fade * 0.85;
+          // Bigger flares — visible prominences
           f.sprite.scale.set(
-            0.06 + rise * 0.08,
-            0.1 + rise * 0.2,
+            0.04 + rise * 0.06,
+            0.08 + rise * 0.35,
             1
           );
-          // Move outward from surface
-          const outR = SUN_RADIUS_VIS * (1.05 + rise * 0.4);
+          // Arc outward from surface with slight curve
+          const outR = SUN_RADIUS_VIS * (1.02 + rise * 0.7);
+          const sway = Math.sin(f.progress * Math.PI * 2) * SUN_RADIUS_VIS * 0.1;
           f.sprite.position.set(
-            Math.cos(f.angle) * outR,
-            f.baseY + rise * SUN_RADIUS_VIS * 0.5,
-            Math.sin(f.angle) * outR
+            Math.cos(f.angle) * outR + Math.cos(f.angle + Math.PI/2) * sway,
+            f.baseY + rise * SUN_RADIUS_VIS * 0.8,
+            Math.sin(f.angle) * outR + Math.sin(f.angle + Math.PI/2) * sway
           );
         }
       }
