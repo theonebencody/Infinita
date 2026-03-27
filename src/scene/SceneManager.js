@@ -97,24 +97,99 @@ const bodyPositions = [{ name: 'Sun', pos: new THREE.Vector3(), radius: SUN_RADI
 PLANETS.forEach(p => {
   // Planet mesh
   const geo = new THREE.SphereGeometry(p.rVis, 32, 32);
+  // Outer planets get more emissive so they're visible in low sunlight
+  const emissiveStrength = p.a > 15 ? 0.18 : p.a > 5 ? 0.14 : p.a > 1.5 ? 0.06 : 0.03;
   const mat = new THREE.MeshStandardMaterial({
     color: p.color,
-    roughness: 0.7,
-    metalness: 0.1,
-    emissive: new THREE.Color(p.color).multiplyScalar(p.a > 5 ? 0.12 : 0.05)
+    roughness: 0.65,
+    metalness: 0.08,
+    emissive: new THREE.Color(p.color).multiplyScalar(emissiveStrength)
   });
   const mesh = new THREE.Mesh(geo, mat);
   scene.add(mesh);
 
-  // Saturn rings
+  // Saturn rings with Cassini division
   if (p.rings) {
-    const ringGeo = new THREE.RingGeometry(p.rVis * 1.4, p.rVis * 2.4, 64);
+    const ringInner = p.rVis * 1.3, ringOuter = p.rVis * 2.5;
+    const ringCanvas = document.createElement('canvas'); ringCanvas.width = 256; ringCanvas.height = 4;
+    const rctx = ringCanvas.getContext('2d');
+    const rg = rctx.createLinearGradient(0,0,256,0);
+    // C ring (faint)
+    rg.addColorStop(0, 'rgba(178,158,118,0.15)');
+    rg.addColorStop(0.15, 'rgba(178,158,118,0.22)');
+    // B ring (bright)
+    rg.addColorStop(0.2, 'rgba(218,198,155,0.7)');
+    rg.addColorStop(0.38, 'rgba(220,200,158,0.75)');
+    // Cassini Division (dark gap)
+    rg.addColorStop(0.4, 'rgba(22,16,10,0.06)');
+    rg.addColorStop(0.44, 'rgba(22,16,10,0.06)');
+    // A ring
+    rg.addColorStop(0.46, 'rgba(192,172,128,0.6)');
+    rg.addColorStop(0.65, 'rgba(185,165,120,0.55)');
+    // Encke Gap
+    rg.addColorStop(0.67, 'rgba(40,30,20,0.08)');
+    rg.addColorStop(0.69, 'rgba(185,165,120,0.45)');
+    // F ring (faint outer)
+    rg.addColorStop(0.85, 'rgba(160,140,100,0.15)');
+    rg.addColorStop(1, 'rgba(0,0,0,0)');
+    rctx.fillStyle = rg; rctx.fillRect(0,0,256,4);
+    const ringTex = new THREE.CanvasTexture(ringCanvas);
+    ringTex.wrapS = THREE.ClampToEdgeWrapping;
+
+    // Build ring geometry with UV mapping
+    const segments = 128, rows = 3;
+    const ringVerts = [], ringUvs = [], ringIdx = [];
+    for (let row = 0; row <= rows; row++) {
+      const r = ringInner + (ringOuter - ringInner) * (row / rows);
+      const v = row / rows;
+      for (let seg = 0; seg <= segments; seg++) {
+        const a = (seg / segments) * Math.PI * 2;
+        ringVerts.push(Math.cos(a) * r, 0, Math.sin(a) * r);
+        ringUvs.push(v, seg / segments);
+      }
+    }
+    for (let row = 0; row < rows; row++) {
+      for (let seg = 0; seg < segments; seg++) {
+        const a = row * (segments + 1) + seg;
+        const b = a + segments + 1;
+        ringIdx.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const ringGeo = new THREE.BufferGeometry();
+    ringGeo.setAttribute('position', new THREE.Float32BufferAttribute(ringVerts, 3));
+    ringGeo.setAttribute('uv', new THREE.Float32BufferAttribute(ringUvs, 2));
+    ringGeo.setIndex(ringIdx);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xd4b896, side: THREE.DoubleSide, transparent: true, opacity: 0.5
+      map: ringTex, side: THREE.DoubleSide, transparent: true, depthWrite: false, opacity: 0.85
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
     ringMesh.rotation.x = Math.PI * 0.45;
     mesh.add(ringMesh);
+  }
+
+  // Atmospheric glow for gas giants and Venus/Earth
+  if (['Jupiter','Saturn','Uranus','Neptune','Earth','Venus'].includes(p.name)) {
+    const atmoCanvas = document.createElement('canvas'); atmoCanvas.width = 64; atmoCanvas.height = 64;
+    const actx = atmoCanvas.getContext('2d');
+    const ag = actx.createRadialGradient(32,32,16,32,32,32);
+    const atmoColors = {
+      Earth: '100,160,255', Venus: '220,200,150', Jupiter: '200,180,140',
+      Saturn: '210,195,150', Uranus: '130,200,220', Neptune: '70,100,200'
+    };
+    const atmoAlpha = { Earth: 0.18, Venus: 0.12, Jupiter: 0.1, Saturn: 0.08, Uranus: 0.15, Neptune: 0.14 };
+    const ac = atmoColors[p.name] || '200,200,255';
+    const aa = atmoAlpha[p.name] || 0.1;
+    ag.addColorStop(0, 'rgba(0,0,0,0)');
+    ag.addColorStop(0.6, 'rgba(0,0,0,0)');
+    ag.addColorStop(0.8, `rgba(${ac},${aa})`);
+    ag.addColorStop(0.92, `rgba(${ac},${aa*0.4})`);
+    ag.addColorStop(1, 'rgba(0,0,0,0)');
+    actx.fillStyle = ag; actx.fillRect(0,0,64,64);
+    const atmoSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(atmoCanvas), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+    }));
+    atmoSprite.scale.setScalar(p.rVis * 3.5);
+    mesh.add(atmoSprite);
   }
 
   planetMeshes.push({ mesh, data: p });
@@ -127,7 +202,7 @@ PLANETS.forEach(p => {
     pts.push(getOrbitalPosition(p, t));
   }
   const orbitGeo = new THREE.BufferGeometry().setFromPoints(pts);
-  const orbitMat = new THREE.LineBasicMaterial({ color: p.color, transparent: true, opacity: 0.5 });
+  const orbitMat = new THREE.LineBasicMaterial({ color: p.color, transparent: true, opacity: 0.18 });
   const orbitLine = new THREE.Line(orbitGeo, orbitMat);
   scene.add(orbitLine);
   orbitLines.push(orbitLine);
@@ -175,11 +250,13 @@ MOONS.forEach(m => {
   bodyPositions.push({ name: m.name, pos: mesh.position, radius: moonRVis, rReal: m.rReal });
 });
 
-// Load real Moon texture
-loadRealTexture('Moon', (tex) => {
-  if (!tex) return;
-  const moonEntry = moonMeshes.find(m => m.data.name === 'Moon');
-  if (moonEntry) { moonEntry.mesh.material.map = tex; moonEntry.mesh.material.needsUpdate = true; }
+// Load real textures for major moons
+['Moon', 'Io', 'Europa', 'Ganymede', 'Callisto', 'Titan', 'Enceladus', 'Triton'].forEach(moonName => {
+  loadRealTexture(moonName.toLowerCase(), (tex) => {
+    if (!tex) return;
+    const entry = moonMeshes.find(m => m.data.name === moonName);
+    if (entry) { entry.mesh.material.map = tex; entry.mesh.material.needsUpdate = true; }
+  });
 });
 
 // ═══════════════════════════════════════════════
@@ -223,6 +300,29 @@ const asteroidMat = new THREE.PointsMaterial({
   transparent: true, depthWrite: false, alphaTest: 0.01
 });
 scene.add(new THREE.Points(asteroidGeo, asteroidMat));
+
+// ── Kuiper Belt (30-50 AU) ──
+const kuiperCount = isMobile ? 600 : 1500;
+const kuiperPos = new Float32Array(kuiperCount * 3);
+const kuiperCol = new Float32Array(kuiperCount * 3);
+for (let i = 0; i < kuiperCount; i++) {
+  const a = 30 + Math.random() * 20; // 30-50 AU
+  const angle = Math.random() * Math.PI * 2;
+  const y = (Math.random() - 0.5) * 0.8; // wider spread than asteroid belt
+  kuiperPos[i*3] = Math.cos(angle) * a;
+  kuiperPos[i*3+1] = y;
+  kuiperPos[i*3+2] = Math.sin(angle) * a;
+  const shade = 0.25 + Math.random() * 0.2;
+  // Icy blue-gray tones
+  kuiperCol[i*3] = shade * 0.85; kuiperCol[i*3+1] = shade * 0.9; kuiperCol[i*3+2] = shade;
+}
+const kuiperGeo = new THREE.BufferGeometry();
+kuiperGeo.setAttribute('position', new THREE.BufferAttribute(kuiperPos, 3));
+kuiperGeo.setAttribute('color', new THREE.BufferAttribute(kuiperCol, 3));
+scene.add(new THREE.Points(kuiperGeo, new THREE.PointsMaterial({
+  map: asteroidTex, vertexColors: true, size: 0.005, sizeAttenuation: true,
+  transparent: true, opacity: 0.6, depthWrite: false, alphaTest: 0.01
+})));
 
 // ═══════════════════════════════════════════════
 //  GRAPHICS ENHANCEMENT: Noise, Textures, Atmosphere, Comets
@@ -634,7 +734,33 @@ haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPos, 3));
 haloGeo.setAttribute('color', new THREE.BufferAttribute(haloCol, 3));
 galaxyGroup.add(new THREE.Points(haloGeo, new THREE.PointsMaterial({ size: 15000, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.3 })));
 
-// ── F. "You Are Here" marker (Sun's position in the Orion Arm) ──
+// ── F. HII Star-Forming Regions (pink/magenta knots along arms) ──
+const hiiCount = isMobile ? 200 : 600;
+const hiiPos = new Float32Array(hiiCount * 3);
+const hiiCol = new Float32Array(hiiCount * 3);
+for (let i = 0; i < hiiCount; i++) {
+  const armIdx = Math.floor(Math.random() * NUM_ARMS);
+  const armBase = (armIdx / NUM_ARMS) * Math.PI * 2;
+  const dist = (0.15 + Math.random() * 0.75) * 50000 * KLY;
+  const spiralAngle = armBase + Math.log(1 + dist / R0) * ARM_WIND;
+  const spread = _gaussRand() * dist * 0.035;
+  hiiPos[i*3] = Math.cos(spiralAngle) * dist + Math.cos(spiralAngle + Math.PI/2) * spread;
+  hiiPos[i*3+1] = _gaussRand() * dist * 0.002;
+  hiiPos[i*3+2] = Math.sin(spiralAngle) * dist + Math.sin(spiralAngle + Math.PI/2) * spread;
+  // Pink to magenta with variation
+  hiiCol[i*3] = 0.85 + Math.random() * 0.15;
+  hiiCol[i*3+1] = 0.15 + Math.random() * 0.25;
+  hiiCol[i*3+2] = 0.25 + Math.random() * 0.2;
+}
+const hiiGeo = new THREE.BufferGeometry();
+hiiGeo.setAttribute('position', new THREE.BufferAttribute(hiiPos, 3));
+hiiGeo.setAttribute('color', new THREE.BufferAttribute(hiiCol, 3));
+galaxyGroup.add(new THREE.Points(hiiGeo, new THREE.PointsMaterial({
+  size: 35000, vertexColors: true, sizeAttenuation: true, transparent: true,
+  opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false
+})));
+
+// ── G. "You Are Here" marker (Sun's position in the Orion Arm) ──
 const sunGalacticR = 26000 * KLY; // 26 kly from center
 const sunGalacticAngle = Math.PI * 0.85; // position in Orion Arm
 const youAreHere = new THREE.Group();
