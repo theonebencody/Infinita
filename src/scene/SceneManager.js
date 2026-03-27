@@ -927,12 +927,22 @@ function loadDeepSkyObjects() {
     const displayName = obj.altName ? `${obj.name} ${obj.altName}` : obj.name;
     const distLY = obj.dist;
 
+    // Special case: Milky Way (dist=0) — center of our coordinate system
+    if (obj.name === 'Milky Way') {
+      // Create a marker at origin for the galactic center
+      sprite.position.set(0, 0, 0);
+      const mwScale = 2; // viewed from inside at Galactic scale
+      labelsList.push({ el: createLabel('Milky Way'), mesh: sprite, scaleLevel: mwScale });
+      searchableObjects.push({ name: 'Milky Way Our Galaxy', distLY: 0, typeLabel: 'Galaxy', mesh: sprite, scaleLevel: mwScale, galaxyType: obj.galaxyType });
+      return; // skip normal deep sky processing
+    }
+
     // Label only brighter objects (mag < 9)
     if (obj.mag < 9) {
       labelsList.push({ el: createLabel(displayName), mesh: sprite, scaleLevel: obj.type === 'galaxy' ? 3 : 2 });
     }
     const objScale = obj.type === 'galaxy' ? 3 : 2;
-    searchableObjects.push({ name: displayName, distLY, typeLabel: typeLabels[obj.type] || 'Deep Sky', mesh: sprite, scaleLevel: objScale });
+    searchableObjects.push({ name: displayName, distLY, typeLabel: typeLabels[obj.type] || 'Deep Sky', mesh: sprite, scaleLevel: objScale, galaxyType: obj.galaxyType });
   });
 }
 
@@ -1205,29 +1215,39 @@ const _galaxyModels = {};
 // When viewing a galaxy close-up, hide all catalog/deep sky sprites
 let _viewingGalaxy = null; // { position, radius } or null
 
-// Galaxy name patterns for local matches (nav computer, explore mode)
-const _GALAXY_NAMES = /andromeda|m31|triangulum|m33|whirlpool|m51|sombrero|m104|pinwheel|m101|bode|m81|cigar|m82|magellanic|centaurus/i;
-
+// Any searchable galaxy (from deep sky catalog) should get a 3D model
 function _ensureGalaxyModel(dest) {
   if (!dest || !dest.name || !dest.position) return;
+  // Check if this is a known galaxy type from the catalog, or matches known galaxy names
   const nameLower = dest.name.toLowerCase();
-  if (!_GALAXY_NAMES.test(nameLower)) return;
+  const isKnownGalaxy = dest.galaxyType || /galaxy|m31|m32|m33|m49|m51|m58|m59|m61|m63|m64|m65|m66|m74|m81|m82|m83|m84|m86|m87|m101|m104|m106|m108|m109|m110|andromeda|triangulum|whirlpool|sombrero|pinwheel|bode|cigar|magellanic|centaurus|sculptor|fornax|barnard|cartwheel|tadpole|milky/i.test(nameLower);
+  if (!isKnownGalaxy) return;
   if (_galaxyModels[dest.name]) return; // already built
 
-  const isAndromeda = /andromeda|m31/i.test(nameLower);
-  const isTriangulum = /triangulum|m33/i.test(nameLower);
-  const isWhirlpool = /whirlpool|m51/i.test(nameLower);
-  const isSombrero = /sombrero|m104/i.test(nameLower);
+  // Determine galaxy type and scale from catalog data or name matching
+  let galaxyType = dest.galaxyType || 'spiral';
+  let galaxyScale = 1;
+  let tilt = 0.3 + Math.random() * 0.5;
 
-  const galaxyOpts = isAndromeda
-    ? { scale: 2.2, tilt: 1.35, arms: 2, wind: 2.0 }
-    : isTriangulum
-    ? { scale: 0.6, tilt: 0.3, arms: 2, wind: 3.0 }
-    : isWhirlpool
-    ? { scale: 0.8, tilt: 0.4, arms: 2, wind: 3.5 }
-    : isSombrero
-    ? { scale: 1.0, tilt: 1.48, arms: 0, elliptical: true }
-    : { scale: 0.5 + Math.random() * 1.5, tilt: Math.random() * 1.2, arms: 2, wind: 2 + Math.random() * 2 };
+  // Override for well-known galaxies with specific visual properties
+  const isAndromeda = /andromeda|m31\b/i.test(nameLower);
+  const isTriangulum = /triangulum|m33\b/i.test(nameLower);
+  const isWhirlpool = /whirlpool|m51\b/i.test(nameLower);
+  const isSombrero = /sombrero|m104\b/i.test(nameLower);
+  const isPinwheel = /pinwheel|m101\b/i.test(nameLower);
+  const isCigar = /cigar|m82\b/i.test(nameLower);
+  const isM87 = /m87\b|virgo a/i.test(nameLower);
+
+  if (isAndromeda)       { galaxyScale = 2.2; tilt = 1.35; galaxyType = 'spiral'; }
+  else if (isTriangulum) { galaxyScale = 0.6; tilt = 0.3; galaxyType = 'spiral'; }
+  else if (isWhirlpool)  { galaxyScale = 0.76; tilt = 0.35; galaxyType = 'grandDesign'; }
+  else if (isPinwheel)   { galaxyScale = 1.7; tilt = 0.15; galaxyType = 'grandDesign'; }
+  else if (isSombrero)   { galaxyScale = 0.5; tilt = 1.45; galaxyType = 'spiral'; }
+  else if (isCigar)      { galaxyScale = 0.37; tilt = 1.3; galaxyType = 'irregular'; }
+  else if (isM87)        { galaxyScale = 2.4; tilt = 0.2; galaxyType = 'elliptical'; }
+
+  // Build options from type
+  const galaxyOpts = { type: galaxyType, scale: galaxyScale, tilt };
 
   const group = _buildGalaxyModel(galaxyOpts);
   group.position.copy(dest.position);
@@ -1836,7 +1856,7 @@ async function doTravelSearch(query) {
   getLocalMatches(q).forEach(obj => {
     renderTravelResult(obj.name, obj.typeLabel, obj.distLY, () => {
       const meshR = obj.mesh?.geometry?.parameters?.radius || 0.05;
-      setTravelDest({ position: obj.mesh.position.clone(), name: obj.name, distLY: obj.distLY, scaleLevel: obj.scaleLevel, radius: meshR });
+      setTravelDest({ position: obj.mesh.position.clone(), name: obj.name, distLY: obj.distLY, scaleLevel: obj.scaleLevel, radius: meshR, galaxyType: obj.galaxyType });
     });
   });
   if (q.length < 2) return;
