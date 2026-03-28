@@ -3377,10 +3377,12 @@ document.getElementById('mission-report').addEventListener('click', e => {
 
 // ═══════════════════════════════════════════════
 //  SPLASH — SPACETIME FABRIC
-//  "Balls on a rubber sheet." Few heavy bodies on
-//  Keplerian orbits create smooth funnel-shaped wells.
-//  Grid drawn with Catmull-Rom splines — no sharp angles.
-//  Displacement follows GR weak-field metric: h ~ GM/r.
+//
+//  Perspective-projected grid warped by invisible
+//  wandering masses. Organic bezier-like paths via
+//  layered sine/cosine. Catmull-Rom splines for
+//  silky smooth curves. Contour rings + depth
+//  shading for topographic depth illusion.
 // ═══════════════════════════════════════════════
 (function _initSplashBg() {
   const canvas = document.getElementById('splash-bg');
@@ -3388,40 +3390,50 @@ document.getElementById('mission-report').addEventListener('click', e => {
   const ctx = canvas.getContext('2d');
   let w, h, animId = null;
   let t = 0;
+  const TWO_PI = Math.PI * 2;
 
   // Mouse
   let mx = -9999, my = -9999, mActive = false;
   canvas.parentElement.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; mActive = true; });
   canvas.parentElement.addEventListener('mouseleave', () => { mActive = false; });
 
-  // ── Few heavy bodies — each one a visible "ball" on the sheet ──
-  const TWO_PI = Math.PI * 2;
-  const bodies = [
-    // Enormous — sweeps a huge region
-    { cx: 0.42, cy: 0.42, a: 0.18, e: 0.04, omega: 0.25, phase: 0,              tilt: 0.4,  mass: 8.0, soft: 650 },
-    // Enormous — different orbit center
-    { cx: 0.62, cy: 0.52, a: 0.15, e: 0.08, omega: 0.35, phase: TWO_PI * 0.35,  tilt: 2.0,  mass: 6.5, soft: 550 },
-    // Very heavy
-    { cx: 0.30, cy: 0.60, a: 0.12, e: 0.06, omega: 0.55, phase: TWO_PI * 0.6,   tilt: 3.8,  mass: 5.0, soft: 480 },
-    // Heavy — faster
-    { cx: 0.73, cy: 0.35, a: 0.10, e: 0.10, omega: 0.75, phase: TWO_PI * 0.15,  tilt: 5.2,  mass: 4.0, soft: 420 },
-    // Medium — fastest
-    { cx: 0.22, cy: 0.32, a: 0.13, e: 0.05, omega: 0.45, phase: TWO_PI * 0.8,   tilt: 1.5,  mass: 3.5, soft: 380 },
-  ];
+  // ── Invisible gravitational masses ──
+  // Each drifts on a smooth, wandering path built from 3 sine/cosine
+  // components per axis — organic and unpredictable, never straight lines.
+  const masses = [];
+  for (let i = 0; i < 5; i++) {
+    masses.push({
+      // Path center (stays within safe viewport bounds)
+      cx: 0.3 + Math.random() * 0.4,
+      cy: 0.3 + Math.random() * 0.4,
+      // X oscillation — 3 frequencies for complex wandering
+      ax1: 0.10 + Math.random() * 0.12, fx1: 0.07 + Math.random() * 0.06, px1: Math.random() * TWO_PI,
+      ax2: 0.05 + Math.random() * 0.06, fx2: 0.16 + Math.random() * 0.10, px2: Math.random() * TWO_PI,
+      ax3: 0.02 + Math.random() * 0.03, fx3: 0.35 + Math.random() * 0.20, px3: Math.random() * TWO_PI,
+      // Y oscillation — 3 frequencies, different from X
+      ay1: 0.08 + Math.random() * 0.10, fy1: 0.06 + Math.random() * 0.05, py1: Math.random() * TWO_PI,
+      ay2: 0.04 + Math.random() * 0.05, fy2: 0.13 + Math.random() * 0.10, py2: Math.random() * TWO_PI,
+      ay3: 0.015 + Math.random() * 0.025, fy3: 0.28 + Math.random() * 0.18, py3: Math.random() * TWO_PI,
+      // Physics
+      radius: 200 + Math.random() * 300,   // influence radius (px)
+      intensity: 0.6 + Math.random() * 0.4, // pull strength
+      speed: 0.6 + Math.random() * 0.8,     // drift speed multiplier
+    });
+  }
 
-  // Solve Kepler's equation → screen position
-  function bodyPos(b) {
-    const M = b.omega * t + b.phase;
-    let E = M;
-    for (let j = 0; j < 5; j++) E -= (E - b.e * Math.sin(E) - M) / (1 - b.e * Math.cos(E));
-    const nu = 2 * Math.atan2(
-      Math.sqrt(1 + b.e) * Math.sin(E / 2),
-      Math.sqrt(1 - b.e) * Math.cos(E / 2)
-    );
-    const r = b.a * (1 - b.e * b.e) / (1 + b.e * Math.cos(nu));
-    const c = Math.cos(b.tilt), s = Math.sin(b.tilt);
-    const cn = Math.cos(nu), sn = Math.sin(nu);
-    return { x: (b.cx + r * (c * cn - s * sn)) * w, y: (b.cy + r * (s * cn + c * sn)) * h };
+  function getMassPos(m) {
+    const st = t * m.speed;
+    const nx = m.cx + Math.sin(st * m.fx1 + m.px1) * m.ax1
+                    + Math.sin(st * m.fx2 + m.px2) * m.ax2
+                    + Math.sin(st * m.fx3 + m.px3) * m.ax3;
+    const ny = m.cy + Math.cos(st * m.fy1 + m.py1) * m.ay1
+                    + Math.cos(st * m.fy2 + m.py2) * m.ay2
+                    + Math.cos(st * m.fy3 + m.py3) * m.ay3;
+    return {
+      x: Math.max(0, Math.min(1, nx)) * w,
+      y: Math.max(0, Math.min(1, ny)) * h,
+      radius: m.radius, intensity: m.intensity,
+    };
   }
 
   // Button wells
@@ -3446,91 +3458,118 @@ document.getElementById('mission-report').addEventListener('click', e => {
   resize();
   window.addEventListener('resize', () => { resize(); _updateBtnWells(); });
 
-  const GRID = 36;
-  const MAX_DISP = GRID * 0.48;
+  const GRID = 44;
+  const PERSP_H = 0.30;       // horizontal convergence toward top
+  const PERSP_V_EXP = 1.12;   // vertical compression exponent (>1 = top compressed)
+  const MAX_DISP = GRID * 0.47;
+  const G_VIS = 2800;         // gravitational pull constant
 
   function draw() {
     if (document.getElementById('splash').classList.contains('hidden')) {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    t += 0.04;
+    t += 0.025;
     _updateBtnWells();
 
-    // Body positions this frame
-    const bpos = bodies.map(b => ({ ...bodyPos(b), mass: b.mass, soft: b.soft }));
+    // Mass positions this frame
+    const mpos = masses.map(getMassPos);
 
     // ── Background ──
-    ctx.fillStyle = '#eaeaec';
+    ctx.fillStyle = '#f2f2f2';
     ctx.fillRect(0, 0, w, h);
 
-    // ── Deep well shadows — the "depth" of the funnel ──
-    // Multiple gradient layers per body for rich, smooth shading
-    for (const bp of bpos) {
-      const mn = bp.mass / 8; // normalize to 0-1 range
-      // Inner dark core
-      const r1 = bp.soft * 1.8;
-      const g1 = ctx.createRadialGradient(bp.x, bp.y, 0, bp.x, bp.y, r1);
-      g1.addColorStop(0, `rgba(18,14,40,${0.12 * mn})`);
-      g1.addColorStop(0.5, `rgba(18,14,40,${0.05 * mn})`);
+    // ── Dark pool shadows under each mass ──
+    for (const mp of mpos) {
+      const r1 = mp.radius * 1.2;
+      const g1 = ctx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, r1);
+      g1.addColorStop(0, `rgba(0,0,0,${0.09 * mp.intensity})`);
+      g1.addColorStop(0.4, `rgba(0,0,0,${0.04 * mp.intensity})`);
       g1.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g1;
-      ctx.fillRect(bp.x - r1, bp.y - r1, r1 * 2, r1 * 2);
-      // Wide outer halo
-      const r2 = bp.soft * 4.5;
-      const g2 = ctx.createRadialGradient(bp.x, bp.y, 0, bp.x, bp.y, r2);
-      g2.addColorStop(0, `rgba(20,16,45,${0.05 * mn})`);
-      g2.addColorStop(0.3, `rgba(15,12,35,${0.025 * mn})`);
-      g2.addColorStop(0.65, `rgba(10,8,25,${0.008 * mn})`);
+      ctx.fillRect(mp.x - r1, mp.y - r1, r1 * 2, r1 * 2);
+      // Wide outer haze
+      const r2 = mp.radius * 3;
+      const g2 = ctx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, r2);
+      g2.addColorStop(0, `rgba(0,0,0,${0.03 * mp.intensity})`);
+      g2.addColorStop(0.35, `rgba(0,0,0,${0.012 * mp.intensity})`);
+      g2.addColorStop(0.7, `rgba(0,0,0,${0.003 * mp.intensity})`);
       g2.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g2;
-      ctx.fillRect(bp.x - r2, bp.y - r2, r2 * 2, r2 * 2);
+      ctx.fillRect(mp.x - r2, mp.y - r2, r2 * 2, r2 * 2);
     }
 
     // Mouse shadow
     if (mActive) {
-      const r = 320;
+      const r = 280;
       const g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-      g.addColorStop(0, 'rgba(18,14,40,0.07)');
-      g.addColorStop(0.3, 'rgba(15,12,35,0.03)');
-      g.addColorStop(0.7, 'rgba(0,0,0,0.008)');
+      g.addColorStop(0, 'rgba(0,0,0,0.06)');
+      g.addColorStop(0.35, 'rgba(0,0,0,0.025)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
       ctx.fillRect(mx - r, my - r, r * 2, r * 2);
     }
 
-    // ── Compute displaced grid ──
-    const margin = GRID * 5;
-    const cols = Math.ceil((w + margin * 2) / GRID) + 2;
-    const rows = Math.ceil((h + margin * 2) / GRID) + 2;
-    const ox = (w % GRID) / 2 - margin;
-    const oy = (h % GRID) / 2 - margin;
+    // ── Faint contour rings — topographic depth illusion ──
+    for (const mp of mpos) {
+      const nRings = 5;
+      for (let ring = 1; ring <= nRings; ring++) {
+        const r = mp.radius * ring * 0.22;
+        ctx.beginPath();
+        ctx.arc(mp.x, mp.y, r, 0, TWO_PI);
+        ctx.strokeStyle = `rgba(0,0,0,${(0.05 / ring) * mp.intensity})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // ── Compute perspective grid with gravitational displacement ──
+    const margin = GRID * 4;
+    const totalH = h + margin * 2;
+    const totalW = w + margin * 2;
+    const cols = Math.ceil(totalW / GRID) + 2;
+    const rows = Math.ceil(totalH / GRID) + 2;
     const stride = cols + 1;
     const pts = new Array(stride * (rows + 1));
+    const centerX = w / 2;
 
     for (let gy = 0; gy <= rows; gy++) {
+      // ── Perspective projection ──
+      // rowT: 0 = top (far), 1 = bottom (near)
+      const rowT = gy / rows;
+      // Vertical: compress rows near the top (far away)
+      const yPersp = Math.pow(rowT, PERSP_V_EXP);
+      const baseY = -margin + yPersp * totalH;
+      // Horizontal: lines converge toward center at the top
+      const hScale = (1 - PERSP_H) + PERSP_H * rowT;
+
       for (let gx = 0; gx <= cols; gx++) {
-        const bx = ox + gx * GRID;
-        const by = oy + gy * GRID;
+        // Flat grid X position
+        const flatX = -margin + gx * GRID;
+        // Apply horizontal perspective convergence
+        const bx = centerX + (flatX - centerX) * hScale;
+        const by = baseY;
+
         let dx = 0, dy = 0;
 
-        // ── Schwarzschild-like metric: displacement ~ GM / (r + soft) ──
-        // Grid lines converge toward each mass, creating funnel-shaped wells.
-        // Softening prevents singularity and sets the well width.
-        for (const bp of bpos) {
-          const rx = bx - bp.x, ry = by - bp.y;
+        // ── Gravitational displacement ──
+        // Inverse-distance falloff: pull ~ intensity / (r + softRadius)
+        // Additive across all masses for complex overlapping warps.
+        for (const mp of mpos) {
+          const rx = bx - mp.x, ry = by - mp.y;
           const r = Math.sqrt(rx * rx + ry * ry);
-          const pull = bp.mass * 4000 / (r + bp.soft);
-          const norm = 1 / (r + 0.5);
-          dx -= rx * norm * pull;
-          dy -= ry * norm * pull;
+          const softR = mp.radius * 0.35;
+          const pull = mp.intensity * G_VIS / (r + softR);
+          const invR = 1 / (r + 0.5);
+          dx -= rx * invR * pull;
+          dy -= ry * invR * pull;
         }
 
-        // Mouse — your cursor is a mass on the sheet
+        // Mouse as a gravitational mass
         if (mActive) {
           const rx = bx - mx, ry = by - my;
           const r = Math.sqrt(rx * rx + ry * ry);
-          const pull = 2500 / (r + 200);
+          const pull = 2200 / (r + 130);
           dx -= (rx / (r + 0.5)) * pull;
           dy -= (ry / (r + 0.5)) * pull;
         }
@@ -3548,45 +3587,40 @@ document.getElementById('mission-report').addEventListener('click', e => {
           }
         }
 
-        // Smooth soft-clamp — approaches MAX_DISP asymptotically, no hard cutoff
+        // Smooth asymptotic clamp — no hard cutoff
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len > 0.01) {
           const clamped = MAX_DISP * (1 - Math.exp(-len / MAX_DISP));
-          const s = clamped / len;
-          dx *= s;
-          dy *= s;
+          dx *= clamped / len;
+          dy *= clamped / len;
         }
 
         pts[gy * stride + gx] = { x: bx + dx, y: by + dy, dx, dy };
       }
     }
 
-    // ── Draw grid as smooth Catmull-Rom → cubic Bezier splines ──
-    // CP1 = P1 + (P2 - P0) / 6,  CP2 = P2 - (P3 - P1) / 6
-    // Guarantees C1 tangent continuity at every junction.
+    // ── Draw grid as Catmull-Rom → cubic Bezier splines ──
+    // CP1 = P1 + (P2 - P0)/6, CP2 = P2 - (P3 - P1)/6
+    // Guarantees C1 tangent continuity — silky smooth everywhere.
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Style: displacement depth controls opacity and weight.
-    // Deep in a well → darker, thicker. Flat space → faint, thin.
-    function setSegStyle(p1, p2) {
+    // Per-segment style: faint/thin in flat space, dark/thick in deep wells
+    function setStyle(p1, p2) {
       const d1 = Math.sqrt(p1.dx * p1.dx + p1.dy * p1.dy);
       const d2 = Math.sqrt(p2.dx * p2.dx + p2.dy * p2.dy);
       const dn = Math.min(1, (d1 + d2) / (2 * MAX_DISP));
-      // Smooth exponential ramp — subtle in flat space, strong in wells
-      const t = 1 - Math.exp(-dn * 3);
-      const alpha = 0.06 + t * 0.32;
-      const lw = 0.35 + t * 1.4;
-      const cr = Math.round(22 * t);
-      const cg = Math.round(16 * t);
-      const cb = Math.round(50 * t);
-      ctx.strokeStyle = `rgba(${cr},${cg},${cb},${Math.min(0.45, alpha)})`;
-      ctx.lineWidth = Math.min(2.0, lw);
+      const ramp = 1 - Math.exp(-dn * 3.5);
+      // Opacity: 0.13 (flat) → 0.38 (deep well)
+      const alpha = 0.13 + ramp * 0.25;
+      // Width: 0.4 (flat) → 1.8 (deep well)
+      const lw = 0.4 + ramp * 1.4;
+      ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.40, alpha)})`;
+      ctx.lineWidth = Math.min(1.9, lw);
     }
 
-    // Draw a Catmull-Rom segment from p1→p2 using neighbors p0,p3
     function drawCR(p0, p1, p2, p3) {
-      setSegStyle(p1, p2);
+      setStyle(p1, p2);
       ctx.beginPath();
       ctx.moveTo(p1.x, p1.y);
       ctx.bezierCurveTo(
