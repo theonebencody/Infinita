@@ -3486,7 +3486,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    t += 0.025;
+    t += 0.018;
     _updateBtnWells();
 
     // Mass positions this frame
@@ -3668,22 +3668,29 @@ document.getElementById('mission-report').addEventListener('click', e => {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Per-segment style: faint/thin in flat space, dark/thick in deep wells
-    function setStyle(p1, p2) {
+    // Per-segment style: lighter overall, with per-line weight variance
+    // lineIdx provides a stable hash so each grid line has a slightly
+    // different base weight — some thinner, some thicker — for texture.
+    function setStyle(p1, p2, lineIdx) {
       const d1 = Math.sqrt(p1.dx * p1.dx + p1.dy * p1.dy);
       const d2 = Math.sqrt(p2.dx * p2.dx + p2.dy * p2.dy);
       const dn = Math.min(1, (d1 + d2) / (2 * MAX_DISP));
       const ramp = 1 - Math.exp(-dn * 3.5);
-      // Opacity: 0.13 (flat) → 0.38 (deep well)
-      const alpha = 0.13 + ramp * 0.25;
-      // Width: 0.4 (flat) → 1.8 (deep well)
-      const lw = 0.4 + ramp * 1.4;
-      ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.40, alpha)})`;
-      ctx.lineWidth = Math.min(1.9, lw);
+      // Per-line variance: deterministic wobble based on line index
+      const variance = ((lineIdx * 7919) % 100) / 100; // 0-1 pseudo-random per line
+      const thickLine = variance > 0.7 ? 1 : 0; // ~30% of lines are accent lines
+      // Opacity: 0.07 (flat thin) → 0.30 (deep well), accent lines slightly stronger
+      const baseAlpha = 0.07 + thickLine * 0.03;
+      const alpha = baseAlpha + ramp * 0.22;
+      // Width: varies per line, boosted in wells
+      const baseLw = 0.25 + variance * 0.3 + thickLine * 0.25;
+      const lw = baseLw + ramp * 1.1;
+      ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.34, alpha)})`;
+      ctx.lineWidth = Math.min(1.8, lw);
     }
 
-    function drawCR(p0, p1, p2, p3) {
-      setStyle(p1, p2);
+    function drawCR(p0, p1, p2, p3, lineIdx) {
+      setStyle(p1, p2, lineIdx);
       ctx.beginPath();
       ctx.moveTo(p1.x, p1.y);
       ctx.bezierCurveTo(
@@ -3694,25 +3701,27 @@ document.getElementById('mission-report').addEventListener('click', e => {
       ctx.stroke();
     }
 
-    // Horizontal splines
+    // Horizontal splines — lineIdx = row index for consistent per-line weight
     for (let gy = 0; gy <= rows; gy++) {
       for (let gx = 0; gx < cols; gx++) {
         drawCR(
           pts[gy * stride + Math.max(0, gx - 1)],
           pts[gy * stride + gx],
           pts[gy * stride + gx + 1],
-          pts[gy * stride + Math.min(cols, gx + 2)]
+          pts[gy * stride + Math.min(cols, gx + 2)],
+          gy
         );
       }
     }
-    // Vertical splines
+    // Vertical splines — lineIdx offset so verticals get different variance from horizontals
     for (let gx = 0; gx <= cols; gx++) {
       for (let gy = 0; gy < rows; gy++) {
         drawCR(
           pts[Math.max(0, gy - 1) * stride + gx],
           pts[gy * stride + gx],
           pts[(gy + 1) * stride + gx],
-          pts[Math.min(rows, gy + 2) * stride + gx]
+          pts[Math.min(rows, gy + 2) * stride + gx],
+          gx + 1000
         );
       }
     }
