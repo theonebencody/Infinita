@@ -3453,10 +3453,23 @@ document.getElementById('mission-report').addEventListener('click', e => {
     ctx.fillStyle = '#e8e8e8';
     ctx.fillRect(0, 0, w, h);
 
-    const cols = Math.ceil(w / GRID_SPACING) + 2;
-    const rows = Math.ceil(h / GRID_SPACING) + 2;
-    const ox = (w % GRID_SPACING) / 2;
-    const oy = (h % GRID_SPACING) / 2;
+    // Shading — subtle gradient shadows around invisible masses
+    for (const m of _masses) {
+      const mx = m.x * w, my = m.y * h;
+      const grad = ctx.createRadialGradient(mx, my, 0, mx, my, m.radius * 1.8);
+      grad.addColorStop(0, `rgba(0,0,0,${0.06 * m.strength})`);
+      grad.addColorStop(0.4, `rgba(0,0,0,${0.025 * m.strength})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(mx - m.radius * 2, my - m.radius * 2, m.radius * 4, m.radius * 4);
+    }
+
+    // Extend grid past borders with extra margin
+    const margin = GRID_SPACING * 3;
+    const cols = Math.ceil((w + margin * 2) / GRID_SPACING) + 2;
+    const rows = Math.ceil((h + margin * 2) / GRID_SPACING) + 2;
+    const ox = (w % GRID_SPACING) / 2 - margin;
+    const oy = (h % GRID_SPACING) / 2 - margin;
 
     // Compute displaced grid points
     const pts = new Array((cols + 1) * (rows + 1));
@@ -3520,9 +3533,16 @@ document.getElementById('mission-report').addEventListener('click', e => {
       ctx.stroke();
     }
 
-    // Darker lines near button wells on hover
+    // Shading and darker lines near button wells on hover
     for (const well of _btnWells) {
       if (well.hover <= 0) continue;
+      // Shadow pool under hovered button
+      const bGrad = ctx.createRadialGradient(well.x, well.y + well.ry * 0.3, 0, well.x, well.y, Math.max(well.rx, well.ry) * 2);
+      bGrad.addColorStop(0, `rgba(0,0,0,${0.06 * well.hover})`);
+      bGrad.addColorStop(0.5, `rgba(0,0,0,${0.02 * well.hover})`);
+      bGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bGrad;
+      ctx.fillRect(well.x - well.rx * 2.5, well.y - well.ry * 2.5, well.rx * 5, well.ry * 5);
       ctx.strokeStyle = `rgba(0,0,0,${0.25 * well.hover})`;
       ctx.lineWidth = 0.9;
       for (let gy = 0; gy <= rows; gy++) {
