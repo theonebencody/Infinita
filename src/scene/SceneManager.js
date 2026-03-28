@@ -3385,27 +3385,38 @@ document.getElementById('mission-report').addEventListener('click', e => {
   let w, h, animId = null;
   let time = 0;
 
-  // Track button positions for gravity wells
-  const _gravityWells = [];
-  function _updateWells() {
-    _gravityWells.length = 0;
+  // Invisible roaming masses that warp spacetime
+  const NUM_MASSES = 7;
+  const _masses = [];
+  for (let i = 0; i < NUM_MASSES; i++) {
+    _masses.push({
+      x: Math.random(), y: Math.random(),         // 0-1 normalized position
+      vx: (Math.random() - 0.5) * 0.0004,         // velocity
+      vy: (Math.random() - 0.5) * 0.0004,
+      strength: 0.2 + Math.random() * 0.4,        // warp strength
+      radius: 120 + Math.random() * 180,           // influence radius in px
+    });
+  }
+
+  // Track button positions for static gravity wells
+  const _btnWells = [];
+  function _updateBtnWells() {
+    _btnWells.length = 0;
     document.querySelectorAll('.splash-btn').forEach(btn => {
       const rect = btn.getBoundingClientRect();
-      _gravityWells.push({
+      _btnWells.push({
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height / 2,
-        rx: rect.width * 0.6,
-        ry: rect.height * 0.6,
-        strength: 0.35,
+        rx: rect.width * 0.7,
+        ry: rect.height * 0.7,
+        strength: 0.3,
         hover: btn.matches(':hover') ? 1 : 0,
       });
     });
   }
-
-  // Track hover state
   document.querySelectorAll('.splash-btn').forEach(btn => {
-    btn.addEventListener('mouseenter', () => _updateWells());
-    btn.addEventListener('mouseleave', () => _updateWells());
+    btn.addEventListener('mouseenter', _updateBtnWells);
+    btn.addEventListener('mouseleave', _updateBtnWells);
   });
 
   function resize() {
@@ -3413,30 +3424,38 @@ document.getElementById('mission-report').addEventListener('click', e => {
     h = canvas.height = window.innerHeight;
   }
   resize();
-  window.addEventListener('resize', () => { resize(); _updateWells(); });
+  window.addEventListener('resize', () => { resize(); _updateBtnWells(); });
 
-  // Grid parameters
-  const GRID_SPACING = 40;
+  const GRID_SPACING = 36;
 
   function draw() {
     if (document.getElementById('splash').classList.contains('hidden')) {
-      cancelAnimationFrame(animId);
-      animId = null;
-      return;
+      cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    time += 0.008;
-    _updateWells();
+    time += 0.006;
 
-    ctx.clearRect(0, 0, w, h);
+    // Move roaming masses
+    _masses.forEach(m => {
+      m.x += m.vx;
+      m.y += m.vy;
+      // Bounce off edges
+      if (m.x < -0.1 || m.x > 1.1) m.vx *= -1;
+      if (m.y < -0.1 || m.y > 1.1) m.vy *= -1;
+      // Slight random drift
+      m.vx += (Math.random() - 0.5) * 0.00003;
+      m.vy += (Math.random() - 0.5) * 0.00003;
+    });
 
-    // Draw the spacetime grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    ctx.lineWidth = 0.5;
+    _updateBtnWells();
+
+    // Greyish white background
+    ctx.fillStyle = '#e8e8e8';
+    ctx.fillRect(0, 0, w, h);
 
     const cols = Math.ceil(w / GRID_SPACING) + 2;
     const rows = Math.ceil(h / GRID_SPACING) + 2;
-    const ox = (w % GRID_SPACING) / 2; // center the grid
+    const ox = (w % GRID_SPACING) / 2;
     const oy = (h % GRID_SPACING) / 2;
 
     // Compute displaced grid points
@@ -3447,26 +3466,32 @@ document.getElementById('mission-report').addEventListener('click', e => {
         const baseY = oy + gy * GRID_SPACING;
         let dx = 0, dy = 0;
 
-        // Background wave — subtle undulation
-        dx += Math.sin(baseY * 0.008 + time * 1.2) * 2.5;
-        dy += Math.cos(baseX * 0.008 + time * 0.9) * 2.5;
-        dx += Math.sin(baseX * 0.005 + baseY * 0.005 + time * 0.7) * 1.5;
+        // Gentle background wave
+        dx += Math.sin(baseY * 0.006 + time * 1.0) * 1.5;
+        dy += Math.cos(baseX * 0.006 + time * 0.8) * 1.5;
 
-        // Gravity wells from buttons
-        for (const well of _gravityWells) {
-          const relX = baseX - well.x;
-          const relY = baseY - well.y;
+        // Invisible roaming masses warp the grid
+        for (const m of _masses) {
+          const mx = m.x * w, my = m.y * h;
+          const relX = baseX - mx, relY = baseY - my;
+          const dist = Math.sqrt(relX * relX + relY * relY);
+          if (dist < m.radius * 2) {
+            const falloff = Math.exp(-(dist * dist) / (m.radius * m.radius));
+            dx -= relX * falloff * m.strength;
+            dy -= relY * falloff * m.strength;
+          }
+        }
+
+        // Button gravity wells
+        for (const well of _btnWells) {
+          const relX = baseX - well.x, relY = baseY - well.y;
           const normDist = Math.sqrt((relX / well.rx) ** 2 + (relY / well.ry) ** 2);
           if (normDist < 3) {
-            const strength = well.strength * (1 + well.hover * 0.8);
+            const str = well.strength * (1 + well.hover * 1.0);
             const falloff = Math.exp(-normDist * normDist * 0.5);
-            // Pull toward center of well (spacetime curvature)
-            dx -= relX * falloff * strength;
-            dy -= relY * falloff * strength;
-            // Extra depth effect on hover
-            if (well.hover > 0) {
-              dy += falloff * strength * 12 * well.hover;
-            }
+            dx -= relX * falloff * str;
+            dy -= relY * falloff * str;
+            if (well.hover > 0) dy += falloff * str * 15 * well.hover;
           }
         }
 
@@ -3474,39 +3499,35 @@ document.getElementById('mission-report').addEventListener('click', e => {
       }
     }
 
-    // Draw horizontal lines
+    // Draw grid — black lines on light background
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 0.6;
+
     for (let gy = 0; gy <= rows; gy++) {
       ctx.beginPath();
       for (let gx = 0; gx <= cols; gx++) {
         const p = pts[gy * (cols + 1) + gx];
-        // Vary line opacity based on proximity to wells
-        if (gx === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
+        if (gx === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
       }
       ctx.stroke();
     }
-
-    // Draw vertical lines
     for (let gx = 0; gx <= cols; gx++) {
       ctx.beginPath();
       for (let gy = 0; gy <= rows; gy++) {
         const p = pts[gy * (cols + 1) + gx];
-        if (gy === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
+        if (gy === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
       }
       ctx.stroke();
     }
 
-    // Draw brighter lines near gravity wells
-    for (const well of _gravityWells) {
+    // Darker lines near button wells on hover
+    for (const well of _btnWells) {
       if (well.hover <= 0) continue;
-      ctx.strokeStyle = `rgba(255,255,255,${0.12 * well.hover})`;
-      ctx.lineWidth = 0.8;
-      // Re-draw nearby grid lines with higher opacity
+      ctx.strokeStyle = `rgba(0,0,0,${0.25 * well.hover})`;
+      ctx.lineWidth = 0.9;
       for (let gy = 0; gy <= rows; gy++) {
-        const p0 = pts[gy * (cols + 1)];
-        const inRange = Math.abs(p0.y - well.y) < well.ry * 2.5;
-        if (!inRange) continue;
+        const py = oy + gy * GRID_SPACING;
+        if (Math.abs(py - well.y) > well.ry * 2.5) continue;
         ctx.beginPath();
         for (let gx = 0; gx <= cols; gx++) {
           const p = pts[gy * (cols + 1) + gx];
@@ -3515,9 +3536,8 @@ document.getElementById('mission-report').addEventListener('click', e => {
         ctx.stroke();
       }
       for (let gx = 0; gx <= cols; gx++) {
-        const p0 = pts[gx];
-        const inRange = Math.abs(p0.x - well.x) < well.rx * 2.5;
-        if (!inRange) continue;
+        const px = ox + gx * GRID_SPACING;
+        if (Math.abs(px - well.x) > well.rx * 2.5) continue;
         ctx.beginPath();
         for (let gy = 0; gy <= rows; gy++) {
           const p = pts[gy * (cols + 1) + gx];
@@ -3525,8 +3545,8 @@ document.getElementById('mission-report').addEventListener('click', e => {
         }
         ctx.stroke();
       }
-      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 0.6;
     }
   }
 
