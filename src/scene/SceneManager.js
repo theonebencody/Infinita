@@ -3385,15 +3385,24 @@ document.getElementById('mission-report').addEventListener('click', e => {
   let w, h, animId = null;
   let time = 0;
 
-  // Smooth flow layers — multiple sine waves at different scales create water-like motion
-  // Each layer has unique frequency, direction, and speed — no discrete masses, no bouncing
-  const _flowLayers = [
-    { fx: 0.0035, fy: 0.0028, sx: 0.35, sy: 0.28, ax: 8,  ay: 7  },
-    { fx: 0.0052, fy: 0.0041, sx: 0.52, sy: 0.45, ax: 5,  ay: 6  },
-    { fx: 0.0018, fy: 0.0022, sx: 0.18, sy: 0.22, ax: 11, ay: 10 },
-    { fx: 0.0071, fy: 0.0063, sx: 0.71, sy: 0.58, ax: 3,  ay: 3.5},
-    { fx: 0.0025, fy: 0.0033, sx: 0.42, sy: 0.35, ax: 6,  ay: 5  },
-  ];
+  // Roaming masses on smooth sine orbits — no bouncing, always flowing
+  const NUM_MASSES = 5;
+  const _masses = [];
+  for (let i = 0; i < NUM_MASSES; i++) {
+    _masses.push({
+      // Each mass traces an elliptical Lissajous path using sine/cosine
+      cx: 0.2 + Math.random() * 0.6,   // orbit center (normalized 0-1)
+      cy: 0.2 + Math.random() * 0.6,
+      rx: 0.15 + Math.random() * 0.25,  // orbit radius
+      ry: 0.12 + Math.random() * 0.2,
+      sx: 0.08 + Math.random() * 0.12,  // orbit speed
+      sy: 0.06 + Math.random() * 0.1,
+      px: Math.random() * Math.PI * 2,  // phase offset
+      py: Math.random() * Math.PI * 2,
+      strength: 0.15 + Math.random() * 0.2,
+      radius: 140 + Math.random() * 160,
+    });
+  }
 
   // Button gravity wells
   const _btnWells = [];
@@ -3432,35 +3441,29 @@ document.getElementById('mission-report').addEventListener('click', e => {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    time += 0.004;
+    time += 0.005;
     _updateBtnWells();
 
     // Greyish white background
     ctx.fillStyle = '#e8e8e8';
     ctx.fillRect(0, 0, w, h);
 
-    // Shading — smooth flowing shadows from the wave displacement field
-    // Sample a few points to create gradient pools where displacement is strongest
-    for (let sy = 0; sy < 3; sy++) {
-      for (let sx = 0; sx < 4; sx++) {
-        const sampleX = w * (sx + 0.5) / 4;
-        const sampleY = h * (sy + 0.5) / 3;
-        let totalDisp = 0;
-        for (const L of _flowLayers) {
-          totalDisp += Math.abs(Math.sin(sampleX * L.fx + sampleY * L.fy * 0.5 + time * L.sx) * L.ax);
-          totalDisp += Math.abs(Math.cos(sampleY * L.fy + sampleX * L.fx * 0.5 + time * L.sy) * L.ay);
-        }
-        const intensity = totalDisp / (MAX_DISP * 3);
-        if (intensity > 0.15) {
-          const r = 180 + intensity * 120;
-          const grad = ctx.createRadialGradient(sampleX, sampleY, 0, sampleX, sampleY, r);
-          grad.addColorStop(0, `rgba(0,0,0,${intensity * 0.08})`);
-          grad.addColorStop(0.5, `rgba(0,0,0,${intensity * 0.03})`);
-          grad.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = grad;
-          ctx.fillRect(sampleX - r, sampleY - r, r * 2, r * 2);
-        }
-      }
+    // Move masses along smooth sine orbits
+    _masses.forEach(m => {
+      m._x = (m.cx + Math.sin(time * m.sx + m.px) * m.rx) * w;
+      m._y = (m.cy + Math.cos(time * m.sy + m.py) * m.ry) * h;
+    });
+
+    // Shading — gradient shadows under each mass
+    for (const m of _masses) {
+      const r = m.radius * 2.2;
+      const grad = ctx.createRadialGradient(m._x, m._y, 0, m._x, m._y, r);
+      grad.addColorStop(0, `rgba(0,0,0,${0.12 * m.strength})`);
+      grad.addColorStop(0.25, `rgba(0,0,0,${0.06 * m.strength})`);
+      grad.addColorStop(0.6, `rgba(0,0,0,${0.02 * m.strength})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(m._x - r, m._y - r, r * 2, r * 2);
     }
 
     // Grid extends past borders
@@ -3478,13 +3481,22 @@ document.getElementById('mission-report').addEventListener('click', e => {
         const baseY = oy + gy * GRID_SPACING;
         let dx = 0, dy = 0;
 
-        // Layered sine waves — each layer flows in a different direction and speed
-        for (const L of _flowLayers) {
-          dx += Math.sin(baseY * L.fx + baseX * L.fy * 0.3 + time * L.sx) * L.ax;
-          dy += Math.cos(baseX * L.fy + baseY * L.fx * 0.3 + time * L.sy) * L.ay;
+        // Gentle global wave — slow, smooth undulation
+        dx += Math.sin(baseY * 0.005 + time * 0.8) * 2;
+        dy += Math.cos(baseX * 0.005 + time * 0.6) * 2;
+
+        // Roaming masses warp the grid smoothly
+        for (const m of _masses) {
+          const relX = baseX - m._x, relY = baseY - m._y;
+          const dist = Math.sqrt(relX * relX + relY * relY);
+          if (dist < m.radius * 2.5) {
+            const falloff = Math.exp(-(dist * dist) / (m.radius * m.radius * 1.2));
+            dx -= relX * falloff * m.strength;
+            dy -= relY * falloff * m.strength;
+          }
         }
 
-        // Button gravity wells — gentle inward pull
+        // Button gravity wells
         for (const well of _btnWells) {
           const relX = baseX - well.x, relY = baseY - well.y;
           const normDist = Math.sqrt((relX / well.rx) ** 2 + (relY / well.ry) ** 2);
