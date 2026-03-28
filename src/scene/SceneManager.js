@@ -3399,27 +3399,27 @@ document.getElementById('mission-report').addEventListener('click', e => {
     ...Array.from({ length: 3 }, () => ({
       cx: 0.15 + Math.random() * 0.7, cy: 0.15 + Math.random() * 0.7,
       rx: 0.2 + Math.random() * 0.3, ry: 0.15 + Math.random() * 0.25,
-      sx: 0.03 + Math.random() * 0.05, sy: 0.025 + Math.random() * 0.04,
+      sx: 0.05 + Math.random() * 0.07, sy: 0.04 + Math.random() * 0.06,
       px: Math.random() * Math.PI * 2, py: Math.random() * Math.PI * 2,
-      strength: 0.35 + Math.random() * 0.15, radius: 220 + Math.random() * 180,
+      strength: 0.55 + Math.random() * 0.2, radius: 240 + Math.random() * 200,
       hue: 220 + Math.random() * 40, // deep blue/indigo
     })),
     // 4 medium cruisers
     ...Array.from({ length: 4 }, () => ({
       cx: 0.1 + Math.random() * 0.8, cy: 0.1 + Math.random() * 0.8,
       rx: 0.15 + Math.random() * 0.25, ry: 0.12 + Math.random() * 0.2,
-      sx: 0.07 + Math.random() * 0.1, sy: 0.06 + Math.random() * 0.08,
+      sx: 0.1 + Math.random() * 0.14, sy: 0.09 + Math.random() * 0.12,
       px: Math.random() * Math.PI * 2, py: Math.random() * Math.PI * 2,
-      strength: 0.2 + Math.random() * 0.15, radius: 150 + Math.random() * 120,
+      strength: 0.35 + Math.random() * 0.2, radius: 170 + Math.random() * 140,
       hue: 260 + Math.random() * 30, // purple
     })),
     // 5 fast, light skimmers that create quick ripples
     ...Array.from({ length: 5 }, () => ({
       cx: 0.05 + Math.random() * 0.9, cy: 0.05 + Math.random() * 0.9,
       rx: 0.1 + Math.random() * 0.35, ry: 0.1 + Math.random() * 0.3,
-      sx: 0.15 + Math.random() * 0.2, sy: 0.12 + Math.random() * 0.18,
+      sx: 0.22 + Math.random() * 0.28, sy: 0.18 + Math.random() * 0.24,
       px: Math.random() * Math.PI * 2, py: Math.random() * Math.PI * 2,
-      strength: 0.12 + Math.random() * 0.1, radius: 80 + Math.random() * 100,
+      strength: 0.2 + Math.random() * 0.15, radius: 100 + Math.random() * 120,
       hue: 190 + Math.random() * 30, // teal/cyan
     })),
   ];
@@ -3457,14 +3457,14 @@ document.getElementById('mission-report').addEventListener('click', e => {
   window.addEventListener('resize', () => { resize(); _updateBtnWells(); });
 
   const GRID_SPACING = 32;
-  const MAX_DISP = GRID_SPACING * 0.44;
+  const MAX_DISP = GRID_SPACING * 0.46;
 
   function draw() {
     if (document.getElementById('splash').classList.contains('hidden')) {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    time += 0.006;
+    time += 0.008;
     _updateBtnWells();
 
     // Background — very subtle warm grey gradient
@@ -3515,10 +3515,11 @@ document.getElementById('mission-report').addEventListener('click', e => {
 
     // Mouse gravity well shadow
     if (mouseActive) {
-      const mRad = 180;
+      const mRad = 260;
       const mGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, mRad);
-      mGrad.addColorStop(0, 'rgba(0,0,0,0.04)');
-      mGrad.addColorStop(0.5, 'rgba(0,0,0,0.015)');
+      mGrad.addColorStop(0, 'rgba(0,0,0,0.07)');
+      mGrad.addColorStop(0.3, 'rgba(0,0,0,0.03)');
+      mGrad.addColorStop(0.6, 'rgba(0,0,0,0.01)');
       mGrad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = mGrad;
       ctx.fillRect(mouseX - mRad, mouseY - mRad, mRad * 2, mRad * 2);
@@ -3583,15 +3584,15 @@ document.getElementById('mission-report').addEventListener('click', e => {
           }
         }
 
-        // Mouse gravity well
+        // Mouse gravity well — strong interactive pull
         if (mouseActive) {
           const relX = baseX - mouseX, relY = baseY - mouseY;
           const dist2 = relX * relX + relY * relY;
-          const mRad = 160;
+          const mRad = 220;
           if (dist2 < mRad * mRad * 4) {
             const falloff = Math.exp(-dist2 / (mRad * mRad));
-            dx -= relX * falloff * 0.2;
-            dy -= relY * falloff * 0.2;
+            dx -= relX * falloff * 0.45;
+            dy -= relY * falloff * 0.45;
           }
         }
 
