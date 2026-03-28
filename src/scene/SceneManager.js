@@ -3454,7 +3454,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
       ay: 0.04 + Math.random() * 0.10, fy: 0.025 + Math.random() * 0.04, py: Math.random() * TWO_PI,
       waveLen: 70 + Math.random() * 130,
       speed: 0.25 + Math.random() * 0.5,
-      amp: 2.5 + Math.random() * 4,
+      amp: 1.5 + Math.random() * 2.5,
       reach: 400 + Math.random() * 500,
       drift: 0.4 + Math.random() * 0.7,
     });
@@ -3494,7 +3494,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    t += 0.010;
+    t += 0.007;
     _updateBtnWells();
 
     // Mass positions this frame
@@ -3518,8 +3518,8 @@ document.getElementById('mission-report').addEventListener('click', e => {
     for (const mp of mpos) {
       const r1 = mp.radius * 1.2;
       const g1 = ctx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, r1);
-      g1.addColorStop(0, `rgba(0,0,0,${0.09 * mp.intensity})`);
-      g1.addColorStop(0.4, `rgba(0,0,0,${0.04 * mp.intensity})`);
+      g1.addColorStop(0, `rgba(0,0,0,${0.06 * mp.intensity})`);
+      g1.addColorStop(0.4, `rgba(0,0,0,${0.025 * mp.intensity})`);
       g1.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g1;
       ctx.fillRect(mp.x - r1, mp.y - r1, r1 * 2, r1 * 2);
@@ -3555,7 +3555,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
         const fade = (1 - phase) * mp.intensity;
         ctx.beginPath();
         ctx.arc(mp.x, mp.y, r, 0, TWO_PI);
-        ctx.strokeStyle = `rgba(0,0,0,${0.04 * fade})`;
+        ctx.strokeStyle = `rgba(0,0,0,${0.025 * fade})`;
         ctx.lineWidth = 0.5 + (1 - phase) * 0.5;
         ctx.stroke();
       }
@@ -3608,7 +3608,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
             const waveSpeed = 1.0 * mp.intensity;
             const wavePhase = r / waveLen - t * waveSpeed;
             const waveFade = Math.exp(-r / (mp.radius * 2.0));
-            const waveAmp = Math.sin(wavePhase * TWO_PI) * waveFade * mp.intensity * 6;
+            const waveAmp = Math.sin(wavePhase * TWO_PI) * waveFade * mp.intensity * 4;
             if (r > 1) {
               dx += (rx / r) * waveAmp;
               dy += (ry / r) * waveAmp;
@@ -3633,8 +3633,8 @@ document.getElementById('mission-report').addEventListener('click', e => {
         }
 
         // Gentle global plane wave — very slow background breathing
-        dx += Math.sin(bx * 0.003 + by * 0.0015 + t * 0.4) * 2.0;
-        dy += Math.cos(bx * 0.0015 - by * 0.003 + t * 0.35) * 2.0;
+        dx += Math.sin(bx * 0.003 + by * 0.0015 + t * 0.4) * 1.2;
+        dy += Math.cos(bx * 0.0015 - by * 0.003 + t * 0.35) * 1.2;
 
         // Mouse as a gravitational mass
         if (mActive) {
