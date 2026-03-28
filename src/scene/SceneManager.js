@@ -3376,10 +3376,10 @@ document.getElementById('mission-report').addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════
-//  SPLASH — SPACETIME FABRIC (complete rewrite)
-//  Continuous turbulent flow field — traveling waves
-//  at many angles/speeds bend the fabric like spacetime.
-//  No point masses or circular ripples.
+//  SPLASH — SPACETIME FABRIC
+//  Physics-based: Keplerian orbits create metric
+//  perturbation h ~ GM/r. Grid drawn with smooth
+//  Catmull-Rom splines. No sharp angles anywhere.
 // ═══════════════════════════════════════════════
 (function _initSplashBg() {
   const canvas = document.getElementById('splash-bg');
@@ -3393,53 +3393,58 @@ document.getElementById('mission-report').addEventListener('click', e => {
   canvas.parentElement.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; mActive = true; });
   canvas.parentElement.addEventListener('mouseleave', () => { mActive = false; });
 
-  // ── Traveling wave fronts ──
-  // Each wave is a planar sine wave traveling in a specific direction.
-  // angle = direction of travel, freq = spatial frequency, speed = temporal speed,
-  // amp = displacement amplitude, phase = initial offset.
-  // Mixing many of these at different scales creates organic, non-circular turbulence.
+  // ── Orbital bodies on Keplerian ellipses ──
+  // Multiple mini-systems scattered across the screen.
+  // Inner orbits are faster (Kepler's 3rd: T² ∝ a³).
   const TWO_PI = Math.PI * 2;
-  const _waves = [];
-  function _makeWave(angle, freq, speed, ampX, ampY, phase) {
-    const cos = Math.cos(angle), sin = Math.sin(angle);
-    return { cos, sin, freq, speed, ampX, ampY, phase };
-  }
-  // Large slow bends — the deep fabric warps
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI + Math.random() * 0.5;
-    _waves.push(_makeWave(a, 0.0015 + Math.random() * 0.001, 0.3 + Math.random() * 0.2, 8 + Math.random() * 5, 8 + Math.random() * 5, Math.random() * TWO_PI));
-  }
-  // Medium flowing waves — the main visible motion
-  for (let i = 0; i < 7; i++) {
-    const a = Math.random() * TWO_PI;
-    _waves.push(_makeWave(a, 0.004 + Math.random() * 0.004, 0.6 + Math.random() * 0.8, 4 + Math.random() * 4, 4 + Math.random() * 4, Math.random() * TWO_PI));
-  }
-  // Fast small ripples — surface shimmer
-  for (let i = 0; i < 6; i++) {
-    const a = Math.random() * TWO_PI;
-    _waves.push(_makeWave(a, 0.01 + Math.random() * 0.01, 1.5 + Math.random() * 1.5, 1.5 + Math.random() * 2, 1.5 + Math.random() * 2, Math.random() * TWO_PI));
+  const bodies = [];
+
+  const systems = [
+    { cx: 0.32, cy: 0.38, s: 1.0, n: 4 },
+    { cx: 0.72, cy: 0.55, s: 0.7, n: 3 },
+    { cx: 0.15, cy: 0.72, s: 0.5, n: 2 },
+    { cx: 0.82, cy: 0.22, s: 0.45, n: 2 },
+  ];
+
+  for (const sys of systems) {
+    for (let i = 0; i < sys.n; i++) {
+      const a = (0.05 + i * 0.045 + Math.random() * 0.02) * sys.s;
+      const e = 0.01 + Math.random() * 0.15;
+      // Kepler's 3rd: omega ∝ a^(-3/2). Normalize to innermost orbit.
+      const aRef = 0.05 * sys.s;
+      const omega = 0.15 * sys.s / Math.pow(a / aRef, 1.5);
+      bodies.push({
+        cx: sys.cx, cy: sys.cy,
+        a, e, omega,
+        phase: Math.random() * TWO_PI,
+        tilt: Math.random() * TWO_PI,         // orbit orientation
+        mass: (0.4 + Math.random() * 0.6) * sys.s * sys.s,
+        soft: 0.035 * sys.s,                  // softening (normalized)
+      });
+    }
   }
 
-  // ── Wandering warp zones ──
-  // Large smooth regions that slowly drift across the screen, locally amplifying
-  // the wave displacement — creates the "invisible object bending spacetime" feel
-  // without circular gravity wells.
-  const _warps = [];
-  for (let i = 0; i < 6; i++) {
-    _warps.push({
-      // Lissajous orbit parameters (normalized 0-1)
-      cx: 0.1 + Math.random() * 0.8, cy: 0.1 + Math.random() * 0.8,
-      rx: 0.15 + Math.random() * 0.3, ry: 0.12 + Math.random() * 0.25,
-      sx: 0.04 + Math.random() * 0.08, sy: 0.03 + Math.random() * 0.06,
-      px: Math.random() * TWO_PI, py: Math.random() * TWO_PI,
-      radius: 180 + Math.random() * 250,  // influence radius in px
-      amp: 1.8 + Math.random() * 1.5,     // local amplification factor
-      // Each warp also introduces its own directional bend
-      bendAngle: Math.random() * TWO_PI,
-      bendFreq: 0.006 + Math.random() * 0.006,
-      bendSpeed: 0.5 + Math.random() * 0.6,
-      bendAmp: 6 + Math.random() * 6,
-    });
+  // Solve Kepler's equation → screen position
+  function bodyPos(b) {
+    const M = b.omega * t + b.phase;
+    // Newton's method for E: M = E - e*sin(E)
+    let E = M;
+    for (let j = 0; j < 5; j++) {
+      E -= (E - b.e * Math.sin(E) - M) / (1 - b.e * Math.cos(E));
+    }
+    // True anomaly
+    const nu = 2 * Math.atan2(
+      Math.sqrt(1 + b.e) * Math.sin(E / 2),
+      Math.sqrt(1 - b.e) * Math.cos(E / 2)
+    );
+    // Radial distance
+    const r = b.a * (1 - b.e * b.e) / (1 + b.e * Math.cos(nu));
+    // Rotate into screen space by orbit tilt
+    const cosT = Math.cos(b.tilt), sinT = Math.sin(b.tilt);
+    const cosN = Math.cos(nu), sinN = Math.sin(nu);
+    const lx = r * (cosT * cosN - sinT * sinN);
+    const ly = r * (sinT * cosN + cosT * sinN);
+    return { x: (b.cx + lx) * w, y: (b.cy + ly) * h };
   }
 
   // Button wells
@@ -3466,49 +3471,53 @@ document.getElementById('mission-report').addEventListener('click', e => {
 
   const GRID = 28;
   const MAX_DISP = GRID * 0.47;
+  // Gravitational visual constant (tuned for screen-space)
+  const G_VIS = 1600;
 
   function draw() {
     if (document.getElementById('splash').classList.contains('hidden')) {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    t += 0.014;
+    t += 0.012;
     _updateBtnWells();
 
-    // Background
+    const dim = Math.max(w, h);
+
+    // Body positions this frame
+    const bpos = bodies.map(b => {
+      const p = bodyPos(b);
+      return { x: p.x, y: p.y, mass: b.mass, soft: b.soft * dim };
+    });
+
+    // ── Background ──
     ctx.fillStyle = '#e8e8ea';
     ctx.fillRect(0, 0, w, h);
 
-    // Update warp zone positions
-    for (const wz of _warps) {
-      wz._x = (wz.cx + Math.sin(t * wz.sx + wz.px) * wz.rx) * w;
-      wz._y = (wz.cy + Math.cos(t * wz.sy + wz.py) * wz.ry) * h;
-    }
-
-    // Soft shadow under each warp zone — shows where spacetime is being bent
-    for (const wz of _warps) {
-      const r = wz.radius * 1.8;
-      const g = ctx.createRadialGradient(wz._x, wz._y, 0, wz._x, wz._y, r);
-      g.addColorStop(0, `rgba(30,25,60,${0.04 * wz.amp})`);
-      g.addColorStop(0.35, `rgba(20,20,50,${0.02 * wz.amp})`);
-      g.addColorStop(0.7, `rgba(0,0,0,${0.005 * wz.amp})`);
+    // Soft curvature shadows under each body (shows the gravity wells)
+    for (const bp of bpos) {
+      const r = bp.soft * 3.5;
+      const g = ctx.createRadialGradient(bp.x, bp.y, 0, bp.x, bp.y, r);
+      g.addColorStop(0, `rgba(25,20,55,${Math.min(0.15, 0.04 * bp.mass)})`);
+      g.addColorStop(0.3, `rgba(20,18,45,${Math.min(0.08, 0.018 * bp.mass)})`);
+      g.addColorStop(0.7, `rgba(0,0,0,${0.004 * bp.mass})`);
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
-      ctx.fillRect(wz._x - r, wz._y - r, r * 2, r * 2);
+      ctx.fillRect(bp.x - r, bp.y - r, r * 2, r * 2);
     }
 
     // Mouse shadow
     if (mActive) {
-      const r = 280;
+      const r = 300;
       const g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-      g.addColorStop(0, 'rgba(30,20,60,0.06)');
-      g.addColorStop(0.4, 'rgba(0,0,0,0.025)');
+      g.addColorStop(0, 'rgba(25,20,50,0.055)');
+      g.addColorStop(0.4, 'rgba(0,0,0,0.02)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
       ctx.fillRect(mx - r, my - r, r * 2, r * 2);
     }
 
-    // ── Compute grid ──
+    // ── Compute displaced grid ──
     const margin = GRID * 5;
     const cols = Math.ceil((w + margin * 2) / GRID) + 2;
     const rows = Math.ceil((h + margin * 2) / GRID) + 2;
@@ -3523,46 +3532,37 @@ document.getElementById('mission-report').addEventListener('click', e => {
         const by = oy + gy * GRID;
         let dx = 0, dy = 0;
 
-        // Sum all traveling waves
-        for (const wv of _waves) {
-          // Project point onto wave direction
-          const proj = bx * wv.cos + by * wv.sin;
-          const val = Math.sin(proj * wv.freq + t * wv.speed + wv.phase);
-          // Displace perpendicular to the wave direction (bends the fabric)
-          dx += -wv.sin * val * wv.ampX;
-          dy +=  wv.cos * val * wv.ampY;
+        // ── GR metric perturbation: displacement ~ M / (r + softening) ──
+        // Each body warps spacetime; grid points are pulled inward.
+        // The 1/r falloff matches the weak-field Schwarzschild metric.
+        for (const bp of bpos) {
+          const rx = bx - bp.x, ry = by - bp.y;
+          const r = Math.sqrt(rx * rx + ry * ry);
+          // h ~ GM/r → displacement magnitude = G_VIS * mass / (r + soft)
+          const disp = G_VIS * bp.mass / (r + bp.soft);
+          // Direction: toward the mass (grid converges near massive objects)
+          const invR = 1 / (r + 0.5);
+          dx -= rx * invR * disp;
+          dy -= ry * invR * disp;
         }
 
-        // Warp zones — locally amplify displacement + add their own directional bend
-        for (const wz of _warps) {
-          const rx = bx - wz._x, ry = by - wz._y;
-          const d2 = rx * rx + ry * ry;
-          const r2 = wz.radius * wz.radius;
-          if (d2 < r2 * 4) {
-            // Smooth gaussian influence
-            const influence = Math.exp(-d2 / (r2 * 1.2));
-            // Amplify existing displacement
-            dx *= 1 + influence * (wz.amp - 1);
-            dy *= 1 + influence * (wz.amp - 1);
-            // Add directional bend unique to this warp
-            const bCos = Math.cos(wz.bendAngle), bSin = Math.sin(wz.bendAngle);
-            const bProj = bx * bCos + by * bSin;
-            const bVal = Math.sin(bProj * wz.bendFreq + t * wz.bendSpeed);
-            dx += -bSin * bVal * wz.bendAmp * influence;
-            dy +=  bCos * bVal * wz.bendAmp * influence;
-          }
-        }
+        // ── Gravitational waves ──
+        // Plus-polarization GW: stretches x while compressing y, then reverses.
+        // Very gentle, long wavelength — represents GR radiation in the fabric.
+        const gw1 = Math.sin(bx * 0.0025 + by * 0.001 + t * 0.4) * 1.8;
+        const gw2 = Math.sin(bx * 0.001 - by * 0.002 + t * 0.3) * 1.2;
+        dx += gw1;
+        dy -= gw1 * 0.6;  // quadrupolar: opposite sign
+        dx += gw2 * 0.5;
+        dy += gw2;
 
-        // Mouse warp — pulls fabric toward cursor
+        // Mouse — acts as a massive object bending spacetime
         if (mActive) {
           const rx = bx - mx, ry = by - my;
-          const d2 = rx * rx + ry * ry;
-          const mRad = 240;
-          if (d2 < mRad * mRad * 5) {
-            const f = Math.exp(-d2 / (mRad * mRad));
-            dx -= rx * f * 0.6;
-            dy -= ry * f * 0.6;
-          }
+          const r = Math.sqrt(rx * rx + ry * ry);
+          const disp = 900 / (r + 100);
+          dx -= (rx / (r + 0.5)) * disp;
+          dy -= (ry / (r + 0.5)) * disp;
         }
 
         // Button wells
@@ -3578,7 +3578,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
           }
         }
 
-        // Clamp
+        // Clamp to prevent grid folding
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len > MAX_DISP) { const s = MAX_DISP / len; dx *= s; dy *= s; }
 
@@ -3586,52 +3586,70 @@ document.getElementById('mission-report').addEventListener('click', e => {
       }
     }
 
-    // ── Draw grid ──
-    // Segment distortion → visual weight
+    // ── Draw grid as smooth Catmull-Rom splines ──
+    // Converts to cubic Bezier: CP1 = P + (P_next - P_prev)/6
+    // This guarantees C1 continuity — no sharp angles anywhere.
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    function _drawSeg(p1, p2) {
-      const segLen = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-      const comp = Math.max(0, 1 - segLen / GRID);        // compression
-      const stretch = Math.max(0, segLen / GRID - 1);      // stretching
+    // Per-segment style based on displacement depth
+    function segStyle(p1, p2) {
       const d1 = Math.sqrt(p1.dx * p1.dx + p1.dy * p1.dy);
       const d2 = Math.sqrt(p2.dx * p2.dx + p2.dy * p2.dy);
-      const disp = (d1 + d2) * 0.5;
-      const dispN = Math.min(1, disp / MAX_DISP);
-
-      // Base alpha + boost from compression and displacement
-      const alpha = 0.055 + comp * 0.5 + dispN * 0.12 + stretch * 0.15;
-      const lw = 0.3 + comp * 1.5 + dispN * 0.4;
-
-      // Color shifts: deep displacement → indigo, compression → dark blue, stretch → warm
-      let r = 0, g = 0, b = 0;
-      if (dispN > 0.25) {
-        const blend = (dispN - 0.25) / 0.75;
-        r = 45 * blend; g = 35 * blend; b = 100 * blend;
-      }
-      if (stretch > 0.05) {
-        r += stretch * 80; g += stretch * 20;
-      }
-
-      ctx.strokeStyle = `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${Math.min(0.55, alpha)})`;
-      ctx.lineWidth = Math.min(2.2, lw);
-      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      const dn = Math.min(1, (d1 + d2) / (2 * MAX_DISP));
+      const alpha = 0.055 + dn * 0.28;
+      const lw = 0.35 + dn * 1.2;
+      // Smooth color: transparent grey → subtle indigo in deep curvature
+      const cr = Math.round(25 * dn);
+      const cg = Math.round(20 * dn);
+      const cb = Math.round(55 * dn);
+      ctx.strokeStyle = `rgba(${cr},${cg},${cb},${Math.min(0.42, alpha)})`;
+      ctx.lineWidth = Math.min(1.8, lw);
     }
 
-    // Horizontal
+    // Horizontal splines
     for (let gy = 0; gy <= rows; gy++) {
       for (let gx = 0; gx < cols; gx++) {
-        _drawSeg(pts[gy * stride + gx], pts[gy * stride + gx + 1]);
-      }
-    }
-    // Vertical
-    for (let gx = 0; gx <= cols; gx++) {
-      for (let gy = 0; gy < rows; gy++) {
-        _drawSeg(pts[gy * stride + gx], pts[(gy + 1) * stride + gx]);
+        const i0 = gy * stride + Math.max(0, gx - 1);
+        const i1 = gy * stride + gx;
+        const i2 = gy * stride + gx + 1;
+        const i3 = gy * stride + Math.min(cols, gx + 2);
+        const p0 = pts[i0], p1 = pts[i1], p2 = pts[i2], p3 = pts[i3];
+
+        segStyle(p1, p2);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.bezierCurveTo(
+          p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+          p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+          p2.x, p2.y
+        );
+        ctx.stroke();
       }
     }
 
-    // Shadow pools under hovered buttons
+    // Vertical splines
+    for (let gx = 0; gx <= cols; gx++) {
+      for (let gy = 0; gy < rows; gy++) {
+        const i0 = Math.max(0, gy - 1) * stride + gx;
+        const i1 = gy * stride + gx;
+        const i2 = (gy + 1) * stride + gx;
+        const i3 = Math.min(rows, gy + 2) * stride + gx;
+        const p0 = pts[i0], p1 = pts[i1], p2 = pts[i2], p3 = pts[i3];
+
+        segStyle(p1, p2);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.bezierCurveTo(
+          p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+          p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+          p2.x, p2.y
+        );
+        ctx.stroke();
+      }
+    }
+
+    // Button hover shadows
     for (const well of _btnWells) {
       if (well.hover <= 0) continue;
       const bGrad = ctx.createRadialGradient(well.x, well.y + well.ry * 0.3, 0, well.x, well.y, Math.max(well.rx, well.ry) * 2.5);
