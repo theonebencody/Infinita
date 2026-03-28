@@ -3376,71 +3376,82 @@ document.getElementById('mission-report').addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════
-//  SPLASH — SPACETIME FABRIC GRID BACKGROUND
+//  SPLASH — SPACETIME FABRIC (complete rewrite)
+//  Continuous turbulent flow field — traveling waves
+//  at many angles/speeds bend the fabric like spacetime.
+//  No point masses or circular ripples.
 // ═══════════════════════════════════════════════
 (function _initSplashBg() {
   const canvas = document.getElementById('splash-bg');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   let w, h, animId = null;
-  let time = 0;
+  let t = 0;
 
-  // Mouse tracking for interactive gravity well
-  let mouseX = -9999, mouseY = -9999;
-  let mouseActive = false;
-  canvas.parentElement.addEventListener('mousemove', e => {
-    mouseX = e.clientX; mouseY = e.clientY; mouseActive = true;
-  });
-  canvas.parentElement.addEventListener('mouseleave', () => { mouseActive = false; });
+  // Mouse
+  let mx = -9999, my = -9999, mActive = false;
+  canvas.parentElement.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; mActive = true; });
+  canvas.parentElement.addEventListener('mouseleave', () => { mActive = false; });
 
-  // Diverse masses — heavy slow ones, medium cruisers, fast light ones
-  const _masses = [
-    // 3 heavy, slow-moving deep wells
-    ...Array.from({ length: 3 }, () => ({
-      cx: 0.15 + Math.random() * 0.7, cy: 0.15 + Math.random() * 0.7,
-      rx: 0.2 + Math.random() * 0.3, ry: 0.15 + Math.random() * 0.25,
-      sx: 0.05 + Math.random() * 0.07, sy: 0.04 + Math.random() * 0.06,
-      px: Math.random() * Math.PI * 2, py: Math.random() * Math.PI * 2,
-      strength: 0.55 + Math.random() * 0.2, radius: 240 + Math.random() * 200,
-      hue: 220 + Math.random() * 40, // deep blue/indigo
-    })),
-    // 4 medium cruisers
-    ...Array.from({ length: 4 }, () => ({
+  // ── Traveling wave fronts ──
+  // Each wave is a planar sine wave traveling in a specific direction.
+  // angle = direction of travel, freq = spatial frequency, speed = temporal speed,
+  // amp = displacement amplitude, phase = initial offset.
+  // Mixing many of these at different scales creates organic, non-circular turbulence.
+  const TWO_PI = Math.PI * 2;
+  const _waves = [];
+  function _makeWave(angle, freq, speed, ampX, ampY, phase) {
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    return { cos, sin, freq, speed, ampX, ampY, phase };
+  }
+  // Large slow bends — the deep fabric warps
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI + Math.random() * 0.5;
+    _waves.push(_makeWave(a, 0.0015 + Math.random() * 0.001, 0.3 + Math.random() * 0.2, 8 + Math.random() * 5, 8 + Math.random() * 5, Math.random() * TWO_PI));
+  }
+  // Medium flowing waves — the main visible motion
+  for (let i = 0; i < 7; i++) {
+    const a = Math.random() * TWO_PI;
+    _waves.push(_makeWave(a, 0.004 + Math.random() * 0.004, 0.6 + Math.random() * 0.8, 4 + Math.random() * 4, 4 + Math.random() * 4, Math.random() * TWO_PI));
+  }
+  // Fast small ripples — surface shimmer
+  for (let i = 0; i < 6; i++) {
+    const a = Math.random() * TWO_PI;
+    _waves.push(_makeWave(a, 0.01 + Math.random() * 0.01, 1.5 + Math.random() * 1.5, 1.5 + Math.random() * 2, 1.5 + Math.random() * 2, Math.random() * TWO_PI));
+  }
+
+  // ── Wandering warp zones ──
+  // Large smooth regions that slowly drift across the screen, locally amplifying
+  // the wave displacement — creates the "invisible object bending spacetime" feel
+  // without circular gravity wells.
+  const _warps = [];
+  for (let i = 0; i < 6; i++) {
+    _warps.push({
+      // Lissajous orbit parameters (normalized 0-1)
       cx: 0.1 + Math.random() * 0.8, cy: 0.1 + Math.random() * 0.8,
-      rx: 0.15 + Math.random() * 0.25, ry: 0.12 + Math.random() * 0.2,
-      sx: 0.1 + Math.random() * 0.14, sy: 0.09 + Math.random() * 0.12,
-      px: Math.random() * Math.PI * 2, py: Math.random() * Math.PI * 2,
-      strength: 0.35 + Math.random() * 0.2, radius: 170 + Math.random() * 140,
-      hue: 260 + Math.random() * 30, // purple
-    })),
-    // 5 fast, light skimmers that create quick ripples
-    ...Array.from({ length: 5 }, () => ({
-      cx: 0.05 + Math.random() * 0.9, cy: 0.05 + Math.random() * 0.9,
-      rx: 0.1 + Math.random() * 0.35, ry: 0.1 + Math.random() * 0.3,
-      sx: 0.22 + Math.random() * 0.28, sy: 0.18 + Math.random() * 0.24,
-      px: Math.random() * Math.PI * 2, py: Math.random() * Math.PI * 2,
-      strength: 0.2 + Math.random() * 0.15, radius: 100 + Math.random() * 120,
-      hue: 190 + Math.random() * 30, // teal/cyan
-    })),
-  ];
+      rx: 0.15 + Math.random() * 0.3, ry: 0.12 + Math.random() * 0.25,
+      sx: 0.04 + Math.random() * 0.08, sy: 0.03 + Math.random() * 0.06,
+      px: Math.random() * TWO_PI, py: Math.random() * TWO_PI,
+      radius: 180 + Math.random() * 250,  // influence radius in px
+      amp: 1.8 + Math.random() * 1.5,     // local amplification factor
+      // Each warp also introduces its own directional bend
+      bendAngle: Math.random() * TWO_PI,
+      bendFreq: 0.006 + Math.random() * 0.006,
+      bendSpeed: 0.5 + Math.random() * 0.6,
+      bendAmp: 6 + Math.random() * 6,
+    });
+  }
 
-  // Ripple waves emanating from masses — spawned periodically
-  const _ripples = [];
-  let _lastRipple = 0;
-
-  // Button gravity wells
+  // Button wells
   const _btnWells = [];
   function _updateBtnWells() {
     _btnWells.length = 0;
     document.querySelectorAll('.splash-btn').forEach(btn => {
       const rect = btn.getBoundingClientRect();
       _btnWells.push({
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-        rx: rect.width * 0.7,
-        ry: rect.height * 0.7,
-        strength: 0.25,
-        hover: btn.matches(':hover') ? 1 : 0,
+        x: rect.left + rect.width / 2, y: rect.top + rect.height / 2,
+        rx: rect.width * 0.7, ry: rect.height * 0.7,
+        strength: 0.3, hover: btn.matches(':hover') ? 1 : 0,
       });
     });
   }
@@ -3449,228 +3460,174 @@ document.getElementById('mission-report').addEventListener('click', e => {
     btn.addEventListener('mouseleave', _updateBtnWells);
   });
 
-  function resize() {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-  }
+  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
   resize();
   window.addEventListener('resize', () => { resize(); _updateBtnWells(); });
 
-  const GRID_SPACING = 30;
-  const MAX_DISP = GRID_SPACING * 0.48;
+  const GRID = 28;
+  const MAX_DISP = GRID * 0.47;
 
   function draw() {
     if (document.getElementById('splash').classList.contains('hidden')) {
       cancelAnimationFrame(animId); animId = null; return;
     }
     animId = requestAnimationFrame(draw);
-    time += 0.016;
+    t += 0.014;
     _updateBtnWells();
 
-    // Background — very subtle warm grey gradient
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, '#eaeaea');
-    bgGrad.addColorStop(1, '#e2e2e4');
-    ctx.fillStyle = bgGrad;
+    // Background
+    ctx.fillStyle = '#e8e8ea';
     ctx.fillRect(0, 0, w, h);
 
-    // Move masses along Lissajous orbits
-    _masses.forEach(m => {
-      m._x = (m.cx + Math.sin(time * m.sx + m.px) * m.rx) * w;
-      m._y = (m.cy + Math.cos(time * m.sy + m.py) * m.ry) * h;
-    });
-
-    // Spawn ripples frequently from random masses
-    if (time - _lastRipple > 0.08) {
-      _lastRipple = time;
-      const src = _masses[Math.floor(Math.random() * _masses.length)];
-      _ripples.push({ x: src._x, y: src._y, t: 0, maxR: src.radius * 3.5, strength: src.strength * 0.7, hue: src.hue });
-    }
-    // Age and cull ripples
-    for (let i = _ripples.length - 1; i >= 0; i--) {
-      _ripples[i].t += 0.015;
-      if (_ripples[i].t > 1) _ripples.splice(i, 1);
+    // Update warp zone positions
+    for (const wz of _warps) {
+      wz._x = (wz.cx + Math.sin(t * wz.sx + wz.px) * wz.rx) * w;
+      wz._y = (wz.cy + Math.cos(t * wz.sy + wz.py) * wz.ry) * h;
     }
 
-    // Shading — deep gravity well shadows with subtle color
-    for (const m of _masses) {
-      const r = m.radius * 2.8;
-      // Dark shadow layer
-      const grad = ctx.createRadialGradient(m._x, m._y, 0, m._x, m._y, r);
-      grad.addColorStop(0, `rgba(0,0,0,${0.09 * m.strength / 0.3})`);
-      grad.addColorStop(0.2, `rgba(0,0,0,${0.05 * m.strength / 0.3})`);
-      grad.addColorStop(0.5, `rgba(0,0,0,${0.015 * m.strength / 0.3})`);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(m._x - r, m._y - r, r * 2, r * 2);
-      // Subtle color tint in the well core
-      const cGrad = ctx.createRadialGradient(m._x, m._y, 0, m._x, m._y, m.radius * 1.5);
-      const h0 = m.hue || 220;
-      cGrad.addColorStop(0, `hsla(${h0},50%,40%,${0.04 * m.strength / 0.3})`);
-      cGrad.addColorStop(0.4, `hsla(${h0},40%,50%,${0.02 * m.strength / 0.3})`);
-      cGrad.addColorStop(1, 'hsla(0,0%,0%,0)');
-      ctx.fillStyle = cGrad;
-      ctx.fillRect(m._x - r, m._y - r, r * 2, r * 2);
+    // Soft shadow under each warp zone — shows where spacetime is being bent
+    for (const wz of _warps) {
+      const r = wz.radius * 1.8;
+      const g = ctx.createRadialGradient(wz._x, wz._y, 0, wz._x, wz._y, r);
+      g.addColorStop(0, `rgba(30,25,60,${0.04 * wz.amp})`);
+      g.addColorStop(0.35, `rgba(20,20,50,${0.02 * wz.amp})`);
+      g.addColorStop(0.7, `rgba(0,0,0,${0.005 * wz.amp})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(wz._x - r, wz._y - r, r * 2, r * 2);
     }
 
-    // Mouse gravity well shadow
-    if (mouseActive) {
-      const mRad = 260;
-      const mGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, mRad);
-      mGrad.addColorStop(0, 'rgba(0,0,0,0.07)');
-      mGrad.addColorStop(0.3, 'rgba(0,0,0,0.03)');
-      mGrad.addColorStop(0.6, 'rgba(0,0,0,0.01)');
-      mGrad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = mGrad;
-      ctx.fillRect(mouseX - mRad, mouseY - mRad, mRad * 2, mRad * 2);
+    // Mouse shadow
+    if (mActive) {
+      const r = 280;
+      const g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
+      g.addColorStop(0, 'rgba(30,20,60,0.06)');
+      g.addColorStop(0.4, 'rgba(0,0,0,0.025)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(mx - r, my - r, r * 2, r * 2);
     }
 
-    // Grid extends past borders
-    const margin = GRID_SPACING * 4;
-    const cols = Math.ceil((w + margin * 2) / GRID_SPACING) + 2;
-    const rows = Math.ceil((h + margin * 2) / GRID_SPACING) + 2;
-    const ox = (w % GRID_SPACING) / 2 - margin;
-    const oy = (h % GRID_SPACING) / 2 - margin;
-
-    // Compute displaced grid points
+    // ── Compute grid ──
+    const margin = GRID * 5;
+    const cols = Math.ceil((w + margin * 2) / GRID) + 2;
+    const rows = Math.ceil((h + margin * 2) / GRID) + 2;
+    const ox = (w % GRID) / 2 - margin;
+    const oy = (h % GRID) / 2 - margin;
     const stride = cols + 1;
     const pts = new Array(stride * (rows + 1));
+
     for (let gy = 0; gy <= rows; gy++) {
       for (let gx = 0; gx <= cols; gx++) {
-        const baseX = ox + gx * GRID_SPACING;
-        const baseY = oy + gy * GRID_SPACING;
+        const bx = ox + gx * GRID;
+        const by = oy + gy * GRID;
         let dx = 0, dy = 0;
 
-        // Multi-frequency global waves — the fabric is ALIVE
-        // Fast surface ripples
-        dx += Math.sin(baseY * 0.008 + time * 1.6) * 4;
-        dy += Math.cos(baseX * 0.008 + time * 1.3) * 4;
-        // Medium cross-waves (diagonal interference)
-        dx += Math.sin(baseY * 0.015 + baseX * 0.005 + time * 2.2) * 2.5;
-        dy += Math.cos(baseX * 0.015 + baseY * 0.005 + time * 1.8) * 2.5;
-        // Slow deep heaving breath
-        dx += Math.sin(baseY * 0.003 + time * 0.5) * 6;
-        dy += Math.cos(baseX * 0.003 + time * 0.4) * 6;
-        // Ultra-slow tidal drift
-        dx += Math.sin(baseY * 0.001 + baseX * 0.0008 + time * 0.15) * 4;
-        dy += Math.cos(baseX * 0.001 + baseY * 0.0008 + time * 0.12) * 4;
+        // Sum all traveling waves
+        for (const wv of _waves) {
+          // Project point onto wave direction
+          const proj = bx * wv.cos + by * wv.sin;
+          const val = Math.sin(proj * wv.freq + t * wv.speed + wv.phase);
+          // Displace perpendicular to the wave direction (bends the fabric)
+          dx += -wv.sin * val * wv.ampX;
+          dy +=  wv.cos * val * wv.ampY;
+        }
 
-        // Roaming masses warp the grid — heavy pull with swirl
-        for (const m of _masses) {
-          const relX = baseX - m._x, relY = baseY - m._y;
-          const dist2 = relX * relX + relY * relY;
-          const cutoff = m.radius * 3.5;
-          if (dist2 < cutoff * cutoff) {
-            const r2 = m.radius * m.radius * 1.4;
-            const falloff = Math.exp(-dist2 / r2);
-            dx -= relX * falloff * m.strength * 1.6;
-            dy -= relY * falloff * m.strength * 1.6;
-            // Tangential swirl — rotational current
-            const swirlStr = falloff * m.strength * 0.5;
-            dx += relY * swirlStr * 0.25;
-            dy -= relX * swirlStr * 0.25;
+        // Warp zones — locally amplify displacement + add their own directional bend
+        for (const wz of _warps) {
+          const rx = bx - wz._x, ry = by - wz._y;
+          const d2 = rx * rx + ry * ry;
+          const r2 = wz.radius * wz.radius;
+          if (d2 < r2 * 4) {
+            // Smooth gaussian influence
+            const influence = Math.exp(-d2 / (r2 * 1.2));
+            // Amplify existing displacement
+            dx *= 1 + influence * (wz.amp - 1);
+            dy *= 1 + influence * (wz.amp - 1);
+            // Add directional bend unique to this warp
+            const bCos = Math.cos(wz.bendAngle), bSin = Math.sin(wz.bendAngle);
+            const bProj = bx * bCos + by * bSin;
+            const bVal = Math.sin(bProj * wz.bendFreq + t * wz.bendSpeed);
+            dx += -bSin * bVal * wz.bendAmp * influence;
+            dy +=  bCos * bVal * wz.bendAmp * influence;
           }
         }
 
-        // Ripple waves — expanding rings with strong displacement
-        for (const rip of _ripples) {
-          const relX = baseX - rip.x, relY = baseY - rip.y;
-          const dist = Math.sqrt(relX * relX + relY * relY);
-          const ripRadius = rip.t * rip.maxR;
-          const ringWidth = rip.maxR * 0.2;
-          const distFromRing = Math.abs(dist - ripRadius);
-          if (distFromRing < ringWidth * 2.5) {
-            const fade = (1 - rip.t) * Math.exp(-(distFromRing * distFromRing) / (ringWidth * ringWidth));
-            const push = fade * rip.strength * 20;
-            if (dist > 1) {
-              dx += (relX / dist) * push;
-              dy += (relY / dist) * push;
-            }
+        // Mouse warp — pulls fabric toward cursor
+        if (mActive) {
+          const rx = bx - mx, ry = by - my;
+          const d2 = rx * rx + ry * ry;
+          const mRad = 240;
+          if (d2 < mRad * mRad * 5) {
+            const f = Math.exp(-d2 / (mRad * mRad));
+            dx -= rx * f * 0.6;
+            dy -= ry * f * 0.6;
           }
         }
 
-        // Mouse gravity well — heavy interactive pull
-        if (mouseActive) {
-          const relX = baseX - mouseX, relY = baseY - mouseY;
-          const dist2 = relX * relX + relY * relY;
-          const mRad = 250;
-          if (dist2 < mRad * mRad * 5) {
-            const falloff = Math.exp(-dist2 / (mRad * mRad));
-            dx -= relX * falloff * 0.7;
-            dy -= relY * falloff * 0.7;
-          }
-        }
-
-        // Button gravity wells
+        // Button wells
         for (const well of _btnWells) {
-          const relX = baseX - well.x, relY = baseY - well.y;
-          const normDist = Math.sqrt((relX / well.rx) ** 2 + (relY / well.ry) ** 2);
-          if (normDist < 3) {
-            const str = well.strength * (1 + well.hover * 1.2);
-            const falloff = Math.exp(-normDist * normDist * 0.5);
-            dx -= relX * falloff * str * 0.4;
-            dy -= relY * falloff * str * 0.4;
-            if (well.hover > 0) dy += falloff * str * 10 * well.hover;
+          const rx = bx - well.x, ry = by - well.y;
+          const nd = Math.sqrt((rx / well.rx) ** 2 + (ry / well.ry) ** 2);
+          if (nd < 3) {
+            const str = well.strength * (1 + well.hover * 1.5);
+            const f = Math.exp(-nd * nd * 0.5);
+            dx -= rx * f * str * 0.4;
+            dy -= ry * f * str * 0.4;
+            if (well.hover > 0) dy += f * str * 12 * well.hover;
           }
         }
 
-        // Clamp displacement to prevent grid folding
+        // Clamp
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len > MAX_DISP) { const s = MAX_DISP / len; dx *= s; dy *= s; }
 
-        pts[gy * stride + gx] = { x: baseX + dx, y: baseY + dy, dx, dy };
+        pts[gy * stride + gx] = { x: bx + dx, y: by + dy, dx, dy };
       }
     }
 
-    // Draw grid — compression-based shading with subtle color in deep wells
-    function _segInfo(p1, p2, baseLen) {
-      const actualLen = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-      const compression = 1 - (actualLen / baseLen);
-      // Average displacement magnitude for color
+    // ── Draw grid ──
+    // Segment distortion → visual weight
+    ctx.lineCap = 'round';
+
+    function _drawSeg(p1, p2) {
+      const segLen = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+      const comp = Math.max(0, 1 - segLen / GRID);        // compression
+      const stretch = Math.max(0, segLen / GRID - 1);      // stretching
       const d1 = Math.sqrt(p1.dx * p1.dx + p1.dy * p1.dy);
       const d2 = Math.sqrt(p2.dx * p2.dx + p2.dy * p2.dy);
-      return { comp: Math.max(0, compression), disp: (d1 + d2) * 0.5 };
+      const disp = (d1 + d2) * 0.5;
+      const dispN = Math.min(1, disp / MAX_DISP);
+
+      // Base alpha + boost from compression and displacement
+      const alpha = 0.055 + comp * 0.5 + dispN * 0.12 + stretch * 0.15;
+      const lw = 0.3 + comp * 1.5 + dispN * 0.4;
+
+      // Color shifts: deep displacement → indigo, compression → dark blue, stretch → warm
+      let r = 0, g = 0, b = 0;
+      if (dispN > 0.25) {
+        const blend = (dispN - 0.25) / 0.75;
+        r = 45 * blend; g = 35 * blend; b = 100 * blend;
+      }
+      if (stretch > 0.05) {
+        r += stretch * 80; g += stretch * 20;
+      }
+
+      ctx.strokeStyle = `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${Math.min(0.55, alpha)})`;
+      ctx.lineWidth = Math.min(2.2, lw);
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
     }
 
-    // Draw all horizontal segments
-    ctx.lineCap = 'round';
+    // Horizontal
     for (let gy = 0; gy <= rows; gy++) {
       for (let gx = 0; gx < cols; gx++) {
-        const p1 = pts[gy * stride + gx];
-        const p2 = pts[gy * stride + gx + 1];
-        const { comp, disp } = _segInfo(p1, p2, GRID_SPACING);
-        const dispNorm = Math.min(1, disp / MAX_DISP);
-        // Blend from grey to colored based on displacement depth
-        const alpha = 0.06 + comp * 0.4 + dispNorm * 0.08;
-        const lw = 0.3 + comp * 1.2 + dispNorm * 0.3;
-        // Subtle blue-purple tint in deep distortion
-        if (dispNorm > 0.3) {
-          const colorAlpha = (dispNorm - 0.3) * 0.15;
-          ctx.strokeStyle = `rgba(60,50,120,${Math.min(0.5, alpha + colorAlpha)})`;
-        } else {
-          ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.45, alpha)})`;
-        }
-        ctx.lineWidth = Math.min(1.8, lw);
-        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        _drawSeg(pts[gy * stride + gx], pts[gy * stride + gx + 1]);
       }
     }
-    // Draw all vertical segments
+    // Vertical
     for (let gx = 0; gx <= cols; gx++) {
       for (let gy = 0; gy < rows; gy++) {
-        const p1 = pts[gy * stride + gx];
-        const p2 = pts[(gy + 1) * stride + gx];
-        const { comp, disp } = _segInfo(p1, p2, GRID_SPACING);
-        const dispNorm = Math.min(1, disp / MAX_DISP);
-        const alpha = 0.06 + comp * 0.4 + dispNorm * 0.08;
-        const lw = 0.3 + comp * 1.2 + dispNorm * 0.3;
-        if (dispNorm > 0.3) {
-          const colorAlpha = (dispNorm - 0.3) * 0.15;
-          ctx.strokeStyle = `rgba(60,50,120,${Math.min(0.5, alpha + colorAlpha)})`;
-        } else {
-          ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.45, alpha)})`;
-        }
-        ctx.lineWidth = Math.min(1.8, lw);
-        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        _drawSeg(pts[gy * stride + gx], pts[(gy + 1) * stride + gx]);
       }
     }
 
