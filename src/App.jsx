@@ -270,17 +270,6 @@ function App() {
             <div className="lh-title">LAUNCH HISTORY</div>
             <div style={{width:'70px'}}></div>
           </div>
-          <div className="lh-filter-row">
-            <button className="lh-filter-btn active" data-org="All">ALL</button>
-            <button className="lh-filter-btn" data-org="Soviet">SOVIET</button>
-            <button className="lh-filter-btn" data-org="NASA">USA</button>
-            <button className="lh-filter-btn" data-org="Roscosmos">RUSSIA</button>
-            <button className="lh-filter-btn" data-org="CNSA">CHINA</button>
-            <button className="lh-filter-btn" data-org="SpaceX">SPACEX</button>
-            <button className="lh-filter-btn" data-org="ESA">ESA</button>
-            <button className="lh-filter-btn" data-org="JAXA">JAPAN</button>
-            <button className="lh-filter-btn" data-org="ISRO">INDIA</button>
-          </div>
         </div>
         <div className="lh-scroll-body" id="lh-scroll-body">
           {/* Hero stats */}
@@ -292,9 +281,10 @@ function App() {
             <div className="lh-timeline" id="lh-timeline"></div>
           </div>
 
-          {/* Featured highlights — defining moments with astronaut backdrop */}
+          {/* Featured highlights — defining moments with full-width astronaut + snowfall */}
           <div className="lh-section lh-defining-section">
             <img src="/Infinita/images/astronaut.png" alt="" className="lh-defining-bg-img" />
+            <div className="lh-snowfall" id="lh-snowfall"></div>
             <div className="lh-section-title">DEFINING MOMENTS</div>
             <div className="lh-defining-subtitle">The missions that changed everything</div>
             <div className="lh-highlights" id="lh-highlights"></div>
