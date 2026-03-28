@@ -3515,12 +3515,29 @@ document.getElementById('splash-launches-btn').addEventListener('click', (e) => 
 });
 
 // ═══════════════════════════════════════════════
-//  SPLASH HOVER DESCRIPTIONS
+//  SPLASH HOVER DESCRIPTIONS (dynamically generated from actual data)
 // ═══════════════════════════════════════════════
 const _hoverBox = document.getElementById('splash-hover-box');
+const _moonCount = MOONS.length;
+const _planetCount = PLANETS.length;
+const _deepSkyGalaxies = DEEP_SKY_OBJECTS.filter(o => o.type === 'galaxy').length;
+const _deepSkyNebulae = DEEP_SKY_OBJECTS.filter(o => o.type === 'nebula' || o.type === 'planetary_nebula' || o.type === 'snr').length;
+const _deepSkyClusters = DEEP_SKY_OBJECTS.filter(o => o.type === 'globular' || o.type === 'open_cluster').length;
+const _launchCount = LAUNCH_DATA.length;
+const _launchOrgs = new Set(LAUNCH_DATA.map(m => m.org)).size;
+const _launchYearMin = LAUNCH_DATA.reduce((min, m) => Math.min(min, parseInt(m.date.slice(0,4))), 9999);
+const _launchYearMax = LAUNCH_DATA.reduce((max, m) => Math.max(max, parseInt(m.date.slice(0,4))), 0);
+
+const _splashDescs = {
+  'splash-explore-btn': `Pilot your own spacecraft through an accurate 3D solar system. Visit all ${_planetCount} planets with real NASA textures, ${_moonCount} moons, asteroids, the Kuiper Belt, and comets. Explore ${_deepSkyGalaxies} galaxies with a full 3D rendering engine, ${_deepSkyNebulae} nebulae, and ${_deepSkyClusters} star clusters. Search and travel to over 15 million real objects from the SIMBAD database. Control the flow of time from paused to 27 years per second. Track real satellites in orbit using live CelesTrak data.`,
+  'splash-launches-btn': `Dive into a comprehensive database of ${_launchCount.toLocaleString()} orbital launches spanning from ${_launchYearMin} to ${_launchYearMax} across ${_launchOrgs} organizations worldwide. Explore interactive 3D globes of Earth, Mars, and the solar system. Browse detailed organization profiles with launch-by-year charts, rocket fleets, and historic firsts. Watch embedded launch videos for iconic missions. Filter by nation and drill into defining moments of spaceflight history.`,
+  'splash-sim-btn': `Watch SpaceX's Starship flight profile unfold in real time with accurate physics simulation. Follow every milestone from liftoff through Max Q, hot-staging, booster catch, and orbit insertion. Features real SpaceX photography for each flight phase, live telemetry readouts (altitude, velocity, acceleration, stage), scrub bar, and adjustable playback speed up to 10x.`,
+  'splash-planner-btn': `Plan interplanetary missions with real Hohmann transfer orbital mechanics. Choose from 6 rockets across SpaceX, NASA, Blue Origin, and ESA. Select destinations from the Moon to Neptune, pick your mission type (flyby, orbit, or landing), and get a physics-based delta-v feasibility analysis. Approve your mission and watch it execute in a 3D solar system with live telemetry.`,
+};
+
 document.querySelectorAll('.splash-btn[data-hover-desc]').forEach(btn => {
   btn.addEventListener('mouseenter', () => {
-    const desc = btn.getAttribute('data-hover-desc');
+    const desc = _splashDescs[btn.id] || btn.getAttribute('data-hover-desc');
     if (_hoverBox && desc) {
       _hoverBox.innerHTML = '<div class="splash-hover-box-inner"><div class="splash-hover-box-text">' + desc + '</div></div>';
       _hoverBox.classList.add('visible');
