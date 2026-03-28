@@ -3436,6 +3436,23 @@ document.getElementById('mission-report').addEventListener('click', e => {
     };
   }
 
+  // ── Independent wave emitters — separate sources from the masses ──
+  // These wander on their own paths and radiate slow circular waves.
+  const _emitterDefs = [];
+  for (let i = 0; i < 7; i++) {
+    _emitterDefs.push({
+      cx: 0.1 + Math.random() * 0.8, cy: 0.1 + Math.random() * 0.8,
+      ax: 0.08 + Math.random() * 0.15, fx: 0.04 + Math.random() * 0.06, px: Math.random() * TWO_PI,
+      ay: 0.06 + Math.random() * 0.12, fy: 0.03 + Math.random() * 0.05, py: Math.random() * TWO_PI,
+      waveLen: 80 + Math.random() * 120,
+      speed: 0.3 + Math.random() * 0.5,
+      amp: 3 + Math.random() * 4,
+      reach: 350 + Math.random() * 400,
+      drift: 0.5 + Math.random() * 0.8,
+    });
+  }
+  let _emitters = [];
+
   // Button wells
   const _btnWells = [];
   function _updateBtnWells() {
@@ -3474,6 +3491,16 @@ document.getElementById('mission-report').addEventListener('click', e => {
 
     // Mass positions this frame
     const mpos = masses.map(getMassPos);
+
+    // Wave emitter positions (wander independently)
+    _emitters = _emitterDefs.map(em => {
+      const st = t * em.drift;
+      return {
+        x: (em.cx + Math.sin(st * em.fx + em.px) * em.ax) * w,
+        y: (em.cy + Math.cos(st * em.fy + em.py) * em.ay) * h,
+        waveLen: em.waveLen, speed: em.speed, amp: em.amp, reach: em.reach,
+      };
+    });
 
     // ── Background ──
     ctx.fillStyle = '#f2f2f2';
@@ -3515,7 +3542,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
       const nRings = 6;
       for (let ring = 0; ring < nRings; ring++) {
         // Rings expand outward with time, creating a pulsing ripple effect
-        const phase = (t * 1.5 * mp.intensity + ring / nRings) % 1;
+        const phase = (t * 0.6 * mp.intensity + ring / nRings) % 1;
         const r = mp.radius * 0.15 + phase * mp.radius * 1.2;
         const fade = (1 - phase) * mp.intensity;
         ctx.beginPath();
@@ -3567,16 +3594,13 @@ document.getElementById('mission-report').addEventListener('click', e => {
           dx -= rx * invR * pull;
           dy -= ry * invR * pull;
 
-          // Traveling waves pulsing outward from each mass
-          // Like ripples on a pond — sinusoidal waves that radiate out
-          // and decay with distance. Each mass pulses at its own frequency.
+          // Slower traveling waves pulsing outward from each mass
           if (r < mp.radius * 3.5) {
-            const waveLen = mp.radius * 0.6;
-            const waveSpeed = 2.5 * mp.intensity;
+            const waveLen = mp.radius * 0.7;
+            const waveSpeed = 1.0 * mp.intensity;
             const wavePhase = r / waveLen - t * waveSpeed;
-            const waveFade = Math.exp(-r / (mp.radius * 1.8));
-            const waveAmp = Math.sin(wavePhase * TWO_PI) * waveFade * mp.intensity * 7;
-            // Push radially outward along the wave crest
+            const waveFade = Math.exp(-r / (mp.radius * 2.0));
+            const waveAmp = Math.sin(wavePhase * TWO_PI) * waveFade * mp.intensity * 6;
             if (r > 1) {
               dx += (rx / r) * waveAmp;
               dy += (ry / r) * waveAmp;
@@ -3584,12 +3608,25 @@ document.getElementById('mission-report').addEventListener('click', e => {
           }
         }
 
-        // Global plane waves sweeping across the fabric
-        // Two slow waves at different angles — the whole sheet breathes
-        dx += Math.sin(bx * 0.004 + by * 0.002 + t * 1.2) * 3.5;
-        dy += Math.cos(bx * 0.002 - by * 0.004 + t * 1.0) * 3.5;
-        dx += Math.sin(-bx * 0.003 + by * 0.005 + t * 0.7) * 2.0;
-        dy += Math.cos(bx * 0.005 + by * 0.003 + t * 0.85) * 2.0;
+        // Independent wave emitters — separate sources from the masses
+        // Each radiates slow circular waves from a different fixed location
+        for (const em of _emitters) {
+          const erx = bx - em.x, ery = by - em.y;
+          const er = Math.sqrt(erx * erx + ery * ery);
+          if (er < em.reach) {
+            const phase = er / em.waveLen - t * em.speed;
+            const fade = Math.exp(-er / (em.reach * 0.5));
+            const amp = Math.sin(phase * TWO_PI) * fade * em.amp;
+            if (er > 1) {
+              dx += (erx / er) * amp;
+              dy += (ery / er) * amp;
+            }
+          }
+        }
+
+        // Gentle global plane wave — very slow background breathing
+        dx += Math.sin(bx * 0.003 + by * 0.0015 + t * 0.4) * 2.0;
+        dy += Math.cos(bx * 0.0015 - by * 0.003 + t * 0.35) * 2.0;
 
         // Mouse as a gravitational mass
         if (mActive) {
