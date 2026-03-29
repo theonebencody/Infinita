@@ -3412,7 +3412,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
       ay: 0.03 + Math.random() * 0.08, fy: 0.018 + Math.random() * 0.03, py: Math.random() * TWO_PI,
       waveLen: 80 + Math.random() * 140,
       speed: 0.2 + Math.random() * 0.4,
-      amp: 2.0 + Math.random() * 3.0,
+      amp: 4.0 + Math.random() * 5.0,
       reach: 450 + Math.random() * 550,
       drift: 0.3 + Math.random() * 0.6,
     });
@@ -3428,7 +3428,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
       cos: Math.cos(angle), sin: Math.sin(angle),
       freq: 0.001 + Math.random() * 0.003,
       speed: 0.15 + Math.random() * 0.3,
-      amp: 1.0 + Math.random() * 2.0,
+      amp: 2.5 + Math.random() * 3.5,
       phase: Math.random() * TWO_PI,
     });
   }
