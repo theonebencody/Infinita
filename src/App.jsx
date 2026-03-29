@@ -31,7 +31,7 @@ function App() {
             <button className="splash-btn" id="splash-launches-btn"
               data-hover-desc="Dive into a comprehensive database of over 1,300 real space launches spanning from 1957 to 2026 across 21 organizations worldwide. Explore interactive 3D globes of Earth, Mars, and the solar system showing mission trajectories. Browse detailed timelines, organization profiles, and defining moments in spaceflight history.">
               <div className="splash-btn-icon">{'\uD83D\uDE80'}</div>
-              <div className="splash-btn-label">LAUNCH HISTORY <span className="beta-tag">BETA</span></div>
+              <div className="splash-btn-label">LAUNCH HISTORY</div>
             </button>
             {/* Launch Simulator and Mission Planner hidden — tabled for now */}
           </div>
