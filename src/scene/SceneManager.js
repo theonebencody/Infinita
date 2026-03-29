@@ -3376,13 +3376,12 @@ document.getElementById('mission-report').addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════
-//  SPLASH — SPACETIME FABRIC
+//  SPLASH — BREATHING SPACETIME FABRIC
 //
-//  Perspective-projected grid warped by invisible
-//  wandering masses. Organic bezier-like paths via
-//  layered sine/cosine. Catmull-Rom splines for
-//  silky smooth curves. Contour rings + depth
-//  shading for topographic depth illusion.
+//  Subtle waves propagating from distributed sources
+//  across the viewport. No visible "objects" — just
+//  a living, breathing grid. Catmull-Rom splines
+//  for silky smooth curves.
 // ═══════════════════════════════════════════════
 (function _initSplashBg() {
   const canvas = document.getElementById('splash-bg');
@@ -3397,69 +3396,42 @@ document.getElementById('mission-report').addEventListener('click', e => {
   canvas.parentElement.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; mActive = true; });
   canvas.parentElement.addEventListener('mouseleave', () => { mActive = false; });
 
-  // ── Invisible gravitational masses ──
-  // Each drifts on a smooth, wandering path built from 3 sine/cosine
-  // components per axis — organic and unpredictable, never straight lines.
-  const masses = [];
-  for (let i = 0; i < 5; i++) {
-    masses.push({
-      // Path center — spread across full viewport
-      cx: 0.1 + Math.random() * 0.8,
-      cy: 0.1 + Math.random() * 0.8,
-      // X oscillation — 3 frequencies for complex wandering
-      ax1: 0.10 + Math.random() * 0.12, fx1: 0.07 + Math.random() * 0.06, px1: Math.random() * TWO_PI,
-      ax2: 0.05 + Math.random() * 0.06, fx2: 0.16 + Math.random() * 0.10, px2: Math.random() * TWO_PI,
-      ax3: 0.02 + Math.random() * 0.03, fx3: 0.35 + Math.random() * 0.20, px3: Math.random() * TWO_PI,
-      // Y oscillation — 3 frequencies, different from X
-      ay1: 0.08 + Math.random() * 0.10, fy1: 0.06 + Math.random() * 0.05, py1: Math.random() * TWO_PI,
-      ay2: 0.04 + Math.random() * 0.05, fy2: 0.13 + Math.random() * 0.10, py2: Math.random() * TWO_PI,
-      ay3: 0.015 + Math.random() * 0.025, fy3: 0.28 + Math.random() * 0.18, py3: Math.random() * TWO_PI,
-      // Physics
-      radius: 200 + Math.random() * 300,   // influence radius (px)
-      intensity: 0.6 + Math.random() * 0.4, // pull strength
-      speed: 0.6 + Math.random() * 0.8,     // drift speed multiplier
-    });
-  }
-
-  function getMassPos(m) {
-    const st = t * m.speed;
-    const nx = m.cx + Math.sin(st * m.fx1 + m.px1) * m.ax1
-                    + Math.sin(st * m.fx2 + m.px2) * m.ax2
-                    + Math.sin(st * m.fx3 + m.px3) * m.ax3;
-    const ny = m.cy + Math.cos(st * m.fy1 + m.py1) * m.ay1
-                    + Math.cos(st * m.fy2 + m.py2) * m.ay2
-                    + Math.cos(st * m.fy3 + m.py3) * m.ay3;
-    return {
-      x: Math.max(0, Math.min(1, nx)) * w,
-      y: Math.max(0, Math.min(1, ny)) * h,
-      radius: m.radius, intensity: m.intensity,
-    };
-  }
-
-  // ── Independent wave emitters — spread across the ENTIRE viewport ──
-  // Seeded at distributed positions including edges and corners so waves
-  // propagate from everywhere, not just the center.
+  // ── Wave emitters spread across entire viewport ──
+  // Edges, corners, and interior — waves come from everywhere.
   const _emitterDefs = [];
-  // Fixed grid of starting positions to guarantee full coverage
   const _emitterSeeds = [
-    [0.05, 0.05], [0.5, 0.0], [0.95, 0.05],    // top edge
-    [0.0, 0.5],  [0.95, 0.5],                     // sides
-    [0.05, 0.95], [0.5, 1.0], [0.95, 0.95],      // bottom edge
-    [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7], // inner quad
+    [0.05, 0.05], [0.5, 0.0], [0.95, 0.05],
+    [0.0, 0.35], [1.0, 0.35], [0.0, 0.65], [1.0, 0.65],
+    [0.05, 0.95], [0.5, 1.0], [0.95, 0.95],
+    [0.2, 0.2], [0.8, 0.2], [0.5, 0.5], [0.2, 0.8], [0.8, 0.8],
   ];
   for (const [sx, sy] of _emitterSeeds) {
     _emitterDefs.push({
       cx: sx, cy: sy,
-      ax: 0.05 + Math.random() * 0.12, fx: 0.03 + Math.random() * 0.05, px: Math.random() * TWO_PI,
-      ay: 0.04 + Math.random() * 0.10, fy: 0.025 + Math.random() * 0.04, py: Math.random() * TWO_PI,
-      waveLen: 70 + Math.random() * 130,
-      speed: 0.25 + Math.random() * 0.5,
-      amp: 1.5 + Math.random() * 2.5,
-      reach: 400 + Math.random() * 500,
-      drift: 0.4 + Math.random() * 0.7,
+      ax: 0.04 + Math.random() * 0.10, fx: 0.02 + Math.random() * 0.04, px: Math.random() * TWO_PI,
+      ay: 0.03 + Math.random() * 0.08, fy: 0.018 + Math.random() * 0.03, py: Math.random() * TWO_PI,
+      waveLen: 80 + Math.random() * 140,
+      speed: 0.2 + Math.random() * 0.4,
+      amp: 2.0 + Math.random() * 3.0,
+      reach: 450 + Math.random() * 550,
+      drift: 0.3 + Math.random() * 0.6,
     });
   }
   let _emitters = [];
+
+  // ── Layered plane waves at different angles ──
+  // These create the broad, slow breathing feel across the whole grid.
+  const _planeWaves = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.random() * TWO_PI;
+    _planeWaves.push({
+      cos: Math.cos(angle), sin: Math.sin(angle),
+      freq: 0.001 + Math.random() * 0.003,
+      speed: 0.15 + Math.random() * 0.3,
+      amp: 1.0 + Math.random() * 2.0,
+      phase: Math.random() * TWO_PI,
+    });
+  }
 
   // Button wells
   const _btnWells = [];
@@ -3484,10 +3456,9 @@ document.getElementById('mission-report').addEventListener('click', e => {
   window.addEventListener('resize', () => { resize(); _updateBtnWells(); });
 
   const GRID = 44;
-  const PERSP_H = 0.30;       // horizontal convergence toward top
-  const PERSP_V_EXP = 1.12;   // vertical compression exponent (>1 = top compressed)
+  const PERSP_H = 0.30;
+  const PERSP_V_EXP = 1.12;
   const MAX_DISP = GRID * 0.47;
-  const G_VIS = 2800;         // gravitational pull constant
 
   function draw() {
     if (document.getElementById('splash').classList.contains('hidden')) {
@@ -3497,10 +3468,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
     t += 0.007;
     _updateBtnWells();
 
-    // Mass positions this frame
-    const mpos = masses.map(getMassPos);
-
-    // Wave emitter positions (wander independently)
+    // Wave emitter positions (wander slowly)
     _emitters = _emitterDefs.map(em => {
       const st = t * em.drift;
       return {
@@ -3514,116 +3482,46 @@ document.getElementById('mission-report').addEventListener('click', e => {
     ctx.fillStyle = '#f2f2f2';
     ctx.fillRect(0, 0, w, h);
 
-    // ── Dark pool shadows under each mass ──
-    for (const mp of mpos) {
-      const r1 = mp.radius * 1.2;
-      const g1 = ctx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, r1);
-      g1.addColorStop(0, `rgba(0,0,0,${0.06 * mp.intensity})`);
-      g1.addColorStop(0.4, `rgba(0,0,0,${0.025 * mp.intensity})`);
-      g1.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g1;
-      ctx.fillRect(mp.x - r1, mp.y - r1, r1 * 2, r1 * 2);
-      // Wide outer haze
-      const r2 = mp.radius * 3;
-      const g2 = ctx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, r2);
-      g2.addColorStop(0, `rgba(0,0,0,${0.03 * mp.intensity})`);
-      g2.addColorStop(0.35, `rgba(0,0,0,${0.012 * mp.intensity})`);
-      g2.addColorStop(0.7, `rgba(0,0,0,${0.003 * mp.intensity})`);
-      g2.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g2;
-      ctx.fillRect(mp.x - r2, mp.y - r2, r2 * 2, r2 * 2);
-    }
-
-    // Mouse shadow
+    // Mouse shadow (subtle)
     if (mActive) {
-      const r = 280;
+      const r = 250;
       const g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-      g.addColorStop(0, 'rgba(0,0,0,0.06)');
-      g.addColorStop(0.35, 'rgba(0,0,0,0.025)');
+      g.addColorStop(0, 'rgba(0,0,0,0.04)');
+      g.addColorStop(0.4, 'rgba(0,0,0,0.015)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g;
       ctx.fillRect(mx - r, my - r, r * 2, r * 2);
     }
 
-    // ── Pulsing contour rings — ripple outward over time ──
-    for (const mp of mpos) {
-      const nRings = 6;
-      for (let ring = 0; ring < nRings; ring++) {
-        // Rings expand outward with time, creating a pulsing ripple effect
-        const phase = (t * 0.6 * mp.intensity + ring / nRings) % 1;
-        const r = mp.radius * 0.15 + phase * mp.radius * 1.2;
-        const fade = (1 - phase) * mp.intensity;
-        ctx.beginPath();
-        ctx.arc(mp.x, mp.y, r, 0, TWO_PI);
-        ctx.strokeStyle = `rgba(0,0,0,${0.025 * fade})`;
-        ctx.lineWidth = 0.5 + (1 - phase) * 0.5;
-        ctx.stroke();
-      }
-    }
-
-    // ── Compute perspective grid with gravitational displacement ──
+    // ── Compute perspective grid ──
     const margin = GRID * 4;
     const totalH = h + margin * 2;
-    const totalW = w + margin * 2;
-    const cols = Math.ceil(totalW / GRID) + 2;
+    const cols = Math.ceil((w + margin * 2) / GRID) + 2;
     const rows = Math.ceil(totalH / GRID) + 2;
     const stride = cols + 1;
     const pts = new Array(stride * (rows + 1));
     const centerX = w / 2;
 
     for (let gy = 0; gy <= rows; gy++) {
-      // ── Perspective projection ──
-      // rowT: 0 = top (far), 1 = bottom (near)
       const rowT = gy / rows;
-      // Vertical: compress rows near the top (far away)
       const yPersp = Math.pow(rowT, PERSP_V_EXP);
       const baseY = -margin + yPersp * totalH;
-      // Horizontal: lines converge toward center at the top
       const hScale = (1 - PERSP_H) + PERSP_H * rowT;
 
       for (let gx = 0; gx <= cols; gx++) {
-        // Flat grid X position
         const flatX = -margin + gx * GRID;
-        // Apply horizontal perspective convergence
         const bx = centerX + (flatX - centerX) * hScale;
         const by = baseY;
 
         let dx = 0, dy = 0;
 
-        // ── Gravitational displacement + pulsing waves ──
-        for (const mp of mpos) {
-          const rx = bx - mp.x, ry = by - mp.y;
-          const r = Math.sqrt(rx * rx + ry * ry);
-          const softR = mp.radius * 0.35;
-
-          // Static gravitational well (inverse-distance)
-          const pull = mp.intensity * G_VIS / (r + softR);
-          const invR = 1 / (r + 0.5);
-          dx -= rx * invR * pull;
-          dy -= ry * invR * pull;
-
-          // Slower traveling waves pulsing outward from each mass
-          if (r < mp.radius * 3.5) {
-            const waveLen = mp.radius * 0.7;
-            const waveSpeed = 1.0 * mp.intensity;
-            const wavePhase = r / waveLen - t * waveSpeed;
-            const waveFade = Math.exp(-r / (mp.radius * 2.0));
-            const waveAmp = Math.sin(wavePhase * TWO_PI) * waveFade * mp.intensity * 4;
-            if (r > 1) {
-              dx += (rx / r) * waveAmp;
-              dy += (ry / r) * waveAmp;
-            }
-          }
-        }
-
-        // Independent wave emitters — separate sources from the masses
-        // Each radiates slow circular waves from a different fixed location
+        // ── Radial wave emitters ──
         for (const em of _emitters) {
           const erx = bx - em.x, ery = by - em.y;
           const er = Math.sqrt(erx * erx + ery * ery);
           if (er < em.reach) {
             const phase = er / em.waveLen - t * em.speed;
-            const fade = Math.exp(-er / (em.reach * 0.5));
+            const fade = Math.exp(-er / (em.reach * 0.45));
             const amp = Math.sin(phase * TWO_PI) * fade * em.amp;
             if (er > 1) {
               dx += (erx / er) * amp;
@@ -3632,15 +3530,19 @@ document.getElementById('mission-report').addEventListener('click', e => {
           }
         }
 
-        // Gentle global plane wave — very slow background breathing
-        dx += Math.sin(bx * 0.003 + by * 0.0015 + t * 0.4) * 1.2;
-        dy += Math.cos(bx * 0.0015 - by * 0.003 + t * 0.35) * 1.2;
+        // ── Layered plane waves — broad directional breathing ──
+        for (const pw of _planeWaves) {
+          const proj = bx * pw.cos + by * pw.sin;
+          const val = Math.sin(proj * pw.freq + t * pw.speed + pw.phase);
+          dx += -pw.sin * val * pw.amp;
+          dy +=  pw.cos * val * pw.amp;
+        }
 
-        // Mouse as a gravitational mass
+        // Mouse — gentle warp, not a gravity well
         if (mActive) {
           const rx = bx - mx, ry = by - my;
           const r = Math.sqrt(rx * rx + ry * ry);
-          const pull = 2200 / (r + 130);
+          const pull = 800 / (r + 150);
           dx -= (rx / (r + 0.5)) * pull;
           dy -= (ry / (r + 0.5)) * pull;
         }
@@ -3652,13 +3554,13 @@ document.getElementById('mission-report').addEventListener('click', e => {
           if (nd < 3) {
             const str = well.strength * (1 + well.hover * 1.5);
             const f = Math.exp(-nd * nd * 0.5);
-            dx -= rx * f * str * 0.4;
-            dy -= ry * f * str * 0.4;
-            if (well.hover > 0) dy += f * str * 12 * well.hover;
+            dx -= rx * f * str * 0.3;
+            dy -= ry * f * str * 0.3;
+            if (well.hover > 0) dy += f * str * 8 * well.hover;
           }
         }
 
-        // Smooth asymptotic clamp — no hard cutoff
+        // Smooth asymptotic clamp
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len > 0.01) {
           const clamped = MAX_DISP * (1 - Math.exp(-len / MAX_DISP));
