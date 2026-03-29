@@ -3509,6 +3509,46 @@ document.getElementById('mission-report').addEventListener('click', e => {
     ctx.fillStyle = '#f2f2f2';
     ctx.fillRect(0, 0, w, h);
 
+    // ── Soft shading from wave emitters ──
+    for (const em of _emitters) {
+      const r = em.reach * 0.55;
+      const g = ctx.createRadialGradient(em.x, em.y, 0, em.x, em.y, r);
+      const a = em.amp / 9;
+      g.addColorStop(0, `rgba(0,0,0,${0.035 * a})`);
+      g.addColorStop(0.4, `rgba(0,0,0,${0.018 * a})`);
+      g.addColorStop(0.75, `rgba(0,0,0,${0.005 * a})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(em.x - r, em.y - r, r * 2, r * 2);
+    }
+
+    // ── Shading from active ripples ──
+    for (const rip of _ripples) {
+      const age = t - rip.birth;
+      const lifeT = age / rip.life;
+      const frontR = age * rip.speed;
+      const fade = (1 - lifeT) * rip.amp / 14;
+      if (frontR > 5 && fade > 0.002) {
+        const g = ctx.createRadialGradient(rip.x, rip.y, frontR * 0.3, rip.x, rip.y, frontR * 1.2);
+        g.addColorStop(0, `rgba(0,0,0,${0.03 * fade})`);
+        g.addColorStop(0.5, `rgba(0,0,0,${0.015 * fade})`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        const r = frontR * 1.2;
+        ctx.fillRect(rip.x - r, rip.y - r, r * 2, r * 2);
+      }
+    }
+
+    // ── Vignette — darken edges for depth ──
+    const vgOuter = Math.max(w, h) * 0.8;
+    const vgInner = Math.max(w, h) * 0.25;
+    const vg = ctx.createRadialGradient(w / 2, h / 2, vgInner, w / 2, h / 2, vgOuter);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(0.6, 'rgba(0,0,0,0.012)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.04)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+
     // Mouse shadow (subtle)
     if (mActive) {
       const r = 250;
