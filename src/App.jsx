@@ -33,16 +33,7 @@ function App() {
               <div className="splash-btn-icon">{'\uD83D\uDE80'}</div>
               <div className="splash-btn-label">LAUNCH HISTORY <span className="beta-tag">BETA</span></div>
             </button>
-            <button className="splash-btn" id="splash-sim-btn"
-              data-hover-desc="Watch SpaceX&apos;s Starship flight profile unfold in real time with accurate physics simulation. Follow every milestone from liftoff through Max Q, hot-staging, booster catch, and orbit insertion. Features real SpaceX photography, live telemetry readouts, and adjustable playback speed.">
-              <div className="splash-btn-icon">{'\u2622'}</div>
-              <div className="splash-btn-label">LAUNCH SIMULATOR <span className="beta-tag">NOT READY</span></div>
-            </button>
-            <button className="splash-btn" id="splash-planner-btn"
-              data-hover-desc="Plan interplanetary missions with real orbital mechanics. Choose from 6 rockets across SpaceX, NASA, Blue Origin, and ESA. Select destinations from the Moon to Neptune, pick your mission type, and get a physics-based feasibility analysis. Approve your mission and watch it execute in a 3D solar system with live telemetry.">
-              <div className="splash-btn-icon">{'\uD83D\uDDFA'}</div>
-              <div className="splash-btn-label">MISSION PLANNER <span className="beta-tag">NOT READY</span></div>
-            </button>
+            {/* Launch Simulator and Mission Planner hidden — tabled for now */}
           </div>
         </div>
         <div className="splash-hover-box" id="splash-hover-box"></div>
