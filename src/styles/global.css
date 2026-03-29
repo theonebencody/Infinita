@@ -253,9 +253,11 @@
   .splash-hover-box-text{font-size:12px;color:rgba(255,255,255,0.5);line-height:2;letter-spacing:0.3px}
 
   /* ── Launch History Overlay ── */
-  .lh-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,2,8,0.98);display:none;flex-direction:column;overflow:hidden}
+  .lh-overlay{position:fixed;inset:0;z-index:300;background:radial-gradient(ellipse at 50% 0%, rgba(0,18,36,0.97), rgba(0,4,10,0.99) 60%, rgba(0,0,2,1) 100%);display:none;flex-direction:column;overflow:hidden}
+  .lh-overlay::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.4) 100%);pointer-events:none;z-index:0}
+  .lh-overlay>*{position:relative;z-index:1}
   .lh-overlay.open{display:flex}
-  .lh-header{padding:0;border-bottom:1px solid rgba(0,238,255,0.1);flex-shrink:0;backdrop-filter:blur(8px);position:relative;z-index:5;pointer-events:all}
+  .lh-header{padding:0;border-bottom:1px solid rgba(0,238,255,0.12);flex-shrink:0;backdrop-filter:blur(20px);position:relative;z-index:5;pointer-events:all;background:linear-gradient(180deg,rgba(0,10,22,0.7) 0%,rgba(0,6,14,0.55) 100%);box-shadow:0 8px 32px rgba(0,0,0,0.5),0 1px 0 rgba(0,238,255,0.08),inset 0 -1px 0 rgba(0,238,255,0.04)}
   .lh-header-top{display:flex;align-items:center;padding:10px 22px 8px;gap:12px}
   .lh-back-btn{background:transparent;border:1px solid rgba(0,238,255,0.2);color:rgba(0,238,255,0.6);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border-radius:2px;transition:all 0.15s;white-space:nowrap;flex-shrink:0}
   .lh-back-btn:hover{border-color:rgba(0,238,255,0.55);color:#0ef}
@@ -266,12 +268,13 @@
   .lh-filter-btn:hover{border-color:rgba(0,238,255,0.35);color:rgba(0,238,255,0.8)}
   .lh-filter-btn.active{background:rgba(0,238,255,0.1);border-color:#0ef;color:#0ef}
 
-  .lh-scroll-body{flex:1;overflow-y:auto;padding:20px 28px 40px}
+  .lh-scroll-body{flex:1;overflow-y:auto;padding:20px 28px 40px;perspective:1200px}
   .lh-scroll-body::-webkit-scrollbar{width:5px}
   .lh-scroll-body::-webkit-scrollbar-thumb{background:rgba(0,238,255,0.15);border-radius:3px}
 
-  .lh-stats-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
-  .lh-stat-card{background:rgba(0,15,30,0.6);border:1px solid rgba(0,238,255,0.12);border-radius:4px;padding:16px 18px;text-align:center}
+  .lh-stats-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px;padding:26px;background:linear-gradient(180deg,rgba(0,16,32,0.6) 0%,rgba(0,8,18,0.5) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.18);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.6),0 4px 12px rgba(0,238,255,0.04),0 0 1px rgba(0,238,255,0.2),inset 0 1px 0 rgba(0,238,255,0.08);backdrop-filter:blur(16px);transform:translateZ(0)}
+  .lh-stat-card{background:linear-gradient(180deg,rgba(0,22,44,0.8) 0%,rgba(0,14,30,0.7) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.16);border-radius:8px;padding:16px 18px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(0,238,255,0.06);transition:transform 0.25s ease,box-shadow 0.25s ease}
+  .lh-stat-card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,0.5),inset 0 1px 0 rgba(0,238,255,0.1)}
   .lh-stat-card-wide{grid-column:span 2;text-align:left;padding:14px 18px}
   .lh-stat-card-value{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:#0ef;margin-bottom:6px}
   .lh-stat-card-label{font-size:10px;letter-spacing:2px;color:rgba(0,238,255,0.6);text-transform:uppercase;margin-bottom:8px}
@@ -283,25 +286,26 @@
   .lh-stat-nation-val{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#0ef}
   .lh-stat-source{grid-column:1/-1;text-align:center;font-size:9px;color:rgba(0,238,255,0.2);letter-spacing:1px;padding:4px 0}
 
-  .lh-section{margin-bottom:32px}
+  .lh-section{margin-bottom:36px;background:linear-gradient(180deg,rgba(0,14,28,0.55) 0%,rgba(0,8,18,0.45) 100%);border:1px solid rgba(0,238,255,0.08);border-top:1px solid rgba(0,238,255,0.15);border-radius:12px;padding:24px 26px;box-shadow:0 18px 56px rgba(0,0,0,0.55),0 4px 14px rgba(0,238,255,0.03),0 0 1px rgba(0,238,255,0.15),inset 0 1px 0 rgba(0,238,255,0.07);backdrop-filter:blur(14px);transform:translateZ(0)}
   .lh-section-title{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:4px;color:rgba(0,238,255,0.7);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(0,238,255,0.12)}
 
   .lh-company-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-  .lh-company-card{background:rgba(0,12,25,0.7);border:1px solid rgba(0,238,255,0.08);border-radius:4px;padding:16px;border-left:3px solid #0ef;transition:transform 0.25s ease,box-shadow 0.25s ease}
-  .lh-company-card:hover{transform:scale(1.03);box-shadow:0 4px 20px rgba(0,238,255,0.08)}
+  .lh-company-card{background:linear-gradient(180deg,rgba(0,18,36,0.8) 0%,rgba(0,10,22,0.7) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.16);border-radius:8px;padding:16px;border-left:3px solid #0ef;transition:transform 0.35s cubic-bezier(0.22,1,0.36,1),box-shadow 0.35s cubic-bezier(0.22,1,0.36,1);box-shadow:0 6px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(0,238,255,0.06)}
+  .lh-company-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 20px 48px rgba(0,0,0,0.5),0 0 24px rgba(0,238,255,0.06),inset 0 1px 0 rgba(0,238,255,0.1)}
   .lh-company-name{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:1px}
   .lh-company-stat{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:rgba(255,255,255,0.7)}
   .lh-company-stat span{color:#0ef;font-weight:700}
 
-  .lh-dual-globes{display:flex;gap:16px;justify-content:center}
-  .lh-globe-wrapper{flex:1;max-width:480px}
+  .lh-dual-globes{display:flex;gap:20px;justify-content:center}
+  .lh-globe-wrapper{flex:1;max-width:480px;background:linear-gradient(180deg,rgba(0,14,28,0.65) 0%,rgba(0,6,14,0.55) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.18);border-radius:12px;padding:20px 18px;box-shadow:0 16px 56px rgba(0,0,0,0.55),0 0 1px rgba(0,238,255,0.2),inset 0 1px 0 rgba(0,238,255,0.08);backdrop-filter:blur(12px);transition:transform 0.35s cubic-bezier(0.22,1,0.36,1),box-shadow 0.35s cubic-bezier(0.22,1,0.36,1)}
+  .lh-globe-wrapper:hover{transform:translateY(-4px);box-shadow:0 24px 64px rgba(0,0,0,0.6),0 0 30px rgba(0,238,255,0.05),inset 0 1px 0 rgba(0,238,255,0.12)}
   .lh-globe-label{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;letter-spacing:4px;color:rgba(0,238,255,0.75);text-align:center;margin-bottom:10px;text-shadow:0 0 8px rgba(0,238,255,0.2)}
-  .lh-globe-container{width:100%;height:300px;position:relative;border-radius:6px;overflow:hidden;background:#010208}
+  .lh-globe-container{width:100%;height:300px;position:relative;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#020a14,#000204);box-shadow:inset 0 0 40px rgba(0,0,0,0.6),inset 0 0 80px rgba(0,0,0,0.3),0 2px 8px rgba(0,0,0,0.4)}
   #earth-canvas,#mars-canvas,#solsys-canvas{width:100%;height:100%;display:block}
 
   .lh-timeline{display:flex;flex-direction:column;gap:0}
-  .lh-timeline-item{display:flex;gap:14px;padding:12px 0;border-left:2px solid rgba(0,238,255,0.15);margin-left:8px;padding-left:18px;position:relative;transition:transform 0.25s ease;transform-origin:left center}
-  .lh-timeline-item:hover{transform:scale(1.02)}
+  .lh-timeline-item{display:flex;gap:14px;padding:12px 14px;border-left:2px solid rgba(0,238,255,0.15);margin-left:8px;padding-left:18px;position:relative;transition:transform 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;transform-origin:left center;border-radius:0 6px 6px 0}
+  .lh-timeline-item:hover{transform:translateX(4px);background:rgba(0,14,28,0.4);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
   .lh-timeline-item::before{content:'';position:absolute;left:-5px;top:16px;width:8px;height:8px;border-radius:50%;background:#0ef;border:2px solid rgba(0,2,8,0.98)}
   .lh-timeline-item.failed::before{background:#f44}
   .lh-timeline-year{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#0ef;min-width:48px;flex-shrink:0}
@@ -311,8 +315,8 @@
   .lh-timeline-firsts{margin-top:6px;font-size:11px;color:#fb4;letter-spacing:0.5px}
 
   .lh-missions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
-  .lh-mission-card{background:rgba(0,12,25,0.5);border:1px solid rgba(0,238,255,0.06);border-radius:4px;padding:14px 16px;cursor:default;transition:border-color 0.15s}
-  .lh-mission-card:hover{border-color:rgba(0,238,255,0.25)}
+  .lh-mission-card{background:linear-gradient(180deg,rgba(0,16,32,0.65) 0%,rgba(0,10,22,0.55) 100%);border:1px solid rgba(0,238,255,0.08);border-top:1px solid rgba(0,238,255,0.14);border-radius:8px;padding:14px 16px;cursor:default;transition:transform 0.3s cubic-bezier(0.22,1,0.36,1),box-shadow 0.3s cubic-bezier(0.22,1,0.36,1),border-color 0.2s;box-shadow:0 4px 16px rgba(0,0,0,0.35),inset 0 1px 0 rgba(0,238,255,0.05)}
+  .lh-mission-card:hover{border-color:rgba(0,238,255,0.2);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,0.45),0 0 16px rgba(0,238,255,0.04),inset 0 1px 0 rgba(0,238,255,0.08)}
   .lh-mission-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
   .lh-mission-card-name{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#fff;letter-spacing:0.5px;line-height:1.4}
   .lh-mission-card-date{font-size:11px;color:rgba(0,238,255,0.6);letter-spacing:1px;flex-shrink:0}
@@ -326,14 +330,14 @@
   .lh-mission-card-status.partial{background:rgba(255,185,0,0.08);border:1px solid rgba(255,185,0,0.2);color:#fb4}
 
   /* ── Defining Moments Section ── */
-  .lh-defining-section{position:relative;overflow:hidden;margin-left:-28px;margin-right:-28px;padding-left:28px;padding-right:28px;padding-top:20px;padding-bottom:20px}
+  .lh-defining-section{position:relative;overflow:hidden;margin-left:0;margin-right:0;padding-left:28px;padding-right:28px;padding-top:26px;padding-bottom:26px;background:linear-gradient(180deg,rgba(0,14,28,0.6) 0%,rgba(0,6,16,0.5) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.18);border-radius:14px;box-shadow:0 20px 64px rgba(0,0,0,0.6),0 4px 14px rgba(0,238,255,0.04),0 0 1px rgba(0,238,255,0.2),inset 0 1px 0 rgba(0,238,255,0.08);backdrop-filter:blur(16px);margin-bottom:36px}
   .lh-defining-bg-img{position:absolute;right:0;top:50%;transform:translateY(-50%);width:100%;max-width:none;opacity:0.1;pointer-events:none;filter:brightness(1.3) contrast(1.15);z-index:0;object-fit:contain}
   .lh-defining-section .lh-section-title{position:relative;z-index:1}
   .lh-defining-subtitle{font-size:11px;color:rgba(0,238,255,0.3);letter-spacing:2px;margin-bottom:16px;position:relative;z-index:1}
 
   .lh-highlights{display:flex;flex-direction:column;gap:0;position:relative;z-index:1}
-  .lh-dm-row{display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid rgba(0,238,255,0.05);cursor:pointer;transition:background 0.12s;flex-wrap:wrap}
-  .lh-dm-row:hover{background:rgba(0,238,255,0.03)}
+  .lh-dm-row{display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid rgba(0,238,255,0.05);cursor:pointer;transition:background 0.2s,transform 0.25s cubic-bezier(0.22,1,0.36,1),box-shadow 0.25s;flex-wrap:wrap;border-radius:6px;margin:2px 0}
+  .lh-dm-row:hover{background:rgba(0,16,32,0.5);transform:translateY(-1px) translateX(2px);box-shadow:0 4px 16px rgba(0,0,0,0.3)}
   .lh-dm-year{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:#0ef;min-width:48px;flex-shrink:0}
   .lh-dm-main{flex:1;min-width:0}
   .lh-dm-name{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#fff;letter-spacing:0.5px;margin-bottom:2px}
@@ -370,14 +374,14 @@
   .lh-timeline-wrap .lh-timeline{position:relative;z-index:1}
   .lh-timeline-wrap .lh-show-more-btn{position:relative;z-index:1}
 
-  .lh-show-more-btn{display:block;width:100%;padding:12px;background:rgba(0,238,255,0.05);border:1px solid rgba(0,238,255,0.2);color:#0ef;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all 0.2s;text-align:center;margin-top:14px}
-  .lh-show-more-btn:hover{background:rgba(0,238,255,0.12);border-color:rgba(0,238,255,0.45);box-shadow:0 0 20px rgba(0,238,255,0.1)}
+  .lh-show-more-btn{display:block;width:100%;padding:12px;background:linear-gradient(180deg,rgba(0,238,255,0.08) 0%,rgba(0,238,255,0.03) 100%);border:1px solid rgba(0,238,255,0.2);border-top:1px solid rgba(0,238,255,0.25);color:#0ef;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;cursor:pointer;border-radius:6px;transition:all 0.25s cubic-bezier(0.22,1,0.36,1);text-align:center;margin-top:14px;box-shadow:0 4px 16px rgba(0,0,0,0.3),inset 0 1px 0 rgba(0,238,255,0.08)}
+  .lh-show-more-btn:hover{background:rgba(0,238,255,0.12);border-color:rgba(0,238,255,0.45);box-shadow:0 8px 28px rgba(0,0,0,0.4),0 0 20px rgba(0,238,255,0.08);transform:translateY(-2px)}
   .lh-catalog-btn{font-size:13px;padding:16px;letter-spacing:4px;margin-top:0;margin-bottom:14px}
 
   /* ── Condensed Org Table ── */
   .lh-org-table{display:flex;flex-direction:column;gap:0}
-  .lh-org-row{display:flex;align-items:center;gap:0;padding:10px 14px;border-bottom:1px solid rgba(0,238,255,0.04);transition:background 0.12s}
-  .lh-org-row:hover{background:rgba(0,238,255,0.03)}
+  .lh-org-row{display:flex;align-items:center;gap:0;padding:10px 14px;border-bottom:1px solid rgba(0,238,255,0.04);transition:background 0.2s,transform 0.25s cubic-bezier(0.22,1,0.36,1),box-shadow 0.25s;border-radius:4px}
+  .lh-org-row:hover{background:rgba(0,16,32,0.4);transform:translateX(3px);box-shadow:0 3px 12px rgba(0,0,0,0.25)}
   .lh-org-header-row{background:rgba(0,238,255,0.03);border-bottom:1px solid rgba(0,238,255,0.1);padding:8px 14px}
   .lh-org-header-row span{font-size:8px;letter-spacing:2px;color:rgba(0,238,255,0.35);text-transform:uppercase}
   .lh-org-col{display:inline-block}
@@ -389,7 +393,7 @@
   .lh-org-detail-link:hover{color:#fff;text-shadow:0 0 10px rgba(0,238,255,0.5);border-color:rgba(0,238,255,0.5);background:rgba(0,238,255,0.06)}
 
   /* ── Organization Detail Overlay ── */
-  .lh-org-detail{position:absolute;inset:0;z-index:10;background:rgba(0,2,8,0.98);display:none;flex-direction:column;overflow:hidden}
+  .lh-org-detail{position:absolute;inset:0;z-index:10;background:radial-gradient(ellipse at 50% 0%, rgba(0,18,36,0.97), rgba(0,4,10,0.99) 60%, rgba(0,0,2,1) 100%);display:none;flex-direction:column;overflow:hidden}
   .lh-org-detail.open{display:flex}
   .lh-od-header{padding:14px 22px;border-bottom:2px solid #0ef;display:flex;align-items:center;gap:16px;flex-shrink:0}
   .lh-od-back{background:transparent;border:1px solid rgba(0,238,255,0.2);color:rgba(0,238,255,0.6);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border-radius:2px;transition:all 0.15s;white-space:nowrap}
@@ -400,7 +404,8 @@
   .lh-od-body::-webkit-scrollbar-thumb{background:rgba(0,238,255,0.15);border-radius:3px}
 
   .lh-od-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:24px}
-  .lh-od-stat{background:rgba(0,15,30,0.6);border:1px solid rgba(0,238,255,0.1);border-radius:4px;padding:14px 12px;text-align:center}
+  .lh-od-stat{background:linear-gradient(180deg,rgba(0,18,36,0.7) 0%,rgba(0,12,26,0.6) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.16);border-radius:8px;padding:14px 12px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,0.35),inset 0 1px 0 rgba(0,238,255,0.06);transition:transform 0.25s cubic-bezier(0.22,1,0.36,1),box-shadow 0.25s}
+  .lh-od-stat:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,0.45),inset 0 1px 0 rgba(0,238,255,0.1)}
   .lh-od-stat-val{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;margin-bottom:4px}
   .lh-od-stat-lbl{font-size:9px;letter-spacing:2px;color:rgba(0,238,255,0.4);text-transform:uppercase}
 
@@ -433,8 +438,8 @@
 
   /* Era firsts grid cards */
   .lh-era-firsts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-  .lh-era-first-card{background:rgba(0,12,25,0.7);border:1px solid rgba(0,238,255,0.08);border-top:2px solid #0ef;border-radius:4px;padding:14px 16px;transition:transform 0.2s,border-color 0.2s}
-  .lh-era-first-card:hover{transform:translateY(-2px);border-color:rgba(0,238,255,0.3)}
+  .lh-era-first-card{background:linear-gradient(180deg,rgba(0,16,32,0.75) 0%,rgba(0,10,22,0.65) 100%);border:1px solid rgba(0,238,255,0.1);border-top:2px solid #0ef;border-radius:8px;padding:14px 16px;transition:transform 0.3s cubic-bezier(0.22,1,0.36,1),box-shadow 0.3s,border-color 0.2s;box-shadow:0 6px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(0,238,255,0.05)}
+  .lh-era-first-card:hover{transform:translateY(-5px);border-color:rgba(0,238,255,0.3);box-shadow:0 16px 48px rgba(0,0,0,0.5),0 0 20px rgba(0,238,255,0.05),inset 0 1px 0 rgba(0,238,255,0.1)}
   .lh-era-first-year{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;margin-bottom:4px}
   .lh-era-first-name{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#fff;letter-spacing:0.5px;margin-bottom:4px}
   .lh-era-first-org{font-size:9px;letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase}
@@ -461,9 +466,9 @@
 
   /* ── Era Button Grid ── */
   .lh-era-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-  .lh-era-btn{background:linear-gradient(135deg,rgba(0,15,30,0.8),rgba(0,8,18,0.95));border:1px solid rgba(0,238,255,0.1);border-left:3px solid var(--era-color,#0ef);border-radius:6px;padding:18px 20px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden}
-  .lh-era-btn:hover{border-color:var(--era-color,#0ef);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.3),0 0 20px color-mix(in srgb, var(--era-color) 15%, transparent)}
-  .lh-era-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--era-color,#0ef);opacity:0.5}
+  .lh-era-btn{background:linear-gradient(170deg,rgba(0,18,36,0.85) 0%,rgba(0,8,18,0.95) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.16);border-left:3px solid var(--era-color,#0ef);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all 0.35s cubic-bezier(0.22,1,0.36,1);position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.45),0 0 1px rgba(0,238,255,0.12),inset 0 1px 0 rgba(0,238,255,0.06)}
+  .lh-era-btn:hover{border-color:var(--era-color,#0ef);transform:translateY(-8px);box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 32px color-mix(in srgb, var(--era-color) 18%, transparent),0 0 1px var(--era-color,#0ef),inset 0 1px 0 rgba(0,238,255,0.12)}
+  .lh-era-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--era-color,#0ef),transparent);opacity:0.5}
   .lh-era-btn-icon{font-size:22px;margin-bottom:8px;opacity:0.8}
   .lh-era-btn-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;letter-spacing:2px;color:var(--era-color,#0ef);margin-bottom:4px}
   .lh-era-btn-range{font-size:10px;color:rgba(0,238,255,0.4);letter-spacing:1px;margin-bottom:8px}
@@ -476,7 +481,7 @@
   .lh-era-narrative{font-size:13px;color:rgba(255,255,255,0.72);line-height:2.1;letter-spacing:0.2px;text-align:justify}
 
   /* ── Destination Groups ── */
-  .lh-dest-group{margin-bottom:12px;border-radius:4px;overflow:hidden;background:rgba(0,10,22,0.5);border:1px solid rgba(0,238,255,0.06)}
+  .lh-dest-group{margin-bottom:14px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,rgba(0,14,28,0.65) 0%,rgba(0,8,18,0.55) 100%);border:1px solid rgba(0,238,255,0.08);border-top:1px solid rgba(0,238,255,0.14);box-shadow:0 6px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(0,238,255,0.05)}
   .lh-dest-header{padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;border-left:3px solid #0ef;transition:background 0.15s}
   .lh-dest-header:hover{background:rgba(0,238,255,0.03)}
   .lh-dest-label{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;letter-spacing:2px}
@@ -489,19 +494,21 @@
   .lh-dest-expand-btn{font-size:10px;padding:10px;letter-spacing:2px;margin-top:6px}
 
   @media (max-width: 768px) {
-    .lh-scroll-body{padding:14px 12px 30px}
+    .lh-scroll-body{padding:14px 10px 30px}
     .lh-header-top{padding:8px 12px 6px}
     .lh-filter-row{padding:0 12px 8px}
     .lh-dual-globes{flex-direction:column}
     .lh-globe-container{height:200px}
-    .lh-stats-overview{grid-template-columns:repeat(2,1fr)}
+    .lh-stats-overview{grid-template-columns:repeat(2,1fr);padding:16px}
+    .lh-section{padding:16px 14px}
     .lh-company-grid{grid-template-columns:1fr}
     .lh-missions-grid{grid-template-columns:1fr}
   }
 
 /* ── Launch History LIGHT THEME (scoped to #launch-history only) ── */
-  #launch-history.lh-overlay{background:#eaeaee}
-  #launch-history .lh-header{border-bottom-color:rgba(0,0,0,0.15);backdrop-filter:none;background:rgba(0,0,0,0.035)}
+  #launch-history.lh-overlay{background:radial-gradient(ellipse at 50% 0%, #e8eaef, #dddfe5 50%, #d0d2d8 100%)}
+  #launch-history.lh-overlay::before{background:radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.06) 100%)}
+  #launch-history .lh-header{border-bottom-color:rgba(0,0,0,0.08);backdrop-filter:blur(20px);background:linear-gradient(180deg,rgba(255,255,255,0.7) 0%,rgba(255,255,255,0.5) 100%);box-shadow:0 6px 24px rgba(0,0,0,0.08),0 1px 0 rgba(255,255,255,0.8),inset 0 -1px 0 rgba(0,0,0,0.04)}
   #launch-history .lh-back-btn{border:none;color:rgba(0,0,0,0.6)}
   #launch-history .lh-back-btn:hover{border-color:transparent;color:#000}
   #launch-history .lh-title{color:#000}
@@ -509,7 +516,9 @@
   #launch-history .lh-filter-btn:hover{border-color:transparent;color:rgba(0,0,0,0.85)}
   #launch-history .lh-filter-btn.active{background:transparent;border-color:transparent;color:#000;border-bottom:2px solid rgba(0,0,0,0.5)}
   #launch-history .lh-scroll-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2)}
-  #launch-history .lh-stat-card{background:rgba(0,0,0,0.04);border:none;border-radius:6px}
+  #launch-history .lh-stats-overview{background:linear-gradient(180deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.5) 100%);border:1px solid rgba(255,255,255,0.6);border-top:1px solid rgba(255,255,255,0.85);box-shadow:0 12px 40px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.5)}
+  #launch-history .lh-stat-card{background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.6);border-top:1px solid rgba(255,255,255,0.8);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.4)}
+  #launch-history .lh-stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.5)}
   #launch-history .lh-stat-card-value{color:#0a0a18}
   #launch-history .lh-stat-card-label{color:rgba(0,0,0,0.55);font-size:11px}
   #launch-history .lh-stat-nation-row{border-bottom-color:rgba(0,0,0,0.08)}
@@ -517,12 +526,15 @@
   #launch-history .lh-stat-nation-name{color:rgba(0,0,0,0.7);font-size:12px}
   #launch-history .lh-stat-nation-val{color:#0a0a18}
   #launch-history .lh-stat-source{color:rgba(0,0,0,0.35);font-size:10px}
+  #launch-history .lh-section{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);box-shadow:0 14px 48px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.4);backdrop-filter:blur(14px)}
   #launch-history .lh-section-title{color:rgba(0,0,0,0.7);border-bottom-color:rgba(0,0,0,0.18)}
-  #launch-history .lh-company-card{background:rgba(0,0,0,0.035);border:none;border-left:3px solid rgba(20,20,50,0.3);border-radius:4px}
-  #launch-history .lh-company-card:hover{box-shadow:0 2px 16px rgba(0,0,0,0.07);background:rgba(0,0,0,0.055)}
+  #launch-history .lh-company-card{background:linear-gradient(180deg,rgba(255,255,255,0.7) 0%,rgba(255,255,255,0.5) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);border-left:3px solid rgba(20,20,50,0.3);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.4)}
+  #launch-history .lh-company-card:hover{box-shadow:0 14px 40px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.6);background:linear-gradient(180deg,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0.65) 100%);transform:translateY(-6px) scale(1.02)}
   #launch-history .lh-company-name{color:#000}
   #launch-history .lh-company-stat{color:rgba(0,0,0,0.7);font-size:13px}
   #launch-history .lh-company-stat span{color:#0a0a18}
+  #launch-history .lh-globe-wrapper{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);box-shadow:0 12px 40px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.4)}
+  #launch-history .lh-globe-wrapper:hover{box-shadow:0 20px 56px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
   #launch-history .lh-globe-label{color:rgba(0,0,0,0.6);text-shadow:none}
   #launch-history .lh-timeline-item{border-left-color:rgba(20,20,50,0.2)}
   #launch-history .lh-timeline-item::before{background:#1a1a30;border-color:#eaeaee}
@@ -531,8 +543,8 @@
   #launch-history .lh-timeline-name{color:#000}
   #launch-history .lh-timeline-desc{color:rgba(0,0,0,0.65);font-size:13px}
   #launch-history .lh-timeline-firsts{color:rgba(0,0,0,0.6);font-size:12px}
-  #launch-history .lh-mission-card{background:transparent;border:none;border-bottom:1px solid rgba(0,0,0,0.1);border-radius:0}
-  #launch-history .lh-mission-card:hover{border-color:rgba(0,0,0,0.1);background:rgba(0,0,0,0.03)}
+  #launch-history .lh-mission-card{background:linear-gradient(180deg,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.4) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.7);border-radius:8px;box-shadow:0 3px 12px rgba(0,0,0,0.05),inset 0 1px 0 rgba(255,255,255,0.3)}
+  #launch-history .lh-mission-card:hover{border-color:rgba(255,255,255,0.7);background:linear-gradient(180deg,rgba(255,255,255,0.7) 0%,rgba(255,255,255,0.55) 100%);transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.5)}
   #launch-history .lh-mission-card-name{color:#000}
   #launch-history .lh-mission-card-date{color:rgba(0,0,0,0.5);font-size:12px}
   #launch-history .lh-mission-card-desc{color:rgba(0,0,0,0.65);font-size:13px}
@@ -542,11 +554,11 @@
   #launch-history .lh-mission-card-status.failed{background:rgba(100,30,30,0.07);border-color:rgba(100,30,30,0.12);color:rgba(120,40,40,0.7)}
   #launch-history .lh-mission-card-status.partial{background:rgba(100,80,20,0.07);border-color:rgba(100,80,20,0.12);color:rgba(100,70,10,0.75)}
   #launch-history .lh-mission-card-org{font-size:10px}
-  #launch-history .lh-defining-section{background:rgba(0,0,0,0.025)}
+  #launch-history .lh-defining-section{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);box-shadow:0 16px 52px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.4);margin-left:0;margin-right:0}
   #launch-history .lh-defining-bg-img{opacity:0.07;filter:grayscale(0.7)}
   #launch-history .lh-defining-subtitle{color:rgba(0,0,0,0.5);font-size:12px}
-  #launch-history .lh-dm-row{border-bottom-color:rgba(0,0,0,0.1)}
-  #launch-history .lh-dm-row:hover{background:rgba(0,0,0,0.04)}
+  #launch-history .lh-dm-row{border-bottom-color:rgba(0,0,0,0.08)}
+  #launch-history .lh-dm-row:hover{background:rgba(255,255,255,0.4);transform:translateY(-1px) translateX(2px);box-shadow:0 3px 12px rgba(0,0,0,0.06)}
   #launch-history .lh-dm-year{color:#0a0a18}
   #launch-history .lh-dm-name{color:#000;font-size:13px}
   #launch-history .lh-dm-first{color:rgba(0,0,0,0.6);font-size:11px}
@@ -558,10 +570,10 @@
   #launch-history .lh-video-icon{color:rgba(0,0,0,0.5);opacity:1}
   #launch-history .lh-od-mission-desc{color:rgba(0,0,0,0.6);font-size:11px}
   #launch-history .lh-snowflake{background:rgba(0,0,0,0.2)}
-  #launch-history .lh-show-more-btn{background:rgba(0,0,0,0.03);border:none;border-top:1px solid rgba(0,0,0,0.12);color:rgba(0,0,0,0.55);border-radius:0}
-  #launch-history .lh-show-more-btn:hover{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.12);color:#000;box-shadow:none}
-  #launch-history .lh-org-row{border-bottom-color:rgba(0,0,0,0.08)}
-  #launch-history .lh-org-row:hover{background:rgba(0,0,0,0.04)}
+  #launch-history .lh-show-more-btn{background:linear-gradient(180deg,rgba(255,255,255,0.5) 0%,rgba(255,255,255,0.35) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.7);color:rgba(0,0,0,0.55);border-radius:6px;box-shadow:0 3px 12px rgba(0,0,0,0.05),inset 0 1px 0 rgba(255,255,255,0.3)}
+  #launch-history .lh-show-more-btn:hover{background:linear-gradient(180deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.5) 100%);color:#000;box-shadow:0 6px 20px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.4);transform:translateY(-2px)}
+  #launch-history .lh-org-row{border-bottom-color:rgba(0,0,0,0.06)}
+  #launch-history .lh-org-row:hover{background:rgba(255,255,255,0.35);transform:translateX(3px);box-shadow:0 2px 8px rgba(0,0,0,0.04)}
   #launch-history .lh-org-header-row{background:rgba(0,0,0,0.025);border-bottom-color:rgba(0,0,0,0.12)}
   #launch-history .lh-org-header-row span{color:rgba(0,0,0,0.5);font-size:9px}
   #launch-history .lh-org-col-name{color:#000}
@@ -569,13 +581,14 @@
   #launch-history .lh-org-col-years{color:rgba(0,0,0,0.5);font-size:11px}
   #launch-history .lh-org-detail-link{color:rgba(0,0,0,0.55);border:none}
   #launch-history .lh-org-detail-link:hover{color:#000;text-shadow:none;border-color:transparent;background:transparent}
-  #launch-history .lh-org-detail{background:#eaeaee}
+  #launch-history .lh-org-detail{background:radial-gradient(ellipse at 50% 0%, #e8eaef, #dddfe5 50%, #d0d2d8 100%)}
   #launch-history .lh-od-header{border-bottom:1px solid rgba(0,0,0,0.15)}
   #launch-history .lh-od-back{border:none;color:rgba(0,0,0,0.6)}
   #launch-history .lh-od-back:hover{border-color:transparent;color:#000}
   #launch-history .lh-od-title{color:#000}
   #launch-history .lh-od-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2)}
-  #launch-history .lh-od-stat{background:rgba(0,0,0,0.04);border:none;border-radius:6px}
+  #launch-history .lh-od-stat{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.4) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.4)}
+  #launch-history .lh-od-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.5)}
   #launch-history .lh-od-stat-val{color:#0a0a18}
   #launch-history .lh-od-stat-lbl{color:rgba(0,0,0,0.5);font-size:10px}
   #launch-history .lh-od-section-title{color:rgba(0,0,0,0.6);border-bottom-color:rgba(0,0,0,0.12)}
@@ -590,8 +603,8 @@
   #launch-history .lh-od-first-year{color:#0a0a18}
   #launch-history .lh-od-first-name{color:rgba(0,0,0,0.7);font-size:12px}
   #launch-history .lh-od-first-tag{color:rgba(80,50,5,0.8);font-size:11px}
-  #launch-history .lh-era-btn{background:rgba(0,0,0,0.035);border:none;border-left:3px solid rgba(20,20,50,0.3);border-radius:4px}
-  #launch-history .lh-era-btn:hover{border-color:transparent;border-left-color:rgba(20,20,50,0.5);transform:translateY(-2px);box-shadow:0 2px 16px rgba(0,0,0,0.07);background:rgba(0,0,0,0.055)}
+  #launch-history .lh-era-btn{background:linear-gradient(180deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);border-left:3px solid rgba(20,20,50,0.3);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.4)}
+  #launch-history .lh-era-btn:hover{border-color:rgba(255,255,255,0.7);border-left-color:rgba(20,20,50,0.5);transform:translateY(-8px);box-shadow:0 20px 52px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.6);background:linear-gradient(180deg,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0.6) 100%)}
   #launch-history .lh-era-btn::before{background:rgba(0,0,0,0.05)}
   #launch-history .lh-era-btn-icon{opacity:0.7}
   #launch-history .lh-era-btn-title{color:#0a0a18}
@@ -601,8 +614,8 @@
   #launch-history .lh-era-btn-highlight{color:rgba(80,50,5,0.7);font-size:10px}
   #launch-history .lh-era-btn-arrow{color:rgba(0,0,0,0.5)}
   #launch-history .lh-era-narrative{color:rgba(0,0,0,0.7);font-size:14px}
-  #launch-history .lh-era-first-card{background:rgba(0,0,0,0.035);border:none;border-top:2px solid rgba(20,20,50,0.18);border-radius:4px}
-  #launch-history .lh-era-first-card:hover{background:rgba(0,0,0,0.055)}
+  #launch-history .lh-era-first-card{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.4) 100%);border:1px solid rgba(255,255,255,0.5);border-top:2px solid rgba(20,20,50,0.18);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.3)}
+  #launch-history .lh-era-first-card:hover{background:linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.55) 100%);box-shadow:0 12px 36px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.5)}
   #launch-history .lh-era-first-year{color:#0a0a18}
   #launch-history .lh-era-first-name{color:#000;font-size:12px}
   #launch-history .lh-era-first-org{color:rgba(0,0,0,0.55);font-size:10px}
@@ -613,7 +626,7 @@
   #launch-history .lh-od-mission-name{color:rgba(0,0,0,0.7)}
   #launch-history .lh-od-mission-rocket{color:rgba(0,0,0,0.45);font-size:10px}
   #launch-history .lh-od-mission-dest{color:rgba(0,0,0,0.55);font-size:10px}
-  #launch-history .lh-dest-group{background:rgba(0,0,0,0.025);border:none;border-bottom:1px solid rgba(0,0,0,0.1);border-radius:4px}
+  #launch-history .lh-dest-group{background:linear-gradient(180deg,rgba(255,255,255,0.5) 0%,rgba(255,255,255,0.35) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.7);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.3)}
   #launch-history .lh-dest-header{border-left-color:rgba(20,20,50,0.25)}
   #launch-history .lh-dest-header:hover{background:rgba(0,0,0,0.04)}
   #launch-history .lh-dest-label{color:#000}
