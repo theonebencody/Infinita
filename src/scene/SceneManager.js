@@ -4408,19 +4408,23 @@ document.getElementById('fp-scrub').addEventListener('touchstart', function(e) {
 // Back button
 document.getElementById('sim-back-btn').addEventListener('click', closeLaunchSim);
 
-// Splash sim button
-document.getElementById('splash-sim-btn').addEventListener('click', function(e) {
+// Splash sim button (hidden for now — buttons removed from DOM)
+const _simBtn = document.getElementById('splash-sim-btn');
+if (_simBtn) _simBtn.addEventListener('click', function(e) {
   e.stopPropagation();
   document.getElementById('splash').classList.add('hidden');
   openLaunchSim();
 });
-// Mission Planner button
-document.getElementById('splash-planner-btn').addEventListener('click', function(e) {
-  e.stopPropagation();
-  document.getElementById('splash').classList.add('hidden');
-  openMissionPlanner();
-});
-initMissionPlanner();
+// Mission Planner button (hidden for now — buttons removed from DOM)
+const _planBtn = document.getElementById('splash-planner-btn');
+if (_planBtn) {
+  _planBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.getElementById('splash').classList.add('hidden');
+    openMissionPlanner();
+  });
+  initMissionPlanner();
+}
 
 document.getElementById('hud-back-btn').addEventListener('click', () => {
   started = false;
