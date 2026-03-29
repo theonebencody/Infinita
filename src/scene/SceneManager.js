@@ -3506,7 +3506,7 @@ document.getElementById('mission-report').addEventListener('click', e => {
     }
 
     // ── Background ──
-    ctx.fillStyle = '#f2f2f2';
+    ctx.fillStyle = '#0a0a10';
     ctx.fillRect(0, 0, w, h);
 
     // ── Soft shading from wave emitters ──
@@ -3514,10 +3514,10 @@ document.getElementById('mission-report').addEventListener('click', e => {
       const r = em.reach * 0.55;
       const g = ctx.createRadialGradient(em.x, em.y, 0, em.x, em.y, r);
       const a = em.amp / 9;
-      g.addColorStop(0, `rgba(0,0,0,${0.035 * a})`);
-      g.addColorStop(0.4, `rgba(0,0,0,${0.018 * a})`);
-      g.addColorStop(0.75, `rgba(0,0,0,${0.005 * a})`);
-      g.addColorStop(1, 'rgba(0,0,0,0)');
+      g.addColorStop(0, `rgba(255,255,255,${0.025 * a})`);
+      g.addColorStop(0.4, `rgba(255,255,255,${0.012 * a})`);
+      g.addColorStop(0.75, `rgba(255,255,255,${0.004 * a})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
       ctx.fillRect(em.x - r, em.y - r, r * 2, r * 2);
     }
@@ -3530,9 +3530,9 @@ document.getElementById('mission-report').addEventListener('click', e => {
       const fade = (1 - lifeT) * rip.amp / 14;
       if (frontR > 5 && fade > 0.002) {
         const g = ctx.createRadialGradient(rip.x, rip.y, frontR * 0.3, rip.x, rip.y, frontR * 1.2);
-        g.addColorStop(0, `rgba(0,0,0,${0.03 * fade})`);
-        g.addColorStop(0.5, `rgba(0,0,0,${0.015 * fade})`);
-        g.addColorStop(1, 'rgba(0,0,0,0)');
+        g.addColorStop(0, `rgba(255,255,255,${0.02 * fade})`);
+        g.addColorStop(0.5, `rgba(255,255,255,${0.01 * fade})`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = g;
         const r = frontR * 1.2;
         ctx.fillRect(rip.x - r, rip.y - r, r * 2, r * 2);
@@ -3544,18 +3544,18 @@ document.getElementById('mission-report').addEventListener('click', e => {
     const vgInner = Math.max(w, h) * 0.25;
     const vg = ctx.createRadialGradient(w / 2, h / 2, vgInner, w / 2, h / 2, vgOuter);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(0.6, 'rgba(0,0,0,0.012)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.04)');
+    vg.addColorStop(0.6, 'rgba(0,0,0,0.15)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.35)');
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, w, h);
 
-    // Mouse shadow (subtle)
+    // Mouse glow (subtle)
     if (mActive) {
       const r = 250;
       const g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-      g.addColorStop(0, 'rgba(0,0,0,0.04)');
-      g.addColorStop(0.4, 'rgba(0,0,0,0.015)');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
+      g.addColorStop(0, 'rgba(255,255,255,0.035)');
+      g.addColorStop(0.4, 'rgba(255,255,255,0.012)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
       ctx.fillRect(mx - r, my - r, r * 2, r * 2);
     }
@@ -3680,13 +3680,13 @@ document.getElementById('mission-report').addEventListener('click', e => {
       // Per-line variance: deterministic wobble based on line index
       const variance = ((lineIdx * 7919) % 100) / 100; // 0-1 pseudo-random per line
       const thickLine = variance > 0.7 ? 1 : 0; // ~30% of lines are accent lines
-      // Opacity: 0.035 (flat thin) → 0.18 (deep well), accent lines slightly stronger
-      const baseAlpha = 0.035 + thickLine * 0.015;
-      const alpha = baseAlpha + ramp * 0.13;
+      // Opacity: 0.04 (flat thin) → 0.22 (deep well), accent lines slightly stronger
+      const baseAlpha = 0.04 + thickLine * 0.015;
+      const alpha = baseAlpha + ramp * 0.16;
       // Width: varies per line, boosted in wells
       const baseLw = 0.2 + variance * 0.25 + thickLine * 0.2;
       const lw = baseLw + ramp * 0.8;
-      ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.20, alpha)})`;
+      ctx.strokeStyle = `rgba(255,255,255,${Math.min(0.24, alpha)})`;
       ctx.lineWidth = Math.min(1.4, lw);
     }
 
