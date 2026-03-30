@@ -605,7 +605,7 @@ for (let i = 0; i < bgStarCount; i++) {
   bgStarPos[i*3+2] = r * Math.cos(phi);
   // Realistic spectral color distribution
   const roll = Math.random();
-  const b = 0.65 + Math.random() * 0.35;
+  const b = 0.75 + Math.random() * 0.25;
   if (roll < 0.02) { // O/B blue-white (rare, bright)
     bgStarCol[i*3] = b*0.7; bgStarCol[i*3+1] = b*0.8; bgStarCol[i*3+2] = b;
     bgStarSizes[i] = 1.8 + Math.random() * 1.2;
@@ -653,7 +653,7 @@ const bgStarMat = new THREE.ShaderMaterial({
     void main() {
       vColor = color;
       vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = size * 2.4;
+      gl_PointSize = size * 2.8;
       gl_Position = projectionMatrix * mvPos;
     }
   `,
