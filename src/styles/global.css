@@ -506,134 +506,124 @@
     .lh-missions-grid{grid-template-columns:1fr}
   }
 
-/* ── Launch History LIGHT THEME (scoped to #launch-history only) ── */
-  #launch-history.lh-overlay{background:radial-gradient(ellipse at 50% 0%, #e8eaef, #dddfe5 50%, #d0d2d8 100%)}
-  #launch-history.lh-overlay::before{background:radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.06) 100%)}
-  #launch-history .lh-header{border-bottom-color:rgba(0,0,0,0.08);backdrop-filter:blur(20px);background:linear-gradient(180deg,rgba(255,255,255,0.7) 0%,rgba(255,255,255,0.5) 100%);box-shadow:0 6px 24px rgba(0,0,0,0.08),0 1px 0 rgba(255,255,255,0.8),inset 0 -1px 0 rgba(0,0,0,0.04)}
-  #launch-history .lh-back-btn{border:none;color:rgba(0,0,0,0.6)}
-  #launch-history .lh-back-btn:hover{border-color:transparent;color:#000}
-  #launch-history .lh-title{color:#000}
-  #launch-history .lh-filter-btn{border:none;color:rgba(0,0,0,0.5)}
-  #launch-history .lh-filter-btn:hover{border-color:transparent;color:rgba(0,0,0,0.85)}
-  #launch-history .lh-filter-btn.active{background:transparent;border-color:transparent;color:#000;border-bottom:2px solid rgba(0,0,0,0.5)}
-  #launch-history .lh-scroll-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2)}
-  #launch-history .lh-stats-overview{background:linear-gradient(180deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.5) 100%);border:1px solid rgba(255,255,255,0.6);border-top:1px solid rgba(255,255,255,0.85);box-shadow:0 12px 40px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.5)}
-  #launch-history .lh-stat-card{background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.6);border-top:1px solid rgba(255,255,255,0.8);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.4)}
-  #launch-history .lh-stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.5)}
-  #launch-history .lh-stat-card-value{color:#0a0a18}
-  #launch-history .lh-stat-card-label{color:rgba(0,0,0,0.55);font-size:11px}
-  #launch-history .lh-stat-nation-row{border-bottom-color:rgba(0,0,0,0.08)}
-  #launch-history .lh-stat-link:hover{background:rgba(0,0,0,0.05)}
-  #launch-history .lh-stat-nation-name{color:rgba(0,0,0,0.7);font-size:12px}
-  #launch-history .lh-stat-nation-val{color:#0a0a18}
-  #launch-history .lh-stat-source{color:rgba(0,0,0,0.35);font-size:10px}
-  #launch-history .lh-section{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);box-shadow:0 14px 48px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.4);backdrop-filter:blur(14px)}
-  #launch-history .lh-section-title{color:rgba(0,0,0,0.7);border-bottom-color:rgba(0,0,0,0.18)}
-  #launch-history .lh-company-card{background:linear-gradient(180deg,rgba(255,255,255,0.7) 0%,rgba(255,255,255,0.5) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);border-left:3px solid rgba(20,20,50,0.3);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.4)}
-  #launch-history .lh-company-card:hover{box-shadow:0 14px 40px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.6);background:linear-gradient(180deg,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0.65) 100%);transform:translateY(-6px) scale(1.02)}
-  #launch-history .lh-company-name{color:#000}
-  #launch-history .lh-company-stat{color:rgba(0,0,0,0.7);font-size:13px}
-  #launch-history .lh-company-stat span{color:#0a0a18}
-  #launch-history .lh-globe-wrapper{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);box-shadow:0 12px 40px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.4)}
-  #launch-history .lh-globe-wrapper:hover{box-shadow:0 20px 56px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.5)}
-  #launch-history .lh-globe-label{color:rgba(0,0,0,0.6);text-shadow:none}
-  #launch-history .lh-timeline-item{border-left-color:rgba(20,20,50,0.2)}
-  #launch-history .lh-timeline-item::before{background:#1a1a30;border-color:#eaeaee}
-  #launch-history .lh-timeline-item.failed::before{background:rgba(120,40,40,0.6)}
-  #launch-history .lh-timeline-year{color:#0a0a18}
-  #launch-history .lh-timeline-name{color:#000}
-  #launch-history .lh-timeline-desc{color:rgba(0,0,0,0.65);font-size:13px}
-  #launch-history .lh-timeline-firsts{color:rgba(0,0,0,0.6);font-size:12px}
-  #launch-history .lh-mission-card{background:linear-gradient(180deg,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.4) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.7);border-radius:8px;box-shadow:0 3px 12px rgba(0,0,0,0.05),inset 0 1px 0 rgba(255,255,255,0.3)}
-  #launch-history .lh-mission-card:hover{border-color:rgba(255,255,255,0.7);background:linear-gradient(180deg,rgba(255,255,255,0.7) 0%,rgba(255,255,255,0.55) 100%);transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,0.09),inset 0 1px 0 rgba(255,255,255,0.5)}
-  #launch-history .lh-mission-card-name{color:#000}
-  #launch-history .lh-mission-card-date{color:rgba(0,0,0,0.5);font-size:12px}
-  #launch-history .lh-mission-card-desc{color:rgba(0,0,0,0.65);font-size:13px}
-  #launch-history .lh-mission-card-stats{color:rgba(0,0,0,0.55);font-size:12px}
-  #launch-history .lh-mission-card-stats span{color:#000}
-  #launch-history .lh-mission-card-status.success{background:rgba(30,80,50,0.08);border-color:rgba(30,80,50,0.15);color:rgba(20,70,40,0.8)}
-  #launch-history .lh-mission-card-status.failed{background:rgba(100,30,30,0.07);border-color:rgba(100,30,30,0.12);color:rgba(120,40,40,0.7)}
-  #launch-history .lh-mission-card-status.partial{background:rgba(100,80,20,0.07);border-color:rgba(100,80,20,0.12);color:rgba(100,70,10,0.75)}
-  #launch-history .lh-mission-card-org{font-size:10px}
-  #launch-history .lh-defining-section{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);box-shadow:0 16px 52px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.4);margin-left:0;margin-right:0}
-  #launch-history .lh-defining-bg-img{opacity:0.07;filter:grayscale(0.7)}
-  #launch-history .lh-defining-subtitle{color:rgba(0,0,0,0.5);font-size:12px}
-  #launch-history .lh-dm-row{border-bottom-color:rgba(0,0,0,0.08)}
-  #launch-history .lh-dm-row:hover{background:rgba(255,255,255,0.4);transform:translateY(-1px) translateX(2px);box-shadow:0 3px 12px rgba(0,0,0,0.06)}
-  #launch-history .lh-dm-year{color:#0a0a18}
-  #launch-history .lh-dm-name{color:#000;font-size:13px}
-  #launch-history .lh-dm-first{color:rgba(0,0,0,0.6);font-size:11px}
-  #launch-history .lh-dm-chevron{color:rgba(0,0,0,0.4)}
-  #launch-history .lh-dm-desc{color:rgba(0,0,0,0.65);font-size:12px}
-  #launch-history .lh-dm-stats{color:rgba(0,0,0,0.55);font-size:11px}
-  #launch-history .lh-dm-stats b{color:#000}
-  #launch-history .lh-dm-first-tag{color:rgba(80,50,5,0.8);font-size:11px}
-  #launch-history .lh-video-icon{color:rgba(0,0,0,0.5);opacity:1}
-  #launch-history .lh-yt-badge{opacity:0.65;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.15))}
-  #launch-history .lh-od-mission-desc{color:rgba(0,0,0,0.6);font-size:11px}
-  #launch-history .lh-snowflake{background:rgba(0,0,0,0.2)}
-  #launch-history .lh-show-more-btn{background:linear-gradient(180deg,rgba(255,255,255,0.5) 0%,rgba(255,255,255,0.35) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.7);color:rgba(0,0,0,0.55);border-radius:6px;box-shadow:0 3px 12px rgba(0,0,0,0.05),inset 0 1px 0 rgba(255,255,255,0.3)}
-  #launch-history .lh-show-more-btn:hover{background:linear-gradient(180deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.5) 100%);color:#000;box-shadow:0 6px 20px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.4);transform:translateY(-2px)}
-  #launch-history .lh-org-row{border-bottom-color:rgba(0,0,0,0.06)}
-  #launch-history .lh-org-row:hover{background:rgba(255,255,255,0.35);transform:translateX(3px);box-shadow:0 2px 8px rgba(0,0,0,0.04)}
-  #launch-history .lh-org-header-row{background:rgba(0,0,0,0.025);border-bottom-color:rgba(0,0,0,0.12)}
-  #launch-history .lh-org-header-row span{color:rgba(0,0,0,0.5);font-size:9px}
-  #launch-history .lh-org-col-name{color:#000}
-  #launch-history .lh-org-col-num{color:#000}
-  #launch-history .lh-org-col-years{color:rgba(0,0,0,0.5);font-size:11px}
-  #launch-history .lh-org-detail-link{color:rgba(0,0,0,0.55);border:none}
-  #launch-history .lh-org-detail-link:hover{color:#000;text-shadow:none;border-color:transparent;background:transparent}
-  #launch-history .lh-org-detail{background:radial-gradient(ellipse at 50% 0%, #e8eaef, #dddfe5 50%, #d0d2d8 100%)}
-  #launch-history .lh-od-header{border-bottom:1px solid rgba(0,0,0,0.15)}
-  #launch-history .lh-od-back{border:none;color:rgba(0,0,0,0.6)}
-  #launch-history .lh-od-back:hover{border-color:transparent;color:#000}
-  #launch-history .lh-od-title{color:#000}
-  #launch-history .lh-od-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2)}
-  #launch-history .lh-od-stat{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.4) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.4)}
-  #launch-history .lh-od-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.5)}
-  #launch-history .lh-od-stat-val{color:#0a0a18}
-  #launch-history .lh-od-stat-lbl{color:rgba(0,0,0,0.5);font-size:10px}
-  #launch-history .lh-od-section-title{color:rgba(0,0,0,0.6);border-bottom-color:rgba(0,0,0,0.12)}
-  #launch-history .lh-od-bar-year{color:rgba(0,0,0,0.5)}
-  #launch-history .lh-od-bar-track{background:rgba(0,0,0,0.08);border-radius:3px}
-  #launch-history .lh-od-bar-val{color:#000}
-  #launch-history .lh-od-rocket{border-bottom-color:rgba(0,0,0,0.08)}
-  #launch-history .lh-od-rocket-name{color:rgba(0,0,0,0.65);font-size:12px}
-  #launch-history .lh-od-rocket-count{color:#000}
-  #launch-history .lh-od-dest{border-color:rgba(0,0,0,0.18);background:rgba(0,0,0,0.025);color:rgba(0,0,0,0.65);font-size:10px}
-  #launch-history .lh-od-first{border-bottom-color:rgba(0,0,0,0.08)}
-  #launch-history .lh-od-first-year{color:#0a0a18}
-  #launch-history .lh-od-first-name{color:rgba(0,0,0,0.7);font-size:12px}
-  #launch-history .lh-od-first-tag{color:rgba(80,50,5,0.8);font-size:11px}
-  #launch-history .lh-era-btn{background:linear-gradient(180deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.45) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.8);border-left:3px solid rgba(20,20,50,0.3);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.4)}
-  #launch-history .lh-era-btn:hover{border-color:rgba(255,255,255,0.7);border-left-color:rgba(20,20,50,0.5);transform:translateY(-8px);box-shadow:0 20px 52px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.6);background:linear-gradient(180deg,rgba(255,255,255,0.8) 0%,rgba(255,255,255,0.6) 100%)}
-  #launch-history .lh-era-btn::before{background:rgba(0,0,0,0.05)}
-  #launch-history .lh-era-btn-icon{opacity:0.7}
-  #launch-history .lh-era-btn-title{color:#0a0a18}
-  #launch-history .lh-era-btn-range{color:rgba(0,0,0,0.5);font-size:11px}
-  #launch-history .lh-era-btn-desc{color:rgba(0,0,0,0.6);font-size:11px}
-  #launch-history .lh-era-btn-stats{color:rgba(0,0,0,0.5);font-size:10px}
-  #launch-history .lh-era-btn-highlight{color:rgba(80,50,5,0.7);font-size:10px}
-  #launch-history .lh-era-btn-arrow{color:rgba(0,0,0,0.5)}
-  #launch-history .lh-era-narrative{color:rgba(0,0,0,0.7);font-size:14px}
-  #launch-history .lh-era-first-card{background:linear-gradient(180deg,rgba(255,255,255,0.6) 0%,rgba(255,255,255,0.4) 100%);border:1px solid rgba(255,255,255,0.5);border-top:2px solid rgba(20,20,50,0.18);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.3)}
-  #launch-history .lh-era-first-card:hover{background:linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.55) 100%);box-shadow:0 12px 36px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.5)}
-  #launch-history .lh-era-first-year{color:#0a0a18}
-  #launch-history .lh-era-first-name{color:#000;font-size:12px}
-  #launch-history .lh-era-first-org{color:rgba(0,0,0,0.55);font-size:10px}
-  #launch-history .lh-era-first-tag{color:rgba(80,50,5,0.8);font-size:11px}
-  #launch-history .lh-od-toggle-chevron{color:rgba(0,0,0,0.4)}
-  #launch-history .lh-od-mission-row{border-bottom-color:rgba(0,0,0,0.07)}
-  #launch-history .lh-od-mission-date{color:rgba(0,0,0,0.5);font-size:10px}
-  #launch-history .lh-od-mission-name{color:rgba(0,0,0,0.7)}
-  #launch-history .lh-od-mission-rocket{color:rgba(0,0,0,0.45);font-size:10px}
-  #launch-history .lh-od-mission-dest{color:rgba(0,0,0,0.55);font-size:10px}
-  #launch-history .lh-dest-group{background:linear-gradient(180deg,rgba(255,255,255,0.5) 0%,rgba(255,255,255,0.35) 100%);border:1px solid rgba(255,255,255,0.5);border-top:1px solid rgba(255,255,255,0.7);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.3)}
-  #launch-history .lh-dest-header{border-left-color:rgba(20,20,50,0.25)}
-  #launch-history .lh-dest-header:hover{background:rgba(0,0,0,0.04)}
-  #launch-history .lh-dest-label{color:#000}
-  #launch-history .lh-dest-count{color:rgba(0,0,0,0.5);font-size:10px}
-  #launch-history .lh-dest-chevron{color:rgba(0,0,0,0.4)}
+/* ── Launch History REFINED DARK THEME ── */
+  #launch-history.lh-overlay{background:linear-gradient(180deg, #0b0f18 0%, #0f141f 40%, #0a0e16 100%)}
+  #launch-history.lh-overlay::before{background:radial-gradient(ellipse at 50% 0%, rgba(60,100,180,0.06) 0%, transparent 55%)}
+  #launch-history .lh-header{border-bottom-color:rgba(100,140,200,0.1);background:linear-gradient(180deg,rgba(12,17,28,0.92) 0%,rgba(10,14,22,0.88) 100%);box-shadow:0 4px 24px rgba(0,0,0,0.5),0 1px 0 rgba(100,150,220,0.05)}
+  #launch-history .lh-back-btn{border-color:rgba(100,150,220,0.18);color:rgba(180,200,230,0.55)}
+  #launch-history .lh-back-btn:hover{border-color:rgba(100,150,220,0.35);color:#e2e8f0}
+  #launch-history .lh-title{color:#e2e8f0;text-shadow:0 0 20px rgba(100,160,255,0.08)}
+  #launch-history .lh-filter-btn{border-color:rgba(100,150,220,0.12);color:rgba(160,180,210,0.5)}
+  #launch-history .lh-filter-btn:hover{border-color:rgba(100,150,220,0.25);color:rgba(200,215,235,0.8)}
+  #launch-history .lh-filter-btn.active{background:rgba(100,160,255,0.08);border-color:rgba(100,160,255,0.3);color:#e2e8f0}
+  #launch-history .lh-scroll-body::-webkit-scrollbar-thumb{background:rgba(100,150,220,0.15)}
+  #launch-history .lh-stats-overview{background:rgba(14,20,32,0.7);border-color:rgba(60,80,120,0.15);border-top-color:rgba(60,80,120,0.22);box-shadow:0 10px 40px rgba(0,0,0,0.4),inset 0 1px 0 rgba(100,150,220,0.04)}
+  #launch-history .lh-stat-card{background:rgba(18,25,40,0.85);border-color:rgba(60,80,120,0.15);border-top-color:rgba(60,80,120,0.22);box-shadow:0 3px 12px rgba(0,0,0,0.3),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-stat-card:hover{box-shadow:0 6px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(100,150,220,0.06)}
+  #launch-history .lh-stat-card-value{color:#e2e8f0}
+  #launch-history .lh-stat-card-label{color:rgba(140,160,190,0.6)}
+  #launch-history .lh-stat-nation-row{border-bottom-color:rgba(60,80,120,0.08)}
+  #launch-history .lh-stat-link:hover{background:rgba(100,160,255,0.05)}
+  #launch-history .lh-stat-nation-name{color:rgba(200,210,225,0.65)}
+  #launch-history .lh-stat-nation-val{color:#e2e8f0}
+  #launch-history .lh-stat-source{color:rgba(120,145,180,0.3)}
+  #launch-history .lh-section{background:rgba(13,18,30,0.65);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.2);box-shadow:0 14px 50px rgba(0,0,0,0.45),inset 0 1px 0 rgba(100,150,220,0.04);backdrop-filter:blur(14px)}
+  #launch-history .lh-section-title{color:rgba(180,200,230,0.6);border-bottom-color:rgba(60,80,120,0.15)}
+  #launch-history .lh-company-card{background:rgba(16,22,36,0.8);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.18);border-left:3px solid rgba(100,160,255,0.25);box-shadow:0 4px 20px rgba(0,0,0,0.35),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-company-card:hover{box-shadow:0 16px 48px rgba(0,0,0,0.5),0 0 20px rgba(100,160,255,0.04),inset 0 1px 0 rgba(100,150,220,0.06);transform:translateY(-6px) scale(1.02)}
+  #launch-history .lh-company-name{color:#e2e8f0}
+  #launch-history .lh-company-stat{color:rgba(180,195,215,0.6)}
+  #launch-history .lh-company-stat span{color:#e2e8f0}
+  #launch-history .lh-globe-wrapper{background:rgba(13,18,30,0.7);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.2);box-shadow:0 14px 48px rgba(0,0,0,0.45),inset 0 1px 0 rgba(100,150,220,0.04)}
+  #launch-history .lh-globe-wrapper:hover{box-shadow:0 22px 64px rgba(0,0,0,0.55),0 0 24px rgba(100,160,255,0.04),inset 0 1px 0 rgba(100,150,220,0.06)}
+  #launch-history .lh-globe-label{color:rgba(180,200,230,0.6);text-shadow:0 0 8px rgba(100,160,255,0.12)}
+  #launch-history .lh-timeline-item{border-left-color:rgba(100,160,255,0.15)}
+  #launch-history .lh-timeline-item:hover{background:rgba(20,30,50,0.5)}
+  #launch-history .lh-timeline-item::before{background:#6b9fff;border-color:rgba(10,14,22,0.95)}
+  #launch-history .lh-timeline-item.failed::before{background:#f87171}
+  #launch-history .lh-timeline-year{color:#e2e8f0}
+  #launch-history .lh-timeline-name{color:#e2e8f0}
+  #launch-history .lh-timeline-desc{color:rgba(180,195,215,0.65)}
+  #launch-history .lh-timeline-firsts{color:#d4a44a}
+  #launch-history .lh-mission-card{background:rgba(16,22,36,0.75);border-color:rgba(60,80,120,0.1);border-top-color:rgba(60,80,120,0.16);box-shadow:0 3px 14px rgba(0,0,0,0.3),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-mission-card:hover{border-color:rgba(100,160,255,0.18);background:rgba(20,28,44,0.85);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.45),inset 0 1px 0 rgba(100,150,220,0.05)}
+  #launch-history .lh-mission-card-name{color:#e2e8f0}
+  #launch-history .lh-mission-card-date{color:rgba(140,165,200,0.55)}
+  #launch-history .lh-mission-card-desc{color:rgba(180,195,215,0.6)}
+  #launch-history .lh-mission-card-stats{color:rgba(140,165,200,0.5)}
+  #launch-history .lh-mission-card-stats span{color:#e2e8f0}
+  #launch-history .lh-defining-section{background:rgba(12,17,28,0.7);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.2);box-shadow:0 18px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(100,150,220,0.04);margin-left:0;margin-right:0}
+  #launch-history .lh-defining-bg-img{opacity:0.06;filter:brightness(1.5) contrast(1.1)}
+  #launch-history .lh-defining-subtitle{color:rgba(140,165,200,0.35)}
+  #launch-history .lh-dm-row{border-bottom-color:rgba(60,80,120,0.08)}
+  #launch-history .lh-dm-row:hover{background:rgba(25,35,55,0.5);transform:translateY(-1px) translateX(2px);box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+  #launch-history .lh-dm-year{color:#e2e8f0}
+  #launch-history .lh-dm-name{color:#e2e8f0}
+  #launch-history .lh-dm-first{color:#d4a44a}
+  #launch-history .lh-dm-chevron{color:rgba(140,165,200,0.3)}
+  #launch-history .lh-dm-desc{color:rgba(180,195,215,0.6)}
+  #launch-history .lh-dm-stats{color:rgba(140,165,200,0.5)}
+  #launch-history .lh-dm-stats b{color:#e2e8f0}
+  #launch-history .lh-dm-first-tag{color:#d4a44a}
+  #launch-history .lh-video-icon{color:rgba(140,165,200,0.5)}
+  #launch-history .lh-snowflake{background:rgba(180,210,255,0.25)}
+  #launch-history .lh-show-more-btn{background:rgba(18,25,40,0.7);border-color:rgba(60,80,120,0.18);border-top-color:rgba(60,80,120,0.25);color:rgba(180,200,230,0.6);box-shadow:0 3px 14px rgba(0,0,0,0.3),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-show-more-btn:hover{background:rgba(25,35,55,0.8);border-color:rgba(100,160,255,0.25);color:#e2e8f0;box-shadow:0 8px 28px rgba(0,0,0,0.4),0 0 12px rgba(100,160,255,0.04);transform:translateY(-2px)}
+  #launch-history .lh-org-row{border-bottom-color:rgba(60,80,120,0.06)}
+  #launch-history .lh-org-row:hover{background:rgba(25,35,55,0.4);transform:translateX(3px);box-shadow:0 3px 12px rgba(0,0,0,0.25)}
+  #launch-history .lh-org-header-row{background:rgba(100,160,255,0.03);border-bottom-color:rgba(60,80,120,0.12)}
+  #launch-history .lh-org-header-row span{color:rgba(140,165,200,0.4)}
+  #launch-history .lh-org-col-name{color:#e2e8f0}
+  #launch-history .lh-org-col-num{color:rgba(140,175,230,0.8)}
+  #launch-history .lh-org-col-years{color:rgba(140,165,200,0.45)}
+  #launch-history .lh-org-detail-link{color:rgba(130,170,230,0.6);border-color:rgba(100,160,255,0.15)}
+  #launch-history .lh-org-detail-link:hover{color:#e2e8f0;text-shadow:0 0 10px rgba(100,160,255,0.3);border-color:rgba(100,160,255,0.3);background:rgba(100,160,255,0.05)}
+  #launch-history .lh-org-detail{background:linear-gradient(180deg, #0b0f18 0%, #0f141f 50%, #0a0e16 100%)}
+  #launch-history .lh-od-header{border-bottom:1px solid rgba(60,80,120,0.15)}
+  #launch-history .lh-od-back{border-color:rgba(100,150,220,0.18);color:rgba(180,200,230,0.55)}
+  #launch-history .lh-od-back:hover{border-color:rgba(100,150,220,0.35);color:#e2e8f0}
+  #launch-history .lh-od-body::-webkit-scrollbar-thumb{background:rgba(100,150,220,0.15)}
+  #launch-history .lh-od-stat{background:rgba(18,25,40,0.8);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.2);box-shadow:0 3px 14px rgba(0,0,0,0.3),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-od-stat:hover{box-shadow:0 6px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(100,150,220,0.05)}
+  #launch-history .lh-od-stat-lbl{color:rgba(140,165,200,0.45)}
+  #launch-history .lh-od-section-title{color:rgba(140,165,200,0.5);border-bottom-color:rgba(60,80,120,0.1)}
+  #launch-history .lh-od-bar-year{color:rgba(140,165,200,0.4)}
+  #launch-history .lh-od-bar-track{background:rgba(60,80,120,0.1)}
+  #launch-history .lh-od-bar-val{color:rgba(140,175,230,0.8)}
+  #launch-history .lh-od-rocket{border-bottom-color:rgba(60,80,120,0.06)}
+  #launch-history .lh-od-rocket-name{color:rgba(200,210,225,0.6)}
+  #launch-history .lh-od-rocket-count{color:rgba(140,175,230,0.8)}
+  #launch-history .lh-od-dest{border-color:rgba(100,160,255,0.18);background:rgba(100,160,255,0.05);color:rgba(160,185,220,0.7)}
+  #launch-history .lh-od-first{border-bottom-color:rgba(60,80,120,0.06)}
+  #launch-history .lh-od-first-year{color:rgba(140,175,230,0.8)}
+  #launch-history .lh-od-first-name{color:rgba(200,210,225,0.7)}
+  #launch-history .lh-od-first-tag{color:#d4a44a}
+  #launch-history .lh-era-btn{background:rgba(14,20,34,0.85);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.2);border-left:3px solid var(--era-color,rgba(100,160,255,0.3));box-shadow:0 6px 28px rgba(0,0,0,0.4),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-era-btn:hover{border-color:rgba(100,160,255,0.2);border-left-color:var(--era-color,rgba(100,160,255,0.5));transform:translateY(-8px);box-shadow:0 22px 60px rgba(0,0,0,0.55),0 0 24px color-mix(in srgb, var(--era-color) 12%, transparent),inset 0 1px 0 rgba(100,150,220,0.06)}
+  #launch-history .lh-era-btn::before{background:linear-gradient(90deg,transparent,var(--era-color,rgba(100,160,255,0.3)),transparent);opacity:0.4}
+  #launch-history .lh-era-btn-title{color:var(--era-color,#7aa2f7)}
+  #launch-history .lh-era-btn-range{color:rgba(140,165,200,0.45)}
+  #launch-history .lh-era-btn-desc{color:rgba(180,195,215,0.5)}
+  #launch-history .lh-era-btn-stats{color:rgba(140,165,200,0.45)}
+  #launch-history .lh-era-btn-highlight{color:rgba(212,164,74,0.7)}
+  #launch-history .lh-era-btn-arrow{color:var(--era-color,rgba(100,160,255,0.5))}
+  #launch-history .lh-era-narrative{color:rgba(200,210,225,0.7)}
+  #launch-history .lh-era-first-card{background:rgba(16,22,36,0.75);border-color:rgba(60,80,120,0.1);border-top:2px solid rgba(100,160,255,0.2);box-shadow:0 4px 18px rgba(0,0,0,0.35),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-era-first-card:hover{background:rgba(20,28,44,0.85);box-shadow:0 14px 44px rgba(0,0,0,0.5),0 0 16px rgba(100,160,255,0.04),inset 0 1px 0 rgba(100,150,220,0.05)}
+  #launch-history .lh-era-first-tag{color:#d4a44a}
+  #launch-history .lh-od-toggle-chevron{color:rgba(140,165,200,0.3)}
+  #launch-history .lh-od-mission-row{border-bottom-color:rgba(60,80,120,0.05)}
+  #launch-history .lh-od-mission-date{color:rgba(140,165,200,0.4)}
+  #launch-history .lh-od-mission-name{color:rgba(200,210,225,0.65)}
+  #launch-history .lh-od-mission-rocket{color:rgba(140,165,200,0.35)}
+  #launch-history .lh-od-mission-dest{color:rgba(140,165,200,0.45)}
+  #launch-history .lh-od-mission-desc{color:rgba(180,195,215,0.55)}
+  #launch-history .lh-dest-group{background:rgba(14,20,32,0.65);border-color:rgba(60,80,120,0.1);border-top-color:rgba(60,80,120,0.16);box-shadow:0 4px 20px rgba(0,0,0,0.35),inset 0 1px 0 rgba(100,150,220,0.03)}
+  #launch-history .lh-dest-header{border-left-color:rgba(100,160,255,0.2)}
+  #launch-history .lh-dest-header:hover{background:rgba(100,160,255,0.04)}
+  #launch-history .lh-dest-label{color:#e2e8f0}
+  #launch-history .lh-dest-count{color:rgba(140,165,200,0.4)}
+  #launch-history .lh-dest-chevron{color:rgba(140,165,200,0.3)}
 
 /* ── Mobile Touch Controls ── */
 /* ── Mobile Menu ── */

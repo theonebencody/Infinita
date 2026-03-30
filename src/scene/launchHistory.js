@@ -62,7 +62,7 @@ function _missionCardHtml(m) {
       `<div class="lh-mission-card-name">${m.name}</div>` +
       `<div class="lh-mission-card-date">${year}</div>` +
     `</div>` +
-    `<span class="lh-mission-card-org" style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);color:rgba(0,0,0,0.45)">${m.org}</span>` +
+    `<span class="lh-mission-card-org" style="background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.12);color:rgba(160,185,220,0.65)">${m.org}</span>` +
     `<div class="lh-mission-card-desc">${_truncate(m.desc, 80)}</div>` +
     (hasVideo ? `<div class="lh-mission-card-video" style="display:none">${_videoEmbed(m.video)}</div>` : '') +
   `</div>`;
@@ -299,7 +299,7 @@ function _missionRowHtml(m) {
   const d = new Date(m.date + 'T00:00:00Z');
   const ds = d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
   const statusDot = m.status === 'success' ? '\u25CF' : m.status === 'failed' ? '\u25CF' : '\u25CB';
-  const statusColor = m.status === 'success' ? 'rgba(0,0,0,0.5)' : m.status === 'failed' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.4)';
+  const statusColor = m.status === 'success' ? '#4ade80' : m.status === 'failed' ? '#f87171' : 'rgba(212,164,74,0.7)';
   const hasDetail = m.video || (m.firsts && m.firsts.length > 0);
   return `<div class="lh-od-mission-row${hasDetail ? ' lh-od-expandable' : ''}">` +
     (m.video ? _ytBadge : '') +
@@ -360,24 +360,24 @@ function _openOrgDetail(orgName) {
   const maxCount = Math.max(...barData.map(e => e[1]), 1);
   const barHtml = barData.map(([y, c]) => {
     const pct = Math.round((c / maxCount) * 100);
-    return `<div class="lh-od-bar-row"><span class="lh-od-bar-year">${y}</span><div class="lh-od-bar-track"><div class="lh-od-bar-fill" style="width:${pct}%;background:rgba(0,0,0,0.2)"></div></div><span class="lh-od-bar-val">${c}</span></div>`;
+    return `<div class="lh-od-bar-row"><span class="lh-od-bar-year">${y}</span><div class="lh-od-bar-track"><div class="lh-od-bar-fill" style="width:${pct}%;background:rgba(100,160,255,0.25)"></div></div><span class="lh-od-bar-val">${c}</span></div>`;
   }).join('');
 
-  let html = `<div class="lh-od-header" style="border-bottom-color:rgba(0,0,0,0.1)">` +
+  let html = `<div class="lh-od-header" style="border-bottom-color:rgba(60,80,120,0.15)">` +
     `<button class="lh-od-back" id="lh-od-back">\u2190 BACK</button>` +
-    `<div class="lh-od-title" style="color:#111">${orgName}</div>` +
+    `<div class="lh-od-title" style="color:#e2e8f0">${orgName}</div>` +
     `</div>`;
 
   html += `<div class="lh-od-body">`;
 
   // Stats row
   html += `<div class="lh-od-stats">` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${o.launches}</div><div class="lh-od-stat-lbl">Launches</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${rate}%</div><div class="lh-od-stat-lbl">Success Rate</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${massTonnes}t</div><div class="lh-od-stat-lbl">Mass to Orbit</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${yearRange}</div><div class="lh-od-stat-lbl">Active</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${o.firsts.length}</div><div class="lh-od-stat-lbl">Firsts</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${peakYear[0]}</div><div class="lh-od-stat-lbl">Peak Year (${peakYear[1]})</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${o.launches}</div><div class="lh-od-stat-lbl">Launches</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${rate}%</div><div class="lh-od-stat-lbl">Success Rate</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${massTonnes}t</div><div class="lh-od-stat-lbl">Mass to Orbit</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${yearRange}</div><div class="lh-od-stat-lbl">Active</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${o.firsts.length}</div><div class="lh-od-stat-lbl">Firsts</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${peakYear[0]}</div><div class="lh-od-stat-lbl">Peak Year (${peakYear[1]})</div></div>` +
     `</div>`;
 
   // Launches by year bar chart
@@ -395,7 +395,7 @@ function _openOrgDetail(orgName) {
   topRockets.forEach(([rocket, count]) => {
     html += `<div class="lh-od-rocket"><span class="lh-od-rocket-name">${rocket}</span><span class="lh-od-rocket-count">${count} flights</span></div>`;
   });
-  if (moreRockets > 0) html += `<div class="lh-od-rocket" style="color:rgba(0,0,0,0.25);font-style:italic">+ ${moreRockets} more rocket types</div>`;
+  if (moreRockets > 0) html += `<div class="lh-od-rocket" style="color:rgba(140,165,200,0.3);font-style:italic">+ ${moreRockets} more rocket types</div>`;
   html += `</div></div>`;
 
   // Destinations
@@ -403,7 +403,7 @@ function _openOrgDetail(orgName) {
     `<div class="lh-od-section-title">DESTINATIONS</div>` +
     `<div class="lh-od-dests">`;
   destList.forEach(d => {
-    const dc = 'rgba(0,0,0,0.3)';
+    const dc = 'rgba(100,160,255,0.25)';
     const count = missions.filter(m => m.destination === d).length;
     html += `<span class="lh-od-dest" style="border-color:${dc};color:${dc}">${d} (${count})</span>`;
   });
@@ -489,11 +489,11 @@ function _openOrgDetail(orgName) {
 
 // ─── Timeline by Era — styled as prominent clickable cards ──────
 const _ERA_DEFS = [
-  { label: 'THE SPACE RACE', range: [1957, 1969], color: 'rgba(0,0,0,0.3)', icon: '\u2606', desc: 'From Sputnik to Apollo \u2014 the era that launched humanity into space' },
-  { label: 'STATIONS & SHUTTLES', range: [1970, 1999], color: 'rgba(0,0,0,0.3)', icon: '\u2302', desc: 'Space stations, the Shuttle program, and international cooperation' },
-  { label: 'EXPLORATION ERA', range: [2000, 2014], color: 'rgba(0,0,0,0.3)', icon: '\u269B', desc: 'Mars rovers, ISS expansion, and the dawn of commercial spaceflight' },
-  { label: 'COMMERCIAL REVOLUTION', range: [2015, 2022], color: 'rgba(0,0,0,0.3)', icon: '\u26A1', desc: 'Reusable rockets, mega-constellations, and record launch cadence' },
-  { label: 'THE NEW FRONTIER', range: [2023, 2030], color: 'rgba(0,0,0,0.3)', icon: '\u2B50', desc: 'Starship, Artemis, lunar return, and the push to Mars' },
+  { label: 'THE SPACE RACE', range: [1957, 1969], color: '#7aa2f7', icon: '\u2606', desc: 'From Sputnik to Apollo \u2014 the era that launched humanity into space' },
+  { label: 'STATIONS & SHUTTLES', range: [1970, 1999], color: '#7dcfff', icon: '\u2302', desc: 'Space stations, the Shuttle program, and international cooperation' },
+  { label: 'EXPLORATION ERA', range: [2000, 2014], color: '#bb9af7', icon: '\u269B', desc: 'Mars rovers, ISS expansion, and the dawn of commercial spaceflight' },
+  { label: 'COMMERCIAL REVOLUTION', range: [2015, 2022], color: '#ff9e64', icon: '\u26A1', desc: 'Reusable rockets, mega-constellations, and record launch cadence' },
+  { label: 'THE NEW FRONTIER', range: [2023, 2030], color: '#e0af68', icon: '\u2B50', desc: 'Starship, Artemis, lunar return, and the push to Mars' },
 ];
 
 function _renderTimeline(data) {
@@ -514,7 +514,7 @@ function _renderTimeline(data) {
     const totalFirsts = eraMissions.reduce((s, m) => s + (m.firsts?.length || 0), 0);
     const topFirst = eraMissions.filter(m => m.firsts?.length).sort((a,b) => b.firsts.length - a.firsts.length)[0];
 
-    html += `<div class="lh-era-btn" data-era="${era.label}" style="--era-color:rgba(0,0,0,0.3)">` +
+    html += `<div class="lh-era-btn" data-era="${era.label}" style="--era-color:${era.color}">` +
       `<div class="lh-era-btn-icon">${era.icon}</div>` +
       `<div class="lh-era-btn-title">${era.label}</div>` +
       `<div class="lh-era-btn-range">${era.range[0]} \u2013 ${era.range[1]}</div>` +
@@ -572,18 +572,18 @@ function _openEraDetail(eraLabel, data) {
   // Notable missions with firsts
   const notable = eraMissions.filter(m => m.firsts?.length).sort((a,b) => b.firsts.length - a.firsts.length);
 
-  let html = `<div class="lh-od-header" style="border-bottom-color:rgba(0,0,0,0.1)">` +
+  let html = `<div class="lh-od-header" style="border-bottom-color:rgba(60,80,120,0.15)">` +
     `<button class="lh-od-back" id="lh-od-back">\u2190 BACK</button>` +
-    `<div class="lh-od-title" style="color:#111">${era.icon} ${era.label}</div>` +
+    `<div class="lh-od-title" style="color:#e2e8f0">${era.icon} ${era.label}</div>` +
     `</div><div class="lh-od-body">`;
 
   html += `<div class="lh-od-stats">` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${eraMissions.length.toLocaleString()}</div><div class="lh-od-stat-lbl">Launches</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${Math.round(successes/eraMissions.length*100)}%</div><div class="lh-od-stat-lbl">Success Rate</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${(totalMass/1000).toFixed(0)}t</div><div class="lh-od-stat-lbl">Mass to Orbit</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${orgs.size}</div><div class="lh-od-stat-lbl">Organizations</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${totalFirsts}</div><div class="lh-od-stat-lbl">Firsts</div></div>` +
-    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#111">${era.range[0]}\u2013${era.range[1]}</div><div class="lh-od-stat-lbl">Years</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${eraMissions.length.toLocaleString()}</div><div class="lh-od-stat-lbl">Launches</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${Math.round(successes/eraMissions.length*100)}%</div><div class="lh-od-stat-lbl">Success Rate</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${(totalMass/1000).toFixed(0)}t</div><div class="lh-od-stat-lbl">Mass to Orbit</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${orgs.size}</div><div class="lh-od-stat-lbl">Organizations</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${totalFirsts}</div><div class="lh-od-stat-lbl">Firsts</div></div>` +
+    `<div class="lh-od-stat"><div class="lh-od-stat-val" style="color:#e2e8f0">${era.range[0]}\u2013${era.range[1]}</div><div class="lh-od-stat-lbl">Years</div></div>` +
     `</div>`;
 
   html += `<div class="lh-od-section"><div class="lh-era-narrative">${narrative}</div></div>`;
@@ -594,11 +594,11 @@ function _openEraDetail(eraLabel, data) {
     notable.slice(0, 20).forEach(m => {
       const year = m.date.slice(0, 4);
       const oc = _getOC(m.org);
-      html += `<div class="lh-era-first-card${m.video ? ' lh-era-first-expandable' : ''}" style="border-top-color:rgba(0,0,0,0.1)">` +
+      html += `<div class="lh-era-first-card${m.video ? ' lh-era-first-expandable' : ''}" style="border-top-color:rgba(100,160,255,0.2)">` +
         (m.video ? _ytBadge : '') +
-        `<div class="lh-era-first-year" style="color:#111">${year}</div>` +
+        `<div class="lh-era-first-year" style="color:#e2e8f0">${year}</div>` +
         `<div class="lh-era-first-name">${m.name}</div>` +
-        `<div class="lh-era-first-org" style="color:#111">${m.org}</div>` +
+        `<div class="lh-era-first-org" style="color:#e2e8f0">${m.org}</div>` +
         m.firsts.map(f => `<div class="lh-era-first-tag">\u2605 ${f}</div>`).join('') +
         (m.video ? `<div class="lh-era-first-video" style="display:none">${_videoEmbed(m.video)}</div>` : '') +
         `</div>`;
@@ -645,7 +645,7 @@ function _renderMissionsGrid(data) {
     if (!missions || missions.length === 0) return;
     missions.sort((a, b) => b.date.localeCompare(a.date)); // newest first
 
-    const dc = 'rgba(0,0,0,0.3)';
+    const dc = 'rgba(100,160,255,0.25)';
     const label = groupLabels[key] || key;
     const preview = missions.slice(0, 4);
     const remainCount = missions.length - 4;
@@ -877,7 +877,7 @@ function _initEarthViewer(){
 
     // Label
     const labelDiv = document.createElement('div');
-    labelDiv.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:7px;color:rgba(0,0,0,0.35);letter-spacing:1px;pointer-events:none;white-space:nowrap';
+    labelDiv.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:7px;color:rgba(180,200,230,0.45);letter-spacing:1px;pointer-events:none;white-space:nowrap';
     labelDiv.textContent = od.name;
     const container2 = document.getElementById('earth-canvas')?.parentElement;
     if (container2) container2.appendChild(labelDiv);
@@ -1028,7 +1028,7 @@ function _initMarsViewer() {
 
     // Label
     const lbl = document.createElement('div');
-    lbl.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:7px;color:rgba(0,0,0,0.35);letter-spacing:1px;pointer-events:none;white-space:nowrap';
+    lbl.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:7px;color:rgba(180,200,230,0.45);letter-spacing:1px;pointer-events:none;white-space:nowrap';
     lbl.textContent = od.name;
     const cont = document.getElementById('mars-canvas')?.parentElement;
     if (cont) cont.appendChild(lbl);
@@ -1120,7 +1120,7 @@ function _initSolarSystemViewer() {
 
     // Label
     const lbl = document.createElement('div');
-    lbl.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:6px;color:rgba(0,0,0,0.35);letter-spacing:1px;pointer-events:none;white-space:nowrap';
+    lbl.style.cssText = 'position:absolute;font-family:Orbitron,sans-serif;font-size:6px;color:rgba(180,200,230,0.45);letter-spacing:1px;pointer-events:none;white-space:nowrap';
     lbl.textContent = pd.name;
     const cont = document.getElementById('solsys-canvas')?.parentElement;
     if (cont) cont.appendChild(lbl);
