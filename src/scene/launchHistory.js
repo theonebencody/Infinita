@@ -178,7 +178,7 @@ function _statCard(value, label) {
 const DEFINING_MOMENTS = [
   'sputnik1', 'vostok1', 'friendship7', 'voskhod2', 'apollo11', 'apollo13',
   'skylab1', 'sts1', 'hubble', 'iss_exp1', 'spirit', 'spaceshipone',
-  'falcon1f4', 'dragoncrs1', 'curiosity', 'rosetta', 'newhorizons',
+  'falcon1f4', 'curiosity', 'dragoncrs1', 'rosetta', 'newhorizons',
   'orbcomm2', 'falconheavy', 'crewdragon', 'jwst', 'artemis1',
   'starshipift1', 'polaris_dawn', 'starshipift5',
   'sx_blueghost', 'cn_tianwen2', 'bo_ng_escapade',

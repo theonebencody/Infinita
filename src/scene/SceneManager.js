@@ -2220,6 +2220,7 @@ let travelDestDebounce = null;
 // Build speed grid
 (function() {
   const grid = document.getElementById('travel-speeds-grid');
+  grid.innerHTML = '';
   TRAVEL_SPEEDS.forEach((s, i) => {
     const btn = document.createElement('button');
     btn.className = 'travel-speed-btn' + (i === travelSpeedIdx ? ' selected' : '');

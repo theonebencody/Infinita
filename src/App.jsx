@@ -162,7 +162,7 @@ function App() {
           <div className="travel-card-title">NAVIGATION COMPUTER <button className="panel-close-btn" id="travel-close-btn">{'\u2715'}</button></div>
           <div className="travel-section">
             <div className="travel-section-label">Destination</div>
-            <input className="travel-dest-input" id="travel-dest-input" placeholder="Search star, planet, galaxy\u2026" autoComplete="off" spellCheck="false" />
+            <input className="travel-dest-input" id="travel-dest-input" placeholder="Search star, planet, galaxy…" autoComplete="off" spellCheck="false" />
             <div className="travel-dest-results" id="travel-dest-results"></div>
             <div className="travel-dest-confirmed" id="travel-dest-confirmed">
               <div className="travel-dest-confirmed-name" id="travel-dest-name">{'\u2014'}</div>
@@ -328,11 +328,11 @@ function App() {
           <div className="fp-controls">
             <button className="fp-ctrl-btn" id="fp-play-btn">{'\u25B6'}</button>
             <button className="fp-ctrl-btn" id="fp-pause-btn">{'\u23F8'}</button>
-            <select className="fp-speed-select" id="fp-speed-select">
+            <select className="fp-speed-select" id="fp-speed-select" defaultValue="10">
               <option value="1">1x</option>
               <option value="2">2x</option>
               <option value="5">5x</option>
-              <option value="10" selected>10x</option>
+              <option value="10">10x</option>
             </select>
             <button className="fp-ctrl-btn" id="fp-reset-btn">{'\u21BA'}</button>
           </div>
@@ -382,9 +382,9 @@ function App() {
           <div className="mp-exec-controls" id="mp-exec-controls" style={{display:'none'}}>
             <button className="fp-ctrl-btn" id="mp-play-btn">{'\u25B6'}</button>
             <button className="fp-ctrl-btn" id="mp-pause-btn">{'\u23F8'}</button>
-            <select className="fp-speed-select" id="mp-speed-select">
+            <select className="fp-speed-select" id="mp-speed-select" defaultValue="1">
               <option value="0.5">0.5x</option>
-              <option value="1" selected>1x</option>
+              <option value="1">1x</option>
               <option value="2">2x</option>
               <option value="5">5x</option>
               <option value="10">10x</option>
