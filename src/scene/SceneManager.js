@@ -59,7 +59,7 @@ const sunGroup = new THREE.Group();
 scene.add(sunGroup);
 
 const sunGeo = new THREE.SphereGeometry(SUN_RADIUS_VIS, 64, 64);
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xffb060 });
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xff8848 });
 const sunMesh = new THREE.Mesh(sunGeo, sunMat);
 sunGroup.add(sunMesh);
 
@@ -75,7 +75,7 @@ for (let i = 0; i < 3; i++) {
   const ctx = canvas.getContext('2d');
   const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
   const alpha = [0.35, 0.18, 0.08][i];
-  const col = ['255,220,160', '255,170,70', '255,120,30'][i];
+  const col = ['255,190,120', '255,130,50', '255,80,15'][i];
   grad.addColorStop(0, `rgba(${col},${alpha})`);
   grad.addColorStop(0.4, `rgba(${col},${alpha * 0.4})`);
   grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -126,22 +126,24 @@ for (let i = 0; i < _FLARE_COUNT; i++) {
     transparent: true, depthWrite: false, opacity: 0
   });
   const flareSprite = new THREE.Sprite(flareMat);
+  flareSprite.center.set(0.5, 0); // anchor at bottom so flare extends outward from base
   flareSprite.scale.set(0.08, 0.15, 1);
-  // Position randomly around Sun surface
+  // Position on Sun surface
   const angle = (i / _FLARE_COUNT) * Math.PI * 2;
+  const elev = (Math.random() - 0.5) * Math.PI * 0.5; // latitude spread
   flareSprite.position.set(
-    Math.cos(angle) * SUN_RADIUS_VIS * 1.05,
-    (Math.random() - 0.5) * SUN_RADIUS_VIS * 0.6,
-    Math.sin(angle) * SUN_RADIUS_VIS * 1.05
+    Math.cos(angle) * Math.cos(elev) * SUN_RADIUS_VIS * 0.98,
+    Math.sin(elev) * SUN_RADIUS_VIS * 0.98,
+    Math.sin(angle) * Math.cos(elev) * SUN_RADIUS_VIS * 0.98
   );
   sunGroup.add(flareSprite);
   _solarFlares.push({
     sprite: flareSprite, mat: flareMat,
-    angle, phase: Math.random() * 100, // random start time
-    lifetime: 3 + Math.random() * 5, // seconds before next eruption
-    timer: Math.random() * 8, // offset so they don't all fire at once
+    angle, elev,
+    phase: Math.random() * 100,
+    lifetime: 3 + Math.random() * 5,
+    timer: Math.random() * 8,
     active: false, progress: 0,
-    baseY: flareSprite.position.y,
   });
 }
 
@@ -407,8 +409,12 @@ scene.add(new THREE.Points(kuiperGeo, new THREE.PointsMaterial({
     // Limb darkening — edges of sphere are dimmer
     const limb=0.6+0.4*Math.sqrt(Math.max(0,1-nx*nx-ny*ny-nz*nz+0.5));
     const bl=b*limb;
-    // Color: deep red-orange base
-    return [(255*bl)|0,(115*bl+15)|0,(35*bl+8)|0];
+    // Color: deep red-orange base with reddish variation
+    const redShift=_sfbm(nx*3+50,ny*3,nz*3,2);
+    const rMix=redShift>0.5?(redShift-0.5)*2:0; // 0–1 in red patches
+    const gBase=115*bl+15;
+    const bBase=35*bl+8;
+    return [(255*bl)|0,(gBase*(1-rMix*0.4))|0,(bBase*(1-rMix*0.5))|0];
   });
   sunMat.map=tex; sunMat.needsUpdate=true;
 })();
@@ -4509,7 +4515,7 @@ function animate(now) {
       const breath = 1 + Math.sin(sunT * (0.2 + i * 0.15)) * 0.08;
       c.sprite.scale.setScalar(c.baseScale * breath);
     });
-    // Solar flare eruptions
+    // Solar flare eruptions — anchored to surface, oriented radially outward
     _solarFlares.forEach(f => {
       f.timer += dt;
       if (!f.active && f.timer > f.lifetime) {
@@ -4518,7 +4524,7 @@ function animate(now) {
         f.timer = 0;
         f.lifetime = 2 + Math.random() * 5;
         f.angle += Math.random() * Math.PI * 0.6;
-        f.baseY = (Math.random() - 0.5) * SUN_RADIUS_VIS * 0.4;
+        f.elev = (Math.random() - 0.5) * Math.PI * 0.5;
       }
       if (f.active) {
         f.progress += dt * (0.12 + Math.random() * 0.06);
@@ -4529,25 +4535,28 @@ function animate(now) {
         } else {
           const rise = Math.sin(f.progress * Math.PI);
           const fade = f.progress < 0.2 ? f.progress / 0.2 : Math.pow(1 - (f.progress - 0.2) / 0.8, 0.6);
-          f.mat.opacity = fade * 0.8;
-          // Flare grows from surface outward — base stays anchored
-          const flareH = rise * SUN_RADIUS_VIS * 0.6;
+          f.mat.opacity = fade * 0.85;
+          const flareH = rise * SUN_RADIUS_VIS * 0.7;
           f.sprite.scale.set(
-            0.03 + rise * 0.04,
+            0.03 + rise * 0.05,
             Math.max(0.01, flareH),
             1
           );
-          // Position: base of sprite sits on the Sun surface
-          // Sprite center offset upward by half its height so bottom touches surface
-          const surfR = SUN_RADIUS_VIS * 0.98;
-          const dx = Math.cos(f.angle);
-          const dz = Math.sin(f.angle);
-          // Radial direction outward from center
+          // Base anchored on sun surface (sprite.center is 0,0 = bottom)
+          const surfR = SUN_RADIUS_VIS * 0.96;
+          const ce = Math.cos(f.elev);
           f.sprite.position.set(
-            dx * (surfR + flareH * 0.5),
-            f.baseY + flareH * 0.3,
-            dz * (surfR + flareH * 0.5)
+            Math.cos(f.angle) * ce * surfR,
+            Math.sin(f.elev) * surfR,
+            Math.sin(f.angle) * ce * surfR
           );
+          // Orient sprite so it points radially outward in screen space
+          const worldPos = f.sprite.getWorldPosition(new THREE.Vector3());
+          const sunScreenPos = sunGroup.position.clone().project(camera);
+          const flareScreenPos = worldPos.project(camera);
+          const sdx = flareScreenPos.x - sunScreenPos.x;
+          const sdy = flareScreenPos.y - sunScreenPos.y;
+          f.mat.rotation = Math.atan2(sdx, sdy);
         }
       }
     });
