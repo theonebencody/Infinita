@@ -151,6 +151,7 @@
 }
 
 .lp-col-option:hover { background: rgba(79,195,247,0.06); color: var(--color-text-primary); }
+.lp-col-option:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 .lp-col-check {
   width: 16px; height: 16px;
@@ -169,7 +170,7 @@
 
 .lp-col-option.checked .lp-col-check::after {
   content: '\2713';
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: bold;
   line-height: 1;
 }
@@ -223,7 +224,7 @@
 .lp-sort-arrow {
   display: inline-block;
   margin-left: var(--space-1);
-  font-size: 9px;
+  font-size: var(--text-xs);
   opacity: 0.5;
 }
 
@@ -314,7 +315,7 @@
   border: 1px solid rgba(255,193,7,0.18);
 }
 
-.lp-outcome-icon { font-size: 10px; line-height: 1; }
+.lp-outcome-icon { font-size: var(--text-xs); line-height: 1; }
 
 
 /* ── Expanded detail row ───────────────────────────────────────────────── */
@@ -362,7 +363,7 @@
 .lp-detail-meta-label {
   color: var(--color-text-disabled);
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: var(--text-xs);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
 }
@@ -513,7 +514,7 @@
 
 .lp-card-meta-label {
   color: var(--color-text-disabled);
-  font-size: 9px;
+  font-size: var(--text-xs);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
 }
