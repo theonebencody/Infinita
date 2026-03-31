@@ -128,7 +128,7 @@ function FilterControls({ filters, yearMin, yearMax }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function LaunchesPage({ open, filters, onTrackLaunch }) {
+export default function LaunchesPage({ open, filters }) {
   const [pageIdx, setPageIdx] = useState(0)
   const [expandedId, setExpandedId] = useState(null)
   const [density, setDensity] = useState('comfortable')
@@ -173,14 +173,8 @@ export default function LaunchesPage({ open, filters, onTrackLaunch }) {
   }, [])
 
   const toggleExpand = useCallback((id) => {
-    setExpandedId(prev => {
-      if (prev !== id) {
-        const launch = SEED_DATA.find(r => r.id === id)
-        if (launch) onTrackLaunch?.(launch)
-      }
-      return prev === id ? null : id
-    })
-  }, [onTrackLaunch])
+    setExpandedId(prev => prev === id ? null : id)
+  }, [])
 
   const sortArrow = (col) => {
     if (filters.sort_by !== col) return null
@@ -392,7 +386,17 @@ export default function LaunchesPage({ open, filters, onTrackLaunch }) {
 
       {/* ── Mobile filter bottom sheet ── */}
       <div className={`lp-filter-scrim${filterSheetOpen ? ' open' : ''}`} onClick={() => setFilterSheetOpen(false)} />
-      <div className={`lp-filter-sheet${filterSheetOpen ? ' open' : ''}`}>
+      <div className={`lp-filter-sheet${filterSheetOpen ? ' open' : ''}`}
+        onTouchStart={e => { e.currentTarget._touchY = e.touches[0].clientY }}
+        onTouchMove={e => {
+          const dy = e.touches[0].clientY - (e.currentTarget._touchY || 0)
+          if (dy > 0) e.currentTarget.style.transform = `translateY(${dy}px)`
+        }}
+        onTouchEnd={e => {
+          const dy = e.changedTouches[0].clientY - (e.currentTarget._touchY || 0)
+          if (dy > 80) setFilterSheetOpen(false)
+          e.currentTarget.style.transform = filterSheetOpen ? 'translateY(0)' : ''
+        }}>
         <div className="lp-filter-sheet-handle" />
         <FilterControls filters={filters} yearMin={YEAR_RANGE.min} yearMax={YEAR_RANGE.max} />
       </div>

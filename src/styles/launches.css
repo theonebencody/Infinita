@@ -535,6 +535,7 @@
   .lp-header { padding: var(--space-2) var(--space-4); }
   .lp-title { font-size: var(--text-base); }
   .lp-density-group { display: none; }
+  .lp-view3d-btn { padding: var(--space-3) var(--space-5); font-size: var(--text-sm); width: 100%; justify-content: center; }
 }
 
 
@@ -553,7 +554,7 @@
 
 .lp-page-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px;
+  width: 44px; height: 44px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;

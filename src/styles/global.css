@@ -385,9 +385,8 @@
   .lh-mission-card-video{margin-top:8px}
 
   .lh-timeline-wrap{position:relative;overflow:hidden}
-  .lh-snowfall{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-  .lh-snowflake{position:absolute;background:white;border-radius:50%;opacity:0;animation:snowDrift var(--dur) linear infinite}
-  @keyframes snowDrift{0%{transform:translateY(-10px) translateX(0);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(var(--fall)) translateX(var(--sway));opacity:0}}
+  .lh-snowfall{display:none}
+  .lh-snowflake{display:none}
   .lh-timeline-wrap .lh-timeline{position:relative;z-index:1}
   .lh-timeline-wrap .lh-show-more-btn{position:relative;z-index:1}
 
@@ -582,7 +581,6 @@
   #launch-history .lh-dm-stats b{color:#e2e8f0}
   #launch-history .lh-dm-first-tag{color:#d4a44a}
   #launch-history .lh-video-icon{color:rgba(140,165,200,0.5)}
-  #launch-history .lh-snowflake{background:rgba(180,210,255,0.25)}
   #launch-history .lh-show-more-btn{background:rgba(18,25,40,0.7);border-color:rgba(60,80,120,0.18);border-top-color:rgba(60,80,120,0.25);color:rgba(180,200,230,0.6);box-shadow:0 3px 14px rgba(0,0,0,0.3),inset 0 1px 0 rgba(100,150,220,0.03)}
   #launch-history .lh-show-more-btn:hover{background:rgba(25,35,55,0.8);border-color:rgba(100,160,255,0.25);color:#e2e8f0;box-shadow:0 8px 28px rgba(0,0,0,0.4),0 0 12px rgba(100,160,255,0.04);transform:translateY(-2px)}
   #launch-history .lh-org-row{border-bottom-color:rgba(60,80,120,0.06)}

@@ -154,6 +154,7 @@ for (let i = 0; i < _FLARE_COUNT; i++) {
 const planetMeshes = [];
 const orbitLines = [];
 const bodyPositions = [{ name: 'Sun', pos: new THREE.Vector3(), radius: SUN_RADIUS_VIS, rReal: 696340, temp: SUN_TEMP }];
+let _lastBreadcrumbBody = '';
 
 PLANETS.forEach(p => {
   // Planet mesh
@@ -3397,30 +3398,9 @@ const _TRIVIA_Q_TIME = 12;  // show question for 12s
 const _TRIVIA_A_TIME = 15;  // show answer for 15s
 let _triviaCollapsed = false;
 
-// Init trivia
-document.getElementById('trivia-toggle').addEventListener('click', () => {
-  _triviaCollapsed = !_triviaCollapsed;
-  document.getElementById('trivia-panel').classList.toggle('collapsed', _triviaCollapsed);
-  _positionTriviaPanel();
-  // Reposition continuously during the CSS transition
-  let _frames = 0;
-  const _reposition = () => { _positionTriviaPanel(); if (++_frames < 20) requestAnimationFrame(_reposition); };
-  requestAnimationFrame(_reposition);
-});
-
-function _positionTriviaPanel() {
-  const factsPanel = document.getElementById('facts-panel');
-  const triviaPanel = document.getElementById('trivia-panel');
-  if (!factsPanel || !triviaPanel) return;
-  const triviaH = triviaPanel.offsetHeight;
-  factsPanel.style.bottom = (16 + triviaH + 6) + 'px';
-}
-// Reposition when trivia panel collapses/expands
-const _tpObserver = new MutationObserver(_positionTriviaPanel);
-const _tpEl = document.getElementById('trivia-panel');
-if (_tpEl) _tpObserver.observe(_tpEl, { attributes: true, attributeFilter: ['class'], subtree: true });
+// Trivia panel removed — position facts panel at default bottom
 const _fpEl = document.getElementById('facts-panel');
-if (_fpEl) { const _fpObs = new MutationObserver(_positionTriviaPanel); _fpObs.observe(_fpEl, { attributes: true, attributeFilter: ['class'], subtree: true }); }
+if (_fpEl) _fpEl.style.bottom = '16px';
 setTimeout(_positionTriviaPanel, 100);
 // Show first question
 (function _initTrivia() {
@@ -4867,6 +4847,19 @@ function animate(now) {
   updateLabels();
   // Keep background stars centered on camera so they're always visible
   bgStarMesh.position.copy(camera.position);
+  // Emit breadcrumb state to React (throttled — only when nearest body changes)
+  if (started && window.__infinita_updateBreadcrumbs) {
+    const nb = bodyPositions.reduce((best, b) => {
+      const d = camera.position.distanceTo(b.pos);
+      return d < best.d && d > 0.001 ? { name: b.name, d } : best;
+    }, { name: '', d: Infinity });
+    if (nb.name !== _lastBreadcrumbBody) {
+      _lastBreadcrumbBody = nb.name;
+      const crumbs = [{ label: SCALE_LEVELS[currentScale]?.name || 'Solar System', action: 'resetView' }];
+      if (nb.name && nb.name !== 'Sun') crumbs.push({ label: nb.name, action: 'flyTo:' + nb.name });
+      window.__infinita_updateBreadcrumbs(crumbs);
+    }
+  }
   // Advance Grok shader time for animated planet surfaces
   _grokTime.value += dt * 0.5;
   renderer.render(scene, camera);
@@ -4926,6 +4919,37 @@ document.getElementById('reset-view-btn')?.addEventListener('click', () => {
   applyScale();
   _resetAnim();
 });
+
+// Bridge: reset view from React breadcrumb
+window.__infinita_resetView = () => {
+  document.getElementById('reset-view-btn')?.click();
+};
+
+// Bridge: fly to a named body from React breadcrumb
+window.__infinita_flyToBody = (name) => {
+  if (!started) return;
+  const bp = bodyPositions.find(b => b.name === name);
+  if (!bp) return;
+  const dir = new THREE.Vector3().subVectors(bp.pos, camera.position).normalize();
+  const stopDist = bp.radius * 3 + 0.05;
+  const targetPos = bp.pos.clone().addScaledVector(dir, -stopDist);
+  const targetYaw = Math.atan2(-dir.x, -dir.z);
+  const targetPitch = Math.asin(dir.y);
+  const startPos = camera.position.clone();
+  const startYaw = yaw, startPitch = pitch;
+  let t = 0;
+  const dur = 1.5;
+  function _flyAnim() {
+    t += 1/60;
+    const p = Math.min(t / dur, 1);
+    const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+    camera.position.lerpVectors(startPos, targetPos, e);
+    yaw = startYaw + (targetYaw - startYaw) * e;
+    pitch = startPitch + (targetPitch - startPitch) * e;
+    if (p < 1) requestAnimationFrame(_flyAnim);
+  }
+  _flyAnim();
+};
 
 
 // ═══════════════════════════════════════════════

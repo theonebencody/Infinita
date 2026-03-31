@@ -174,7 +174,8 @@ export default function StatsPage({ open, onFilterYear, onFilterSite }) {
                 return (
                   <g key={y} className="stats-bar" tabIndex={0} role="button" aria-label={`${y}: ${total} launches`}
                     onClick={() => onFilterYear?.(y)}
-                    onMouseMove={e => showTip(e, y, `${total} launches`)} onMouseLeave={hideTip}>
+                    onMouseMove={e => showTip(e, y, `${total} launches`)} onMouseLeave={hideTip}
+                    onTouchStart={e => showTip(e.touches[0], y, `${total} launches`)} onTouchEnd={hideTip}>
                     {segments.map((s, j) => (
                       <rect key={j} x={x} y={barH - s.yOff - s.h} width={bw} height={Math.max(1, s.h)}
                         rx={1} fill={provColor(s.p)} />
@@ -234,7 +235,8 @@ export default function StatsPage({ open, onFilterYear, onFilterSite }) {
                     <circle key={i} className="stats-line-dot" cx={p.x} cy={p.y} r={3}
                       fill={p.outcome === 'failure' ? 'var(--color-failure)' : 'var(--color-success)'}
                       stroke="var(--color-bg-base)" strokeWidth={1.5}
-                      onMouseMove={e => showTip(e, p.name, `${p.rate}% (${p.year})`)} onMouseLeave={hideTip}>
+                      onMouseMove={e => showTip(e, p.name, `${p.rate}% (${p.year})`)} onMouseLeave={hideTip}
+                      onTouchStart={e => showTip(e.touches[0], p.name, `${p.rate}% (${p.year})`)} onTouchEnd={hideTip}>
                       <title>{p.name}: {p.rate}% success rate</title>
                     </circle>
                   ))}
@@ -281,7 +283,8 @@ export default function StatsPage({ open, onFilterYear, onFilterSite }) {
                   <g key={s.name} className="stats-map-marker" tabIndex={0} role="button"
                     aria-label={`${s.name}: ${s.count} launches`}
                     onClick={() => onFilterSite?.(s.name)}
-                    onMouseMove={e => showTip(e, s.name, `${s.count} launches`)} onMouseLeave={hideTip}>
+                    onMouseMove={e => showTip(e, s.name, `${s.count} launches`)} onMouseLeave={hideTip}
+                    onTouchStart={e => showTip(e.touches[0], s.name, `${s.count} launches`)} onTouchEnd={hideTip}>
                     <circle cx={x} cy={y} r={r} fill="var(--color-accent-primary)" opacity={0.15} />
                     <circle cx={x} cy={y} r={r * 0.5} fill="var(--color-accent-primary)" opacity={0.6} />
                     <circle cx={x} cy={y} r={2.5} fill="var(--color-accent-primary)" />

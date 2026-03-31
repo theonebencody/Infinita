@@ -235,7 +235,7 @@
 }
 
 .lp-chip-x {
-  width: 14px; height: 14px;
+  width: 22px; height: 22px;
   border: none; background: rgba(79,195,247,0.12);
   border-radius: 50%;
   color: var(--color-accent-primary);
@@ -243,6 +243,11 @@
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background var(--duration-fast);
+  /* Expand tap target beyond visual size */
+  position: relative;
+}
+.lp-chip-x::before {
+  content: ''; position: absolute; inset: -8px;
 }
 
 .lp-chip-x:hover { background: rgba(79,195,247,0.25); }

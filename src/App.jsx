@@ -5,12 +5,10 @@ import useRecentSearches from './hooks/useRecentSearches.js'
 import useDebounce from './hooks/useDebounce.js'
 import useTheme from './hooks/useTheme.js'
 import ToastContainer from './components/Toasts.jsx'
-import useMissionLog from './hooks/useMissionLog.js'
 
 // Lazy-loaded page components — split into separate chunks
 const LaunchesPage = lazy(() => import('./components/LaunchesPage.jsx'))
 const StatsPage = lazy(() => import('./components/StatsPage.jsx'))
-const MissionLog = lazy(() => import('./components/MissionLog.jsx'))
 const HomePage = lazy(() => import('./components/HomePage.jsx'))
 import ScrollProgress from './components/ScrollProgress.jsx'
 import { SEED_DATA, queryLaunches } from './data/launchDatabase.js'
@@ -24,9 +22,15 @@ function App() {
   const debouncedCmdQuery = useDebounce(cmdQuery, 300)
   const filters = useFilterState()
   const { recent, addSearch } = useRecentSearches()
-  const [sidePanel, setSidePanel] = useState(null) // { type, data } for contextual side panel
+  const [panelStack, setPanelStack] = useState([])
+  const currentPanel = panelStack[panelStack.length - 1] || null
+  const pushPanel = useCallback((p) => setPanelStack(prev => [...prev, p]), [])
+  const popPanel = useCallback(() => setPanelStack(prev => prev.slice(0, -1)), [])
+  const closePanel = useCallback(() => setPanelStack([]), [])
+  const [breadcrumbs, setBreadcrumbs] = useState([])
+  const [lastCmdQuery, setLastCmdQuery] = useState('')
   const { theme, toggle: toggleTheme } = useTheme()
-  const missionLog = useMissionLog(SEED_DATA)
+  const timelineOpenRef = useRef(false)
 
   useEffect(() => {
     let cleanup
@@ -38,29 +42,42 @@ function App() {
     }
   }, [])
 
+  // ── Timeline: open/close old Launch History overlay ──
+  useEffect(() => {
+    if (activeNav === 'timeline' && !timelineOpenRef.current) {
+      import('./scene/launchHistory.js').then(m => { m.openLaunchHistory?.(); timelineOpenRef.current = true })
+    } else if (activeNav !== 'timeline' && timelineOpenRef.current) {
+      import('./scene/launchHistory.js').then(m => { m.closeLaunchHistory?.(); timelineOpenRef.current = false })
+    }
+  }, [activeNav])
+
   // ── Bridge: expose functions for SceneManager ↔ React communication ──
   useEffect(() => {
+    // Global nav setter for SceneManager
+    window.__infinita_setNav = (nav) => setActiveNav(nav)
+    // Breadcrumb updater from SceneManager
+    window.__infinita_updateBreadcrumbs = (crumbs) => setBreadcrumbs(crumbs)
+
     // Called from SceneManager when a launch site marker is clicked in 3D
     window.__infinita_showSiteLaunches = (siteName) => {
-      filters.clearAll()
-      filters.setLaunchSite(siteName)
-      setActiveNav('launches')
-      setSidePanel(null)
+      const siteLaunches = SEED_DATA.filter(l => l.launch_site.toLowerCase().includes(siteName.toLowerCase()))
+      pushPanel({ type: 'siteLaunches', data: { siteName, launches: siteLaunches }, title: siteName })
     }
     // Called from LaunchesPage "View in 3D" button
     window.__infinita_viewIn3D = (launch) => {
       setActiveNav('explore')
-      setSidePanel({ type: 'launch', data: launch })
-      // Tell SceneManager to fly to the launch site
+      pushPanel({ type: 'launch', data: launch, title: launch.mission_name })
       setTimeout(() => {
         window.__infinita_flyToSite?.(launch.launch_site_lat, launch.launch_site_lon, launch.launch_site)
       }, 300)
     }
     return () => {
+      delete window.__infinita_setNav
+      delete window.__infinita_updateBreadcrumbs
       delete window.__infinita_showSiteLaunches
       delete window.__infinita_viewIn3D
     }
-  }, [filters])
+  }, [filters, pushPanel])
 
   // Command palette search results
   const cmdResults = useMemo(() => {
@@ -88,6 +105,7 @@ function App() {
       setCmdQuery(value)
       return // don't close
     }
+    setLastCmdQuery(cmdQuery)
     setCmdQuery('')
     setCmdOpen(false)
   }, [cmdQuery, addSearch, filters])
@@ -95,9 +113,12 @@ function App() {
   // ⌘K / Ctrl+K command palette toggle
   const toggleCmd = useCallback((open) => {
     setCmdOpen(open)
-    if (open) setTimeout(() => cmdInputRef.current?.focus(), 50)
+    if (open) {
+      if (lastCmdQuery) setCmdQuery(lastCmdQuery)
+      setTimeout(() => cmdInputRef.current?.focus(), 50)
+    }
     if (!open) setCmdQuery('')
-  }, [])
+  }, [lastCmdQuery])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -111,8 +132,15 @@ function App() {
       }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [cmdOpen, toggleCmd])
+
+    // Hardware back button (Android) — close overlays in order
+    const onPopState = () => {
+      if (cmdOpen) { toggleCmd(false); history.pushState(null, '', location.href) }
+      else if (panelStack.length > 0) { popPanel(); history.pushState(null, '', location.href) }
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('popstate', onPopState) }
+  }, [cmdOpen, toggleCmd, panelStack, popPanel])
 
   return (
     <>
@@ -130,8 +158,8 @@ function App() {
         <HomePage
           onExplore={() => document.getElementById('splash-explore-btn')?.click()}
           onLaunches={() => {
-            document.getElementById('splash-launches-btn')?.click()
-            setActiveNav('launches')
+            document.getElementById('splash-explore-btn')?.click()
+            setActiveNav('timeline')
           }}
         />
         </Suspense>
@@ -169,10 +197,6 @@ function App() {
           <div className="hud-panel">
             <div className="hud-label">Simulation Date</div>
             <div className="hud-value" id="hud-date">2026.0</div>
-          </div>
-          <div className="hud-panel">
-            <div className="hud-label">Position (AU)</div>
-            <div className="hud-small" id="hud-pos">x: 0 y: 0 z: 0</div>
           </div>
         </div>
 
@@ -575,21 +599,6 @@ function App() {
         </div>
       </div>
 
-      {/* Trivia Panel — sits above Stellar Intelligence */}
-      <div id="trivia-panel">
-        <div className="facts-card">
-          <div className="facts-hdr" id="trivia-toggle">
-            <div className="facts-hdr-title"><span className="facts-hdr-icon">{'\u2728'}</span>Space Trivia</div>
-            <span className="facts-chevron" id="trivia-chevron">{'\u25BC'}</span>
-          </div>
-          <div className="facts-body" id="trivia-body-wrap">
-            <div className="facts-inner">
-              <div className="trivia-question" id="trivia-question"></div>
-              <div className="trivia-answer" id="trivia-answer"></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Fun Facts Panel */}
       <div id="facts-panel">
@@ -652,38 +661,80 @@ function App() {
 
       <div id="labels" />
 
-      {/* ── Contextual Side Panel ── */}
-      {sidePanel && (
-        <div className="ctx-panel open" role="complementary" aria-label="Launch details">
+      {/* ── Contextual Side Panel (stack-based) ── */}
+      {currentPanel && (
+        <div className="ctx-panel open" role="complementary" aria-label="Details panel"
+          onTouchStart={e => { e.currentTarget._touchY = e.touches[0].clientY }}
+          onTouchMove={e => {
+            const dy = e.touches[0].clientY - (e.currentTarget._touchY || 0)
+            if (dy > 0) e.currentTarget.style.transform = `translateY(${dy}px)`
+          }}
+          onTouchEnd={e => {
+            const dy = e.changedTouches[0].clientY - (e.currentTarget._touchY || 0)
+            if (dy > 80) closePanel()
+            else e.currentTarget.style.transform = ''
+          }}>
           <div className="ctx-panel-header">
-            <span className="ctx-panel-title">{sidePanel.data?.mission_name || 'Details'}</span>
-            <button className="ctx-panel-close" onClick={() => setSidePanel(null)} aria-label="Close panel">{'\u2715'}</button>
+            {panelStack.length > 1 && (
+              <button className="ctx-panel-back" onClick={popPanel} aria-label="Back">{'\u2190'}</button>
+            )}
+            <span className="ctx-panel-title">{currentPanel.title || 'Details'}</span>
+            <button className="ctx-panel-close" onClick={closePanel} aria-label="Close panel">{'\u2715'}</button>
           </div>
-          {sidePanel.type === 'launch' && sidePanel.data && (
+          {currentPanel.type === 'launch' && currentPanel.data && (
             <div className="ctx-panel-body">
-              <div className="ctx-panel-field"><span className="ctx-panel-label">Date</span><span className="ctx-panel-value">{sidePanel.data.launch_date}</span></div>
-              <div className="ctx-panel-field"><span className="ctx-panel-label">Rocket</span><span className="ctx-panel-value">{sidePanel.data.rocket_name} {sidePanel.data.rocket_variant}</span></div>
-              <div className="ctx-panel-field"><span className="ctx-panel-label">Provider</span><span className="ctx-panel-value">{sidePanel.data.provider}</span></div>
-              <div className="ctx-panel-field"><span className="ctx-panel-label">Site</span><span className="ctx-panel-value">{sidePanel.data.launch_site}</span></div>
-              <div className="ctx-panel-field"><span className="ctx-panel-label">Orbit</span><span className="ctx-panel-value">{sidePanel.data.orbit_type}</span></div>
-              <div className="ctx-panel-field"><span className="ctx-panel-label">Outcome</span><span className="ctx-panel-value">{sidePanel.data.outcome}</span></div>
-              <div className="ctx-panel-desc">{sidePanel.data.mission_description}</div>
-              {sidePanel.data.firsts?.length > 0 && (
-                <div className="ctx-panel-firsts">{sidePanel.data.firsts.map((f,i) => <div key={i}>{'\u2605'} {f}</div>)}</div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Date</span><span className="ctx-panel-value">{currentPanel.data.launch_date}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Rocket</span><span className="ctx-panel-value">{currentPanel.data.rocket_name} {currentPanel.data.rocket_variant}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Provider</span><span className="ctx-panel-value">{currentPanel.data.provider}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Site</span><span className="ctx-panel-value">{currentPanel.data.launch_site}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Orbit</span><span className="ctx-panel-value">{currentPanel.data.orbit_type}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Outcome</span><span className="ctx-panel-value">{currentPanel.data.outcome}</span></div>
+              <div className="ctx-panel-desc">{currentPanel.data.mission_description}</div>
+              {currentPanel.data.firsts?.length > 0 && (
+                <div className="ctx-panel-firsts">{currentPanel.data.firsts.map((f,i) => <div key={i}>{'\u2605'} {f}</div>)}</div>
               )}
+            </div>
+          )}
+          {currentPanel.type === 'siteLaunches' && currentPanel.data && (
+            <div className="ctx-panel-body">
+              <div className="ctx-panel-site-count">{currentPanel.data.launches.length} launches from this site</div>
+              {currentPanel.data.launches.map(l => (
+                <div key={l.id} className="ctx-panel-launch-row"
+                  onClick={() => pushPanel({ type: 'launch', data: l, title: l.mission_name })}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter') pushPanel({ type: 'launch', data: l, title: l.mission_name }) }}>
+                  <span className="ctx-panel-launch-date">{l.launch_date}</span>
+                  <span className="ctx-panel-launch-name">{l.mission_name}</span>
+                  <span className={`ctx-panel-launch-outcome ${l.outcome}`}>{l.outcome === 'success' ? '\u2713' : l.outcome === 'failure' ? '\u2717' : '\u26A0'}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
       )}
 
+      {/* ── Breadcrumb Bar (Explore mode only) ── */}
+      {activeNav === 'explore' && breadcrumbs.length > 0 && (
+        <div className="breadcrumb-bar" aria-label="Navigation breadcrumb">
+          {breadcrumbs.map((crumb, i) => (
+            <span key={i}>
+              {i > 0 && <span className="breadcrumb-sep">{'\u203A'}</span>}
+              <button className="breadcrumb-item" onClick={() => {
+                if (crumb.action === 'resetView') window.__infinita_resetView?.()
+                else if (crumb.action?.startsWith('flyTo:')) window.__infinita_flyToBody?.(crumb.action.slice(6))
+                closePanel()
+              }}>{crumb.label}</button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* ── Lazy-loaded Pages ── */}
       <Suspense fallback={null}>
-        <LaunchesPage open={activeNav === 'launches'} filters={filters} onTrackLaunch={missionLog.trackLaunch} />
+        <LaunchesPage open={activeNav === 'launches'} filters={filters} />
         <StatsPage open={activeNav === 'stats'}
           onFilterYear={(y) => { filters.clearAll(); filters.setYearRange(Number(y), Number(y)); setActiveNav('launches') }}
           onFilterSite={(s) => { filters.clearAll(); filters.setLaunchSite(s); setActiveNav('launches') }} />
-        <MissionLog open={activeNav === 'timeline'} missionLog={missionLog}
-          onViewLaunch={(l) => { missionLog.trackLaunch(l); filters.clearAll(); filters.setSearch(l.mission_name); setActiveNav('launches') }} />
       </Suspense>
 
       {/* ── Desktop Sidebar ── */}
@@ -712,13 +763,6 @@ function App() {
             </svg></span>
             <span className="nav-sidebar-label">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
           </button>
-          <button className="nav-sidebar-item" onClick={() => setActiveNav('settings')}
-            aria-label="Settings">
-            <span className="nav-sidebar-icon"><svg viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg></span>
-            <span className="nav-sidebar-label">Settings</span>
-          </button>
         </div>
         <button className="nav-search-trigger" onClick={() => toggleCmd(true)} aria-label="Search">
           <span className="nav-search-trigger-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
@@ -735,7 +779,6 @@ function App() {
             ['launches',  'Launches',  <><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></>],
             ['timeline',  'Timeline',  <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>],
             ['stats',     'Stats',     <><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></>],
-            ['settings',  'Settings',  <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>],
           ].map(([id, label, icon]) => (
             <button key={id} className={'nav-bottom-item' + (activeNav === id ? ' active' : '')}
               onClick={() => setActiveNav(id)} aria-label={label}>
@@ -743,6 +786,10 @@ function App() {
               <span className="nav-bottom-label">{label}</span>
             </button>
           ))}
+          <button className="nav-bottom-item" onClick={() => toggleCmd(true)} aria-label="Search">
+            <span className="nav-bottom-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <span className="nav-bottom-label">Search</span>
+          </button>
         </div>
       </nav>
 

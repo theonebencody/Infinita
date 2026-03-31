@@ -148,8 +148,8 @@ export default function HomePage({ onExplore, onLaunches }) {
       <section ref={ctaRef} className={`home-cta${ctaInView ? ' visible' : ''}`} aria-label="Get started">
         <h2 className="home-cta-title">Ready to launch?</h2>
         <div className="home-cta-buttons">
-          <button className="home-cta-btn primary" onClick={onLaunches}>Explore the Database</button>
-          <button className="home-cta-btn" onClick={onExplore}>Enter the Solar System</button>
+          <button className="home-cta-btn primary" onClick={onLaunches}>Browse Launch History</button>
+          <button className="home-cta-btn" onClick={onExplore}>Fly Through Space</button>
         </div>
       </section>
 
