@@ -381,6 +381,46 @@
 
 .cmd-palette-recent-item:hover { background: rgba(79,195,247,0.06); }
 
+/* ── Top Result card ── */
+.cmd-palette-top-result {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  margin: 0 var(--space-2);
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+.cmd-palette-top-result:hover, .cmd-palette-top-result.active {
+  border-color: var(--color-accent-primary);
+  background: rgba(79,195,247,0.06);
+}
+.cmd-palette-top-name {
+  font-family: var(--font-heading);
+  font-size: var(--text-base); font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+.cmd-palette-top-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-2);
+}
+.cmd-palette-top-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-2);
+}
+.cmd-palette-top-outcome {
+  font-size: 10px; letter-spacing: var(--tracking-wider); text-transform: uppercase;
+  padding: 2px var(--space-2); border-radius: var(--radius-full);
+}
+.cmd-palette-top-outcome.success { background: rgba(0,210,106,0.1); color: var(--color-success); }
+.cmd-palette-top-outcome.failure { background: rgba(255,107,107,0.1); color: var(--color-failure); }
+.cmd-palette-top-outcome.partial, .cmd-palette-top-outcome.anomaly { background: rgba(255,193,7,0.08); color: var(--color-anomaly); }
+
 .cmd-palette-recent-icon {
   font-size: var(--text-sm);
   opacity: 0.4;

@@ -79,14 +79,28 @@ function App() {
     }
   }, [filters, pushPanel])
 
-  // Command palette search results
+  // Command palette search results with keyboard navigation
+  const [cmdIdx, setCmdIdx] = useState(-1)
   const cmdResults = useMemo(() => {
     if (!debouncedCmdQuery.trim()) return null
-    const { data } = queryLaunches(SEED_DATA, { search: debouncedCmdQuery, limit: 8 })
+    const { data } = queryLaunches(SEED_DATA, { search: debouncedCmdQuery, limit: 12 })
+    if (data.length === 0) return { topResult: null, launches: [], rockets: [], providers: [], total: 0, allItems: [] }
+    const topResult = data[0]
+    const launches = data.slice(1, 6)
     const rockets = [...new Set(data.map(r => r.rocket_name))].slice(0, 3)
     const providers = [...new Set(data.map(r => r.provider))].slice(0, 3)
-    return { launches: data.slice(0, 5), rockets, providers }
+    // Flat list for keyboard navigation
+    const allItems = [
+      { type: 'launch', value: topResult.mission_name, data: topResult, label: topResult.mission_name },
+      ...launches.map(l => ({ type: 'launch', value: l.mission_name, data: l, label: l.mission_name })),
+      ...rockets.map(r => ({ type: 'rocket', value: r, label: r })),
+      ...providers.map(p => ({ type: 'provider', value: p, label: p })),
+    ]
+    return { topResult, launches, rockets, providers, total: data.length, allItems }
   }, [debouncedCmdQuery])
+
+  // Reset keyboard index when results change
+  useEffect(() => setCmdIdx(-1), [cmdResults])
 
   const handleCmdSelect = useCallback((type, value) => {
     if (cmdQuery.trim()) addSearch(cmdQuery.trim())
@@ -796,41 +810,74 @@ function App() {
       {/* ── Command Palette (⌘K) ── */}
       <div className={'cmd-palette-overlay' + (cmdOpen ? ' open' : '')}
         onClick={(e) => { if (e.target === e.currentTarget) toggleCmd(false) }}
-        role="dialog" aria-modal="true" aria-label="Command palette">
+        role="dialog" aria-modal="true" aria-label="Search missions">
         <div className="cmd-palette">
           <div className="cmd-palette-input-row">
             <span className="cmd-palette-search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <input ref={cmdInputRef} className="cmd-palette-input" type="text"
-              placeholder="Search missions, rockets, planets..." spellCheck="false" autoComplete="off"
+              placeholder="Search missions, rockets, providers..." spellCheck="false" autoComplete="off"
               value={cmdQuery} onChange={e => setCmdQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && cmdQuery.trim()) handleCmdSelect('launch', cmdQuery.trim()) }} />
+              onKeyDown={e => {
+                if (e.key === 'ArrowDown') { e.preventDefault(); setCmdIdx(i => Math.min(i + 1, (cmdResults?.allItems?.length || 0) - 1)) }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); setCmdIdx(i => Math.max(i - 1, -1)) }
+                else if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (cmdIdx >= 0 && cmdResults?.allItems?.[cmdIdx]) {
+                    const item = cmdResults.allItems[cmdIdx]
+                    handleCmdSelect(item.type, item.value)
+                  } else if (cmdQuery.trim()) {
+                    handleCmdSelect('launch', cmdQuery.trim())
+                  }
+                }
+              }} />
             <span className="cmd-palette-kbd">ESC</span>
           </div>
-          <div className="cmd-palette-body" aria-live="polite" aria-atomic="true">
+          <div className="cmd-palette-body" aria-live="polite">
+            {/* Recent searches (when empty) */}
             {!cmdQuery.trim() && recent.length > 0 && (
               <div className="cmd-palette-group">
-                <div className="cmd-palette-group-title">Recent Searches</div>
+                <div className="cmd-palette-group-title">Recent</div>
                 {recent.map(s => (
-                  <div key={s} className="cmd-palette-recent-item" onClick={() => handleCmdSelect('recent', s)}>
+                  <div key={s} className="cmd-palette-recent-item" onClick={() => handleCmdSelect('recent', s)}
+                    role="option" tabIndex={-1}>
                     <span className="cmd-palette-recent-icon">{'\u23F2'}</span>{s}
                   </div>
                 ))}
               </div>
             )}
             {!cmdQuery.trim() && recent.length === 0 && (
-              <div className="cmd-palette-hint">Type to search across the universe</div>
+              <div className="cmd-palette-hint">Try "SpaceX 2024", "mars", or "failed launches"</div>
             )}
-            {cmdQuery.trim() && !cmdResults && (
-              <div className="cmd-palette-hint">Searching...</div>
-            )}
-            {cmdResults && cmdResults.launches.length === 0 && cmdResults.rockets.length === 0 && cmdResults.providers.length === 0 && (
+            {/* No results */}
+            {cmdResults && cmdResults.total === 0 && (
               <div className="cmd-palette-hint">No results for "{cmdQuery}"</div>
             )}
+            {/* Top Result card */}
+            {cmdResults?.topResult && (
+              <div className="cmd-palette-group">
+                <div className="cmd-palette-group-title">Top Result</div>
+                <div className={`cmd-palette-top-result${cmdIdx === 0 ? ' active' : ''}`}
+                  onClick={() => handleCmdSelect('launch', cmdResults.topResult.mission_name)}
+                  role="option" aria-selected={cmdIdx === 0}>
+                  <div className="cmd-palette-top-name">{cmdResults.topResult.mission_name}</div>
+                  <div className="cmd-palette-top-meta">
+                    {cmdResults.topResult.launch_date} {'\u00B7'} {cmdResults.topResult.provider} {'\u00B7'} {cmdResults.topResult.rocket_name}
+                  </div>
+                  <div className="cmd-palette-top-desc">{cmdResults.topResult.mission_description?.slice(0, 120)}...</div>
+                  <span className={`cmd-palette-top-outcome ${cmdResults.topResult.outcome}`}>
+                    {cmdResults.topResult.outcome === 'success' ? '\u2713' : cmdResults.topResult.outcome === 'failure' ? '\u2717' : '\u26A0'} {cmdResults.topResult.outcome}
+                  </span>
+                </div>
+              </div>
+            )}
+            {/* More launches */}
             {cmdResults && cmdResults.launches.length > 0 && (
               <div className="cmd-palette-group">
-                <div className="cmd-palette-group-title">Launches</div>
-                {cmdResults.launches.map(r => (
-                  <div key={r.id} className="cmd-palette-result" onClick={() => handleCmdSelect('launch', r.mission_name)}>
+                <div className="cmd-palette-group-title">Launches ({cmdResults.total} found)</div>
+                {cmdResults.launches.map((r, i) => (
+                  <div key={r.id} className={`cmd-palette-result${cmdIdx === i + 1 ? ' active' : ''}`}
+                    onClick={() => handleCmdSelect('launch', r.mission_name)}
+                    role="option" aria-selected={cmdIdx === i + 1}>
                     <span className="cmd-palette-result-icon">{'\uD83D\uDE80'}</span>
                     <span className="cmd-palette-result-text">{r.mission_name}</span>
                     <span className="cmd-palette-result-meta">{r.launch_date.slice(0,4)} {'\u00B7'} {r.provider}</span>
@@ -838,26 +885,38 @@ function App() {
                 ))}
               </div>
             )}
+            {/* Rockets */}
             {cmdResults && cmdResults.rockets.length > 0 && (
               <div className="cmd-palette-group">
                 <div className="cmd-palette-group-title">Rockets</div>
-                {cmdResults.rockets.map(r => (
-                  <div key={r} className="cmd-palette-result" onClick={() => handleCmdSelect('rocket', r)}>
-                    <span className="cmd-palette-result-icon">{'\u2B06'}</span>
-                    <span className="cmd-palette-result-text">{r}</span>
-                  </div>
-                ))}
+                {cmdResults.rockets.map((r, i) => {
+                  const idx = 1 + (cmdResults.launches?.length || 0) + i
+                  return (
+                    <div key={r} className={`cmd-palette-result${cmdIdx === idx ? ' active' : ''}`}
+                      onClick={() => handleCmdSelect('rocket', r)}
+                      role="option" aria-selected={cmdIdx === idx}>
+                      <span className="cmd-palette-result-icon">{'\u2B06'}</span>
+                      <span className="cmd-palette-result-text">{r}</span>
+                    </div>
+                  )
+                })}
               </div>
             )}
+            {/* Providers */}
             {cmdResults && cmdResults.providers.length > 0 && (
               <div className="cmd-palette-group">
                 <div className="cmd-palette-group-title">Providers</div>
-                {cmdResults.providers.map(p => (
-                  <div key={p} className="cmd-palette-result" onClick={() => handleCmdSelect('provider', p)}>
-                    <span className="cmd-palette-result-icon">{'\uD83C\uDFE2'}</span>
-                    <span className="cmd-palette-result-text">{p}</span>
-                  </div>
-                ))}
+                {cmdResults.providers.map((p, i) => {
+                  const idx = 1 + (cmdResults.launches?.length || 0) + (cmdResults.rockets?.length || 0) + i
+                  return (
+                    <div key={p} className={`cmd-palette-result${cmdIdx === idx ? ' active' : ''}`}
+                      onClick={() => handleCmdSelect('provider', p)}
+                      role="option" aria-selected={cmdIdx === idx}>
+                      <span className="cmd-palette-result-icon">{'\uD83C\uDFE2'}</span>
+                      <span className="cmd-palette-result-text">{p}</span>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

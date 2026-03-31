@@ -117,7 +117,7 @@ export const SEED_DATA = [
 const PAGE_SIZE = 20;
 
 // Pre-build a search index for full-text search
-const _searchableFields = ['mission_name', 'rocket_name', 'rocket_variant', 'provider', 'mission_description'];
+const _searchableFields = ['mission_name', 'rocket_name', 'rocket_variant', 'provider', 'mission_description', 'orbit_type', 'launch_site', 'payload_type'];
 
 function _normalise(str) {
   return (str || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
@@ -132,6 +132,53 @@ const _searchCache = new WeakMap();
 function _getSearchText(record) {
   if (!_searchCache.has(record)) _searchCache.set(record, _buildSearchText(record));
   return _searchCache.get(record);
+}
+
+// ── Fuzzy matching: Levenshtein distance for typo tolerance ──
+function _levenshtein(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      matrix[i][j] = b.charAt(i - 1) === a.charAt(j - 1)
+        ? matrix[i - 1][j - 1]
+        : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function _fuzzyMatch(term, text) {
+  // Exact substring match — fast path
+  if (text.includes(term)) return true;
+  // Fuzzy: check each word in text for close matches
+  const words = text.split(/\s+/);
+  const threshold = term.length <= 3 ? 1 : term.length <= 6 ? 2 : 3;
+  return words.some(w => {
+    if (w.includes(term) || term.includes(w)) return true;
+    // Only compare words of similar length to avoid expensive comparisons
+    if (Math.abs(w.length - term.length) > threshold) return false;
+    return _levenshtein(term, w) <= threshold;
+  });
+}
+
+// ── Smart query parsing: extract year, outcome, and search terms ──
+const _OUTCOME_KEYWORDS = { 'failed': 'failure', 'failure': 'failure', 'fail': 'failure', 'success': 'success', 'successful': 'success', 'partial': 'partial', 'anomaly': 'anomaly' };
+
+function _parseSmartQuery(raw) {
+  const result = { terms: [], year: null, outcome: null };
+  const words = _normalise(raw).split(/\s+/).filter(Boolean);
+  for (const w of words) {
+    if (/^\d{4}$/.test(w)) { result.year = parseInt(w); continue; }
+    if (_OUTCOME_KEYWORDS[w]) { result.outcome = _OUTCOME_KEYWORDS[w]; continue; }
+    // Skip noise words
+    if (['launches', 'launch', 'missions', 'mission', 'from', 'the', 'in', 'of', 'all'].includes(w)) continue;
+    result.terms.push(w);
+  }
+  return result;
 }
 
 
@@ -206,15 +253,35 @@ export function queryLaunches(dataset = SEED_DATA, opts = {}) {
     results = results.filter(r => parseInt(r.launch_date.slice(0, 4)) <= opts.year_max);
   }
 
-  // ── Full-text search ──
+  // ── Full-text search with fuzzy matching and smart parsing ──
 
   if (opts.search) {
-    const terms = _normalise(opts.search).split(/\s+/).filter(Boolean);
+    const parsed = _parseSmartQuery(opts.search);
+    // Apply smart-parsed year filter
+    if (parsed.year) results = results.filter(r => parseInt(r.launch_date.slice(0, 4)) === parsed.year);
+    // Apply smart-parsed outcome filter
+    if (parsed.outcome) results = results.filter(r => r.outcome === parsed.outcome);
+    // Fuzzy match remaining terms
+    const terms = parsed.terms;
     if (terms.length > 0) {
-      results = results.filter(r => {
-        const text = _getSearchText(r);
-        return terms.every(t => text.includes(t));
-      });
+      // Score each result for relevance ranking
+      results = results
+        .map(r => {
+          const text = _getSearchText(r);
+          let score = 0;
+          let allMatch = true;
+          for (const t of terms) {
+            if (text.includes(t)) { score += 10; }
+            else if (_fuzzyMatch(t, text)) { score += 5; }
+            else { allMatch = false; }
+          }
+          // Boost exact name matches
+          const name = _normalise(r.mission_name);
+          for (const t of terms) { if (name.includes(t)) score += 20; }
+          return allMatch ? { ...r, _score: score } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b._score - a._score);
     }
   }
 

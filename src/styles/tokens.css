@@ -329,7 +329,7 @@
 }
 [data-theme="light"] .lp-chip { background: rgba(2,119,189,0.08); border-color: rgba(2,119,189,0.15); }
 [data-theme="light"] .home-hero-cta { color: #ffffff; }
-[data-theme="light"] .home-cta-btn.primary { color: #ffffff; }
+[data-theme="light"] .home-fork-btn.primary { border-color: rgba(2,119,189,0.2); background: linear-gradient(180deg, var(--color-bg-surface), rgba(2,119,189,0.04)); }
 [data-theme="light"] .ctx-panel { background: linear-gradient(180deg, rgba(255,255,255,0.97), rgba(240,241,245,0.95)); }
 [data-theme="light"] .stats-section { background: var(--color-bg-base); }
 [data-theme="light"] .stats-rocket-card { background: linear-gradient(180deg, #f5f6f8, #eef0f4); }
