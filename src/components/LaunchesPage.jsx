@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { SEED_DATA, queryLaunches, getDistinctValues, getYearRange } from '../data/launchDatabase.js'
 import useDebounce from '../hooks/useDebounce.js'
 
@@ -132,6 +132,18 @@ export default function LaunchesPage({ open, filters }) {
   const pageIdx = filters.page || 0
   const setPageIdx = filters.setPage
   const [expandedId, setExpandedId] = useState(null)
+  const chipsRef = useRef(null)
+
+  // Flash chips bar when filters change
+  const prevFilterCount = useRef(0)
+  useEffect(() => {
+    const { activeFiltersList } = filters
+    if (activeFiltersList.length > prevFilterCount.current && chipsRef.current) {
+      chipsRef.current.classList.add('flash')
+      setTimeout(() => chipsRef.current?.classList.remove('flash'), 300)
+    }
+    prevFilterCount.current = activeFiltersList.length
+  }, [filters.activeFiltersList])
   const [density, setDensity] = useState('comfortable')
   const [visibleOptCols, setVisibleOptCols] = useState(new Set())
   const [colPickerOpen, setColPickerOpen] = useState(false)
@@ -251,7 +263,7 @@ export default function LaunchesPage({ open, filters }) {
 
       {/* ── Active filter chips ── */}
       {activeFiltersList.length > 0 && (
-        <div className="lp-chips-bar">
+        <div className="lp-chips-bar" ref={chipsRef}>
           {activeFiltersList.map(f => (
             <span key={f.key} className="lp-chip">
               <span className="lp-chip-type">{f.type}</span>

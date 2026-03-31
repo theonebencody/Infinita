@@ -171,6 +171,31 @@ button:active:not(:disabled), .nav-sidebar-item:active, .nav-bottom-item:active 
 }
 
 
+/* ── 5b. FILTER APPLIED: Brief accent flash on chips bar ────────────────── */
+
+.lp-chips-bar {
+  position: relative;
+}
+
+.lp-chips-bar::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--color-accent-primary);
+  opacity: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.lp-chips-bar.flash::after {
+  animation: chipFlash var(--duration-normal) var(--ease-default);
+}
+
+@keyframes chipFlash {
+  0% { opacity: 0.12; }
+  100% { opacity: 0; }
+}
+
+
 /* ── 6. TOAST NOTIFICATIONS ────────────────────────────────────────────── */
 
 .toast-container {
@@ -213,7 +238,7 @@ button:active:not(:disabled), .nav-sidebar-item:active, .nav-bottom-item:active 
   height: 2px;
   background: var(--color-accent-primary);
   transform-origin: left;
-  animation: toastProgress 5s linear forwards;
+  animation: toastProgress 4s linear forwards;
 }
 
 @keyframes toastIn {
@@ -332,4 +357,10 @@ button:active:not(:disabled), .nav-sidebar-item:active, .nav-bottom-item:active 
   /* No nav glow animation, keep static indicator */
   .nav-sidebar-item.active::before { box-shadow: none; }
   .nav-bottom-item.active::after { box-shadow: none; }
+
+  /* No filter flash */
+  .lp-chips-bar.flash::after { animation: none; }
+
+  /* Side panel content: no delayed fade */
+  .ctx-panel-body { opacity: 1 !important; transition: none !important; }
 }

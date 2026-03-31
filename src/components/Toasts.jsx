@@ -11,11 +11,11 @@ export default function ToastContainer() {
   _addToast = useCallback((message) => {
     const id = Date.now()
     setToasts(prev => [...prev, { id, message }])
-    // Auto-dismiss after 5s
+    // Auto-dismiss after 4s
     setTimeout(() => {
       setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t))
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300)
-    }, 5000)
+    }, 4000)
   }, [])
 
   if (toasts.length === 0) return null

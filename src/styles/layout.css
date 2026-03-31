@@ -491,6 +491,16 @@
   transform: translateX(0);
 }
 
+/* Content fades in after panel finishes sliding */
+.ctx-panel-body {
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-default);
+  transition-delay: var(--duration-slow); /* wait for slide to finish */
+}
+.ctx-panel.open .ctx-panel-body {
+  opacity: 1;
+}
+
 .ctx-panel-header {
   display: flex;
   align-items: center;
