@@ -1,0 +1,335 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-INTERACTIONS — Purposeful motion & delightful details
+   Based on: public/space-website-design-guide.md, Section 7
+   All animations: GPU-only (transform/opacity), token durations, RM-safe
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ── 1. BUTTONS: Radial glow on hover, scale on press ──────────────────── */
+
+button, .lp-tool-btn, .home-hero-cta, .home-cta-btn, .lp-view3d-btn,
+.reset-view-btn, .lp-page-btn, .nav-sidebar-item, .nav-bottom-item,
+.cmd-palette-result, .splash-btn, .lp-filter-clear-btn, .lp-show-more-btn,
+.lp-no-results-btn, .stats-rocket-card {
+  position: relative;
+  transition:
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+}
+
+/* Radial glow pseudo-element */
+.home-hero-cta::after, .home-cta-btn.primary::after, .lp-view3d-btn::after {
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 50%, var(--color-accent-primary), transparent 70%);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity var(--duration-fast) var(--ease-default);
+  pointer-events: none;
+}
+
+.home-hero-cta:hover::after, .home-cta-btn.primary:hover::after, .lp-view3d-btn:hover::after {
+  opacity: 0.15;
+}
+
+/* Press scale */
+button:active:not(:disabled), .nav-sidebar-item:active, .nav-bottom-item:active {
+  transform: scale(0.97) !important;
+}
+
+.home-hero-cta:active, .home-cta-btn:active, .lp-view3d-btn:active {
+  transform: scale(1.02) !important;
+}
+
+
+/* ── 2. LOADING STATES: Orbiting dot animation ─────────────────────────── */
+
+.loading-orbit {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  position: relative;
+}
+
+.loading-orbit::before {
+  content: '';
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--color-accent-primary);
+  position: absolute;
+  animation: orbitSpin 1s linear infinite;
+}
+
+.loading-orbit::after {
+  content: '';
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--color-text-disabled);
+  opacity: 0.4;
+}
+
+@keyframes orbitSpin {
+  from { transform: rotate(0deg) translateX(7px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(7px) rotate(-360deg); }
+}
+
+/* Pulsing star */
+.loading-star {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent-primary);
+  animation: starPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes starPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%      { transform: scale(1.8); opacity: 1; }
+}
+
+
+/* ── 3. DATA TABLE: Scanning glow sweep on hover ──────────────────────── */
+
+.lp-table tbody tr {
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-table tbody tr::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; bottom: 0;
+  width: 60%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(79, 195, 247, 0.03),
+    rgba(79, 195, 247, 0.06),
+    rgba(79, 195, 247, 0.03),
+    transparent
+  );
+  pointer-events: none;
+  transition: none;
+}
+
+.lp-table tbody tr:hover::after {
+  animation: scanSweep 0.8s ease-out forwards;
+}
+
+@keyframes scanSweep {
+  from { left: -60%; }
+  to   { left: 100%; }
+}
+
+[data-theme="light"] .lp-table tbody tr::after {
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(2, 119, 189, 0.03),
+    rgba(2, 119, 189, 0.06),
+    rgba(2, 119, 189, 0.03),
+    transparent
+  );
+}
+
+
+/* ── 4. SEARCH: Results fade-in with staggered upward slide ────────────── */
+
+.cmd-palette-result, .cmd-palette-recent-item {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: resultSlideIn var(--duration-normal) var(--ease-spring) forwards;
+}
+
+.cmd-palette-result:nth-child(1) { animation-delay: 0ms; }
+.cmd-palette-result:nth-child(2) { animation-delay: 50ms; }
+.cmd-palette-result:nth-child(3) { animation-delay: 100ms; }
+.cmd-palette-result:nth-child(4) { animation-delay: 150ms; }
+.cmd-palette-result:nth-child(5) { animation-delay: 200ms; }
+.cmd-palette-result:nth-child(6) { animation-delay: 250ms; }
+
+.cmd-palette-recent-item:nth-child(1) { animation-delay: 0ms; }
+.cmd-palette-recent-item:nth-child(2) { animation-delay: 50ms; }
+.cmd-palette-recent-item:nth-child(3) { animation-delay: 100ms; }
+
+@keyframes resultSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ── 5. FILTER CHIPS: Spring scale in, fade shrink out ─────────────────── */
+
+.lp-chip {
+  animation: chipIn var(--duration-normal) var(--ease-spring);
+}
+
+@keyframes chipIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+
+/* ── 6. TOAST NOTIFICATIONS ────────────────────────────────────────────── */
+
+.toast-container {
+  position: fixed;
+  top: var(--space-4); left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex; flex-direction: column; gap: var(--space-2);
+  pointer-events: none;
+  width: min(90vw, 400px);
+}
+
+.toast {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-lg);
+  pointer-events: all;
+  position: relative;
+  overflow: hidden;
+  animation: toastIn var(--duration-slow) var(--ease-spring);
+}
+
+.toast.exiting {
+  animation: toastOut var(--duration-normal) var(--ease-default) forwards;
+}
+
+.toast-text {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Progress bar border fill */
+.toast::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--color-accent-primary);
+  transform-origin: left;
+  animation: toastProgress 5s linear forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.95); }
+}
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+
+/* ── 7. NAVIGATION: Active indicator glow + page transitions ──────────── */
+
+.nav-sidebar-item.active {
+  position: relative;
+}
+
+.nav-sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px;
+  background: var(--color-accent-primary);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px var(--color-accent-primary), 0 0 16px rgba(79, 195, 247, 0.2);
+}
+
+.nav-bottom-item.active {
+  position: relative;
+}
+
+.nav-bottom-item.active::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 2px;
+  background: var(--color-accent-primary);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 6px var(--color-accent-primary);
+}
+
+/* Page fade transition */
+.launches-page, .stats-page {
+  animation: pageFadeIn var(--duration-normal) var(--ease-default);
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+/* ── 8. SCROLL PROGRESS BAR ────────────────────────────────────────────── */
+
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: calc(var(--z-overlay) + 10);
+  pointer-events: none;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  background: var(--color-accent-primary);
+  box-shadow: 0 0 6px var(--color-accent-primary), 0 0 12px rgba(79, 195, 247, 0.15);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 60ms linear;
+  will-change: transform;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION — Disable ALL micro-interactions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Remove all glow pseudo-elements */
+  .home-hero-cta::after, .home-cta-btn.primary::after, .lp-view3d-btn::after { display: none; }
+
+  /* No press scale */
+  button:active:not(:disabled) { transform: none !important; }
+
+  /* No scan sweep */
+  .lp-table tbody tr::after { display: none; }
+  .lp-table tbody tr:hover::after { animation: none; }
+
+  /* Search results appear instantly */
+  .cmd-palette-result, .cmd-palette-recent-item {
+    opacity: 1; transform: none; animation: none;
+  }
+
+  /* Chips appear instantly */
+  .lp-chip { animation: none; }
+
+  /* Toasts appear/disappear instantly */
+  .toast { animation: none; }
+  .toast.exiting { animation: none; opacity: 0; }
+  .toast::before { animation: none; }
+
+  /* No page fade */
+  .launches-page, .stats-page { animation: none; }
+
+  /* Loading states static */
+  .loading-orbit::before { animation: none; }
+  .loading-star { animation: none; opacity: 1; transform: scale(1); }
+
+  /* No nav glow animation, keep static indicator */
+  .nav-sidebar-item.active::before { box-shadow: none; }
+  .nav-bottom-item.active::after { box-shadow: none; }
+}

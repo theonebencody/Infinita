@@ -320,6 +320,112 @@ MOONS.forEach(m => {
 });
 
 // ═══════════════════════════════════════════════
+//  LAUNCH SITE MARKERS (on Earth)
+// ═══════════════════════════════════════════════
+const LAUNCH_SITES = [
+  { name: 'Cape Canaveral', lat: 28.56, lon: -80.58 },
+  { name: 'Kennedy Space Center', lat: 28.57, lon: -80.65 },
+  { name: 'Vandenberg', lat: 34.63, lon: -120.63 },
+  { name: 'Baikonur', lat: 45.92, lon: 63.34 },
+  { name: 'Kourou', lat: 5.24, lon: -52.77 },
+  { name: 'Tanegashima', lat: 30.4, lon: 131.0 },
+  { name: 'Wenchang', lat: 19.61, lon: 110.95 },
+  { name: 'Satish Dhawan', lat: 13.73, lon: 80.23 },
+  { name: 'Boca Chica', lat: 25.99, lon: -97.16 },
+  { name: 'Mahia', lat: -39.26, lon: 177.86 },
+  { name: 'Vostochny', lat: 51.88, lon: 128.33 },
+];
+const _earthMesh = planetMeshes.find(p => p.data.name === 'Earth')?.mesh;
+const _launchMarkers = [];
+if (_earthMesh) {
+  const earthR = PLANETS.find(p => p.name === 'Earth').rVis;
+  LAUNCH_SITES.forEach(site => {
+    const phi = (90 - site.lat) * Math.PI / 180;
+    const theta = (site.lon + 180) * Math.PI / 180;
+    const r = earthR * 1.02;
+    const x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.cos(phi);
+    const z = r * Math.sin(phi) * Math.sin(theta);
+    const dotGeo = new THREE.SphereGeometry(earthR * 0.06, 8, 8);
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0x4fc3f7, transparent: true, opacity: 0.85 });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.set(x, y, z);
+    dot.userData.launchSite = site.name;
+    _earthMesh.add(dot);
+    // Glow sprite
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = 16; glowCanvas.height = 16;
+    const gctx = glowCanvas.getContext('2d');
+    const gg = gctx.createRadialGradient(8,8,0,8,8,8);
+    gg.addColorStop(0, 'rgba(79,195,247,0.8)');
+    gg.addColorStop(0.5, 'rgba(79,195,247,0.2)');
+    gg.addColorStop(1, 'rgba(79,195,247,0)');
+    gctx.fillStyle = gg; gctx.fillRect(0,0,16,16);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(glowCanvas), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+    }));
+    glow.scale.setScalar(earthR * 0.25);
+    glow.position.copy(dot.position);
+    _earthMesh.add(glow);
+    _launchMarkers.push(dot);
+  });
+}
+
+// Clicking a launch site marker → show launches from that site
+const _siteRaycaster = new THREE.Raycaster();
+const _siteMouse = new THREE.Vector2();
+renderer.domElement.addEventListener('click', (e) => {
+  if (!started || _launchMarkers.length === 0) return;
+  _siteMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  _siteMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  _siteRaycaster.setFromCamera(_siteMouse, camera);
+  const hits = _siteRaycaster.intersectObjects(_launchMarkers, false);
+  if (hits.length > 0) {
+    const siteName = hits[0].object.userData.launchSite;
+    if (siteName && window.__infinita_showSiteLaunches) {
+      window.__infinita_showSiteLaunches(siteName);
+    }
+  }
+});
+
+// Bridge: fly camera to a lat/lon on Earth (called from React)
+window.__infinita_flyToSite = (lat, lon, siteName) => {
+  if (!_earthMesh || !started) return;
+  const earthR = PLANETS.find(p => p.name === 'Earth').rVis;
+  // Fly to Earth first if far away
+  const earthPos = _earthMesh.position.clone();
+  const distToEarth = camera.position.distanceTo(earthPos);
+  const stopDist = earthR * 4;
+  // Calculate viewing angle from site lat/lon
+  const phi = (90 - lat) * Math.PI / 180;
+  const theta = (lon + 180) * Math.PI / 180;
+  const surfDir = new THREE.Vector3(
+    Math.sin(phi) * Math.cos(theta),
+    Math.cos(phi),
+    Math.sin(phi) * Math.sin(theta)
+  ).normalize();
+  const targetPos = earthPos.clone().addScaledVector(surfDir, stopDist);
+  const lookDir = new THREE.Vector3().subVectors(earthPos, targetPos).normalize();
+  const targetYaw = Math.atan2(-lookDir.x, -lookDir.z);
+  const targetPitch = Math.asin(lookDir.y);
+  const startPos = camera.position.clone();
+  const startYaw = yaw, startPitch = pitch;
+  let t = 0;
+  const dur = distToEarth > 1 ? 2.5 : 1.5;
+  currentScale = 0; applyScale();
+  function _flyToSiteAnim() {
+    t += 1/60;
+    const p = Math.min(t / dur, 1);
+    const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+    camera.position.lerpVectors(startPos, targetPos, e);
+    yaw = startYaw + (targetYaw - startYaw) * e;
+    pitch = startPitch + (targetPitch - startPitch) * e;
+    if (p < 1) requestAnimationFrame(_flyToSiteAnim);
+  }
+  _flyToSiteAnim();
+};
+
+// ═══════════════════════════════════════════════
 //  ASTEROID BELT
 // ═══════════════════════════════════════════════
 const asteroidCount = isMobile ? 800 : 2000;
@@ -4740,6 +4846,110 @@ if (earthMeshRef) initSatellites(scene, earthMeshRef);
 
 
 // Launch History extracted to launchHistory.js
+
+
+// ═══════════════════════════════════════════════
+//  RESET VIEW BUTTON
+// ═══════════════════════════════════════════════
+document.getElementById('reset-view-btn')?.addEventListener('click', () => {
+  if (!started) return;
+  // Smoothly animate camera back to default solar system view
+  const targetPos = new THREE.Vector3(0, 1.5, 4);
+  const startPos = camera.position.clone();
+  const startYaw = yaw, startPitch = pitch;
+  const targetYaw = Math.PI, targetPitch = -0.3;
+  let t = 0;
+  const dur = 1.5; // seconds
+  function _resetAnim() {
+    t += 1/60;
+    const p = Math.min(t / dur, 1);
+    // ease in-out
+    const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+    camera.position.lerpVectors(startPos, targetPos, e);
+    yaw = startYaw + (targetYaw - startYaw) * e;
+    pitch = startPitch + (targetPitch - startPitch) * e;
+    if (p < 1) requestAnimationFrame(_resetAnim);
+  }
+  currentScale = 0;
+  applyScale();
+  _resetAnim();
+});
+
+
+// ═══════════════════════════════════════════════
+//  CLICK PLANET TO FLY (raycasting)
+// ═══════════════════════════════════════════════
+const _raycaster = new THREE.Raycaster();
+const _rayMouse = new THREE.Vector2();
+const _planetClickMeshes = planetMeshes.map(pm => pm.mesh);
+
+renderer.domElement.addEventListener('dblclick', (e) => {
+  if (!started || travelActive) return;
+  _rayMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  _rayMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  _raycaster.setFromCamera(_rayMouse, camera);
+  // Expand hit detection — planets are small, use a slightly larger threshold
+  _raycaster.params.Points = { threshold: 0.1 };
+  const hits = _raycaster.intersectObjects(_planetClickMeshes, false);
+  if (hits.length > 0) {
+    const hitMesh = hits[0].object;
+    const bp = bodyPositions.find(b => b.pos === hitMesh.position);
+    if (bp) {
+      // Fly camera to 3 radii from the planet
+      const dir = new THREE.Vector3().subVectors(bp.pos, camera.position).normalize();
+      const stopDist = bp.radius * 3 + 0.05;
+      const targetPos = bp.pos.clone().addScaledVector(dir, -stopDist);
+      const targetYaw = Math.atan2(-dir.x, -dir.z);
+      const targetPitch = Math.asin(dir.y);
+      const startPos = camera.position.clone();
+      const startYaw = yaw, startPitch = pitch;
+      let t = 0;
+      const dur = 1.5;
+      function _flyAnim() {
+        t += 1/60;
+        const p = Math.min(t / dur, 1);
+        const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+        camera.position.lerpVectors(startPos, targetPos, e);
+        yaw = startYaw + (targetYaw - startYaw) * e;
+        pitch = startPitch + (targetPitch - startPitch) * e;
+        if (p < 1) requestAnimationFrame(_flyAnim);
+      }
+      _flyAnim();
+    }
+  }
+});
+
+
+// ═══════════════════════════════════════════════
+//  FIRST-TIME GESTURE HINT OVERLAY
+// ═══════════════════════════════════════════════
+const _gestureHint = document.getElementById('gesture-hint');
+if (_gestureHint && !localStorage.getItem('infinita-gesture-seen')) {
+  // Show after controls overlay is dismissed
+  const _gestureWatch = setInterval(() => {
+    if (_introPhase === 'tip' || _introPhase === 'done') {
+      clearInterval(_gestureWatch);
+      _gestureHint.classList.add('active');
+      // Dismiss on any user interaction (delay to avoid catching the controls-close event)
+      setTimeout(() => {
+      const _dismiss = () => {
+        _gestureHint.classList.remove('active');
+        localStorage.setItem('infinita-gesture-seen', '1');
+        window.removeEventListener('mousedown', _dismiss);
+        window.removeEventListener('touchstart', _dismiss);
+        window.removeEventListener('wheel', _dismiss);
+        window.removeEventListener('keydown', _dismiss);
+      };
+      window.addEventListener('mousedown', _dismiss, { once: false });
+      window.addEventListener('touchstart', _dismiss, { once: false });
+      window.addEventListener('wheel', _dismiss, { once: false });
+      window.addEventListener('keydown', _dismiss, { once: false });
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => { if (_gestureHint.classList.contains('active')) _dismiss(); }, 5000);
+      }, 500); // delay dismissal listener registration
+    }
+  }, 300);
+}
 
 
 }

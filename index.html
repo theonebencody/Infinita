@@ -2,11 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Infinita</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Infinita — Every rocket launch in history, visualized. Explore 7,000+ launches in an interactive 3D solar system with real NASA data." />
+    <meta name="theme-color" content="#0d1117" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="/Infinita/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/Infinita/favicon.svg" />
+    <title>Infinita — Space Launch Explorer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+      /* Critical CSS — shown before JS loads (prevents FOUC / CLS) */
+      body { margin: 0; background: #0d1117; overflow: hidden; }
+      #root { min-height: 100vh; min-height: 100dvh; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

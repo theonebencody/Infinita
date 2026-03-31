@@ -1,6 +1,6 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace;color:#0ef;user-select:none;touch-action:none;-webkit-touch-callout:none}
-  #canvas-container canvas{display:block;position:fixed;top:0;left:0;touch-action:none}
+  #canvas-container canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%;touch-action:none}
 
   #splash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#0a0a10;cursor:default;transition:opacity 0.8s}
   #splash.hidden{opacity:0;pointer-events:none;visibility:hidden}
@@ -252,6 +252,22 @@
   .splash-hover-box-inner{background:rgba(255,255,255,0.06);border:none;border-radius:0;padding:18px 28px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
   .splash-hover-box-text{font-size:12px;color:rgba(255,255,255,0.5);line-height:2;letter-spacing:0.3px}
 
+  /* ── Reset View Button ── */
+  .reset-view-btn{background:rgba(0,12,25,0.7);border:1px solid rgba(0,238,255,0.2);color:rgba(0,238,255,0.6);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:6px 14px;cursor:pointer;border-radius:4px;transition:all 0.15s;white-space:nowrap;margin-top:6px;display:block}
+  .reset-view-btn:hover{border-color:rgba(0,238,255,0.5);color:#0ef;background:rgba(0,238,255,0.08)}
+  .reset-view-btn:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(0,0,2,0.9),0 0 0 4px #4fc3f7}
+
+  /* ── Gesture Hint Overlay ── */
+  .gesture-hint{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:20;display:none;gap:32px;padding:16px 28px;background:rgba(0,10,22,0.85);border:1px solid rgba(0,238,255,0.15);border-radius:12px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);pointer-events:none;animation:gestureIn 0.5s ease}
+  .gesture-hint.active{display:flex}
+  .gesture-hint-item{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .gesture-hint-icon{font-size:24px;opacity:0.7;animation:gestureBob 2s ease-in-out infinite}
+  .gesture-hint-text{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(0,238,255,0.6);white-space:nowrap}
+  @keyframes gestureIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  @keyframes gestureBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  @media(max-width:768px){.gesture-hint{gap:20px;padding:12px 18px}.gesture-hint-icon{font-size:20px}.gesture-hint-text{font-size:9px}}
+  @media(prefers-reduced-motion:reduce){.gesture-hint-icon{animation:none}.gesture-hint{animation:none}}
+
   /* ── Launch History Overlay ── */
   .lh-overlay{position:fixed;inset:0;z-index:300;background:radial-gradient(ellipse at 50% 0%, rgba(0,18,36,0.97), rgba(0,4,10,0.99) 60%, rgba(0,0,2,1) 100%);display:none;flex-direction:column;overflow:hidden}
   .lh-overlay::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.4) 100%);pointer-events:none;z-index:-1}
@@ -468,7 +484,7 @@
   /* ── Era Button Grid ── */
   .lh-era-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
   .lh-era-btn{background:linear-gradient(170deg,rgba(0,18,36,0.85) 0%,rgba(0,8,18,0.95) 100%);border:1px solid rgba(0,238,255,0.1);border-top:1px solid rgba(0,238,255,0.16);border-left:3px solid var(--era-color,#0ef);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all 0.35s cubic-bezier(0.22,1,0.36,1);position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.45),0 0 1px rgba(0,238,255,0.12),inset 0 1px 0 rgba(0,238,255,0.06)}
-  .lh-era-btn:hover{border-color:var(--era-color,#0ef);transform:translateY(-8px);box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 32px color-mix(in srgb, var(--era-color) 18%, transparent),0 0 1px var(--era-color,#0ef),inset 0 1px 0 rgba(0,238,255,0.12)}
+  .lh-era-btn:hover{border-color:var(--era-color,#0ef);transform:translateY(-8px);box-shadow:0 24px 64px rgba(0,0,0,0.55),0 0 32px rgba(0,238,255,0.12),0 0 1px var(--era-color,#0ef),inset 0 1px 0 rgba(0,238,255,0.12)}
   .lh-era-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--era-color,#0ef),transparent);opacity:0.5}
   .lh-era-btn-icon{font-size:22px;margin-bottom:8px;opacity:0.8}
   .lh-era-btn-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;letter-spacing:2px;color:var(--era-color,#0ef);margin-bottom:4px}
@@ -599,7 +615,7 @@
   #launch-history .lh-od-first-name{color:rgba(200,210,225,0.7)}
   #launch-history .lh-od-first-tag{color:#d4a44a}
   #launch-history .lh-era-btn{background:rgba(14,20,34,0.85);border-color:rgba(60,80,120,0.12);border-top-color:rgba(60,80,120,0.2);border-left:3px solid var(--era-color,rgba(100,160,255,0.3));box-shadow:0 6px 28px rgba(0,0,0,0.4),inset 0 1px 0 rgba(100,150,220,0.03)}
-  #launch-history .lh-era-btn:hover{border-color:rgba(100,160,255,0.2);border-left-color:var(--era-color,rgba(100,160,255,0.5));transform:translateY(-8px);box-shadow:0 22px 60px rgba(0,0,0,0.55),0 0 24px color-mix(in srgb, var(--era-color) 12%, transparent),inset 0 1px 0 rgba(100,150,220,0.06)}
+  #launch-history .lh-era-btn:hover{border-color:rgba(100,160,255,0.2);border-left-color:var(--era-color,rgba(100,160,255,0.5));transform:translateY(-8px);box-shadow:0 22px 60px rgba(0,0,0,0.55),0 0 24px rgba(100,160,255,0.08),inset 0 1px 0 rgba(100,150,220,0.06)}
   #launch-history .lh-era-btn::before{background:linear-gradient(90deg,transparent,var(--era-color,rgba(100,160,255,0.3)),transparent);opacity:0.4}
   #launch-history .lh-era-btn-title{color:var(--era-color,#7aa2f7)}
   #launch-history .lh-era-btn-range{color:rgba(140,165,200,0.45)}
@@ -879,3 +895,10 @@
   .mp-sidebar{width:100%;max-height:50vh;border-left:none;border-top:1px solid rgba(0,238,255,0.08)}
   .mp-rocket-grid,.mp-dest-grid{grid-template-columns:1fr}
 }
+
+/* ── Light Theme Global Overrides ── */
+[data-theme="light"] #splash{background:#f5f6f8}
+[data-theme="light"] #splash .splash-bg-canvas{opacity:0.06}
+[data-theme="light"] .splash-title{color:#1a1a2e}
+[data-theme="light"] .splash-sub{color:#555566}
+[data-theme="light"] body{background:#f5f6f8}

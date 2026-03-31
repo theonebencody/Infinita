@@ -1,7 +1,32 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from 'react'
+import StarFieldBg from './components/StarFieldBg.jsx'
+import useFilterState from './hooks/useFilterState.js'
+import useRecentSearches from './hooks/useRecentSearches.js'
+import useDebounce from './hooks/useDebounce.js'
+import useTheme from './hooks/useTheme.js'
+import ToastContainer from './components/Toasts.jsx'
+import useMissionLog from './hooks/useMissionLog.js'
+
+// Lazy-loaded page components — split into separate chunks
+const LaunchesPage = lazy(() => import('./components/LaunchesPage.jsx'))
+const StatsPage = lazy(() => import('./components/StatsPage.jsx'))
+const MissionLog = lazy(() => import('./components/MissionLog.jsx'))
+const HomePage = lazy(() => import('./components/HomePage.jsx'))
+import ScrollProgress from './components/ScrollProgress.jsx'
+import { SEED_DATA, queryLaunches } from './data/launchDatabase.js'
 
 function App() {
   const canvasContainer = useRef(null)
+  const [cmdOpen, setCmdOpen] = useState(false)
+  const [activeNav, setActiveNav] = useState('explore')
+  const cmdInputRef = useRef(null)
+  const [cmdQuery, setCmdQuery] = useState('')
+  const debouncedCmdQuery = useDebounce(cmdQuery, 300)
+  const filters = useFilterState()
+  const { recent, addSearch } = useRecentSearches()
+  const [sidePanel, setSidePanel] = useState(null) // { type, data } for contextual side panel
+  const { theme, toggle: toggleTheme } = useTheme()
+  const missionLog = useMissionLog(SEED_DATA)
 
   useEffect(() => {
     let cleanup
@@ -13,30 +38,103 @@ function App() {
     }
   }, [])
 
+  // ── Bridge: expose functions for SceneManager ↔ React communication ──
+  useEffect(() => {
+    // Called from SceneManager when a launch site marker is clicked in 3D
+    window.__infinita_showSiteLaunches = (siteName) => {
+      filters.clearAll()
+      filters.setLaunchSite(siteName)
+      setActiveNav('launches')
+      setSidePanel(null)
+    }
+    // Called from LaunchesPage "View in 3D" button
+    window.__infinita_viewIn3D = (launch) => {
+      setActiveNav('explore')
+      setSidePanel({ type: 'launch', data: launch })
+      // Tell SceneManager to fly to the launch site
+      setTimeout(() => {
+        window.__infinita_flyToSite?.(launch.launch_site_lat, launch.launch_site_lon, launch.launch_site)
+      }, 300)
+    }
+    return () => {
+      delete window.__infinita_showSiteLaunches
+      delete window.__infinita_viewIn3D
+    }
+  }, [filters])
+
+  // Command palette search results
+  const cmdResults = useMemo(() => {
+    if (!debouncedCmdQuery.trim()) return null
+    const { data } = queryLaunches(SEED_DATA, { search: debouncedCmdQuery, limit: 8 })
+    const rockets = [...new Set(data.map(r => r.rocket_name))].slice(0, 3)
+    const providers = [...new Set(data.map(r => r.provider))].slice(0, 3)
+    return { launches: data.slice(0, 5), rockets, providers }
+  }, [debouncedCmdQuery])
+
+  const handleCmdSelect = useCallback((type, value) => {
+    if (cmdQuery.trim()) addSearch(cmdQuery.trim())
+    if (type === 'launch') {
+      filters.setSearch(value)
+      setActiveNav('launches')
+    } else if (type === 'rocket') {
+      filters.clearAll()
+      filters.setSearch(value)
+      setActiveNav('launches')
+    } else if (type === 'provider') {
+      filters.clearAll()
+      filters.toggleProvider(value)
+      setActiveNav('launches')
+    } else if (type === 'recent') {
+      setCmdQuery(value)
+      return // don't close
+    }
+    setCmdQuery('')
+    setCmdOpen(false)
+  }, [cmdQuery, addSearch, filters])
+
+  // ⌘K / Ctrl+K command palette toggle
+  const toggleCmd = useCallback((open) => {
+    setCmdOpen(open)
+    if (open) setTimeout(() => cmdInputRef.current?.focus(), 50)
+    if (!open) setCmdQuery('')
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        toggleCmd(!cmdOpen)
+      }
+      if (e.key === 'Escape' && cmdOpen) {
+        e.stopPropagation()
+        toggleCmd(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [cmdOpen, toggleCmd])
+
   return (
     <>
-      <div ref={canvasContainer} id="canvas-container" />
+      <StarFieldBg />
+      <div ref={canvasContainer} id="canvas-container" aria-label="Interactive 3D view of the solar system" role="img" />
 
       <div id="splash">
         <canvas id="splash-bg" className="splash-bg-canvas"></canvas>
-        <div className="splash-inner">
-          <div className="splash-title">INFINITA</div>
-          <div className="splash-sub">Life on Earth is finite. Life beyond is infinite.</div>
-          <div className="splash-buttons">
-            <button className="splash-btn splash-btn-primary" id="splash-explore-btn"
-              data-hover-desc="Pilot your own spacecraft through an accurate 3D solar system. Visit all 8 planets with real NASA textures, 18 moons, asteroids, and comets. Search and travel to over 15 million real stars, galaxies, and nebulae from the SIMBAD database. Control the flow of time from paused to 27 years per second. Track real satellites in orbit using live data.">
-              <div className="splash-btn-icon">{'\u2B21'}</div>
-              <div className="splash-btn-label">EXPLORE UNIVERSE</div>
-            </button>
-            <button className="splash-btn" id="splash-launches-btn"
-              data-hover-desc="Dive into a comprehensive database of over 1,300 real space launches spanning from 1957 to 2026 across 21 organizations worldwide. Explore interactive 3D globes of Earth, Mars, and the solar system showing mission trajectories. Browse detailed timelines, organization profiles, and defining moments in spaceflight history.">
-              <div className="splash-btn-icon">{'\uD83D\uDE80'}</div>
-              <div className="splash-btn-label">LAUNCH HISTORY</div>
-            </button>
-            {/* Launch Simulator and Mission Planner hidden — tabled for now */}
-          </div>
-        </div>
+        {/* Hidden buttons for SceneManager.js event listeners */}
+        <button id="splash-explore-btn" style={{ display: 'none' }} aria-hidden="true" />
+        <button id="splash-launches-btn" style={{ display: 'none' }} aria-hidden="true" />
         <div className="splash-hover-box" id="splash-hover-box"></div>
+        {/* Scrollytelling homepage */}
+        <Suspense fallback={null}>
+        <HomePage
+          onExplore={() => document.getElementById('splash-explore-btn')?.click()}
+          onLaunches={() => {
+            document.getElementById('splash-launches-btn')?.click()
+            setActiveNav('launches')
+          }}
+        />
+        </Suspense>
       </div>
 
       <div id="hud">
@@ -85,9 +183,26 @@ function App() {
           <div className="hud-panel controls-help" id="controls-help">
             <span>C</span> Show all controls
           </div>
+          <button className="reset-view-btn" id="reset-view-btn" aria-label="Reset view to solar system overview" style={{pointerEvents:'all'}}>{'\u2302'} Reset View</button>
         </div>
 
         <div className="cruise-tip" id="cruise-tip">Press R for a good time</div>
+
+        {/* Gesture hint for first-time visitors */}
+        <div className="gesture-hint" id="gesture-hint" aria-hidden="true">
+          <div className="gesture-hint-item">
+            <div className="gesture-hint-icon">{'\uD83D\uDD90\uFE0F'}</div>
+            <div className="gesture-hint-text">Drag to look around</div>
+          </div>
+          <div className="gesture-hint-item">
+            <div className="gesture-hint-icon">{'\u2195'}</div>
+            <div className="gesture-hint-text">Scroll to adjust speed</div>
+          </div>
+          <div className="gesture-hint-item">
+            <div className="gesture-hint-icon">{'\uD83D\uDDB1\uFE0F'}</div>
+            <div className="gesture-hint-text">Double-click a planet to fly to it</div>
+          </div>
+        </div>
 
         <div className="hud-ticker" id="hud-ticker">
           <span className="hud-ticker-text" id="hud-ticker-text"></span>
@@ -96,7 +211,7 @@ function App() {
         {/* Controls overlay */}
         <div className="controls-overlay" id="controls-overlay">
           <div className="controls-card">
-            <div className="controls-card-title">CONTROLS <button className="panel-close-btn" id="controls-close-btn">{'\u2715'}</button></div>
+            <div className="controls-card-title">CONTROLS <button className="panel-close-btn" id="controls-close-btn" aria-label="Close controls">{'\u2715'}</button></div>
             <div className="controls-grid">
 
               <div>
@@ -148,7 +263,7 @@ function App() {
         {/* Search overlay */}
         <div className="search-overlay">
           <div className="search-panel" id="search-panel">
-            <div className="search-title">Object Database Search <button className="panel-close-btn" id="search-close-btn">{'\u2715'}</button></div>
+            <div className="search-title">Object Database Search <button className="panel-close-btn" id="search-close-btn" aria-label="Close search">{'\u2715'}</button></div>
             <input type="text" className="search-input" id="search-input" placeholder="Search stars, exoplanets, planets..." autoComplete="off" spellCheck="false" />
             <div className="search-results" id="search-results"></div>
             <div className="search-hint">ESC / F to close {'\u00A0'}{'\u00B7'}{'\u00A0'} Enter or click to travel {'\u00A0'}{'\u00B7'}{'\u00A0'} Powered by SIMBAD (~15M objects)</div>
@@ -159,7 +274,7 @@ function App() {
       {/* Travel Panel */}
       <div className="travel-panel" id="travel-panel">
         <div className="travel-card">
-          <div className="travel-card-title">NAVIGATION COMPUTER <button className="panel-close-btn" id="travel-close-btn">{'\u2715'}</button></div>
+          <div className="travel-card-title">NAVIGATION COMPUTER <button className="panel-close-btn" id="travel-close-btn" aria-label="Close navigation">{'\u2715'}</button></div>
           <div className="travel-section">
             <div className="travel-section-label">Destination</div>
             <input className="travel-dest-input" id="travel-dest-input" placeholder="Search star, planet, galaxy…" autoComplete="off" spellCheck="false" />
@@ -209,7 +324,7 @@ function App() {
       {/* Welcome Intro */}
       <div id="welcome-intro" className="welcome-overlay">
         <div className="welcome-card">
-          <button className="panel-close-btn" id="welcome-close-btn" style={{position:'absolute',top:'12px',right:'12px',transform:'none'}}>{'\u2715'}</button>
+          <button className="panel-close-btn" id="welcome-close-btn" aria-label="Close welcome" style={{position:'absolute',top:'12px',right:'12px',transform:'none'}}>{'\u2715'}</button>
           <div className="welcome-icon">{'\u2B21'}</div>
           <div className="welcome-title">WELCOME, EXPLORER</div>
           <div className="welcome-text">
@@ -229,7 +344,7 @@ function App() {
       {/* Astro Report Overlay */}
       <div id="mission-report" className="report-overlay">
         <div className="report-card">
-          <button className="panel-close-btn" id="report-close-btn">{'\u2715'}</button>
+          <button className="panel-close-btn" id="report-close-btn" aria-label="Close report">{'\u2715'}</button>
           <div className="report-header">
             <div className="report-icon">{'\u2263'}</div>
             <div className="report-title">ASTRO REPORT</div>
@@ -326,15 +441,15 @@ function App() {
           <button className="lh-back-btn" id="sim-back-btn">{'\u2190'} BACK</button>
           <div className="fp-title">STARSHIP FLIGHT PROFILE</div>
           <div className="fp-controls">
-            <button className="fp-ctrl-btn" id="fp-play-btn">{'\u25B6'}</button>
-            <button className="fp-ctrl-btn" id="fp-pause-btn">{'\u23F8'}</button>
+            <button className="fp-ctrl-btn" id="fp-play-btn" aria-label="Play">{'\u25B6'}</button>
+            <button className="fp-ctrl-btn" id="fp-pause-btn" aria-label="Pause">{'\u23F8'}</button>
             <select className="fp-speed-select" id="fp-speed-select" defaultValue="10">
               <option value="1">1x</option>
               <option value="2">2x</option>
               <option value="5">5x</option>
               <option value="10">10x</option>
             </select>
-            <button className="fp-ctrl-btn" id="fp-reset-btn">{'\u21BA'}</button>
+            <button className="fp-ctrl-btn" id="fp-reset-btn" aria-label="Reset">{'\u21BA'}</button>
           </div>
         </div>
         <div className="fp-body">
@@ -380,8 +495,8 @@ function App() {
           <button className="lh-back-btn" id="mp-back-btn">{'\u2190'} BACK</button>
           <div className="mp-title">MISSION PLANNER</div>
           <div className="mp-exec-controls" id="mp-exec-controls" style={{display:'none'}}>
-            <button className="fp-ctrl-btn" id="mp-play-btn">{'\u25B6'}</button>
-            <button className="fp-ctrl-btn" id="mp-pause-btn">{'\u23F8'}</button>
+            <button className="fp-ctrl-btn" id="mp-play-btn" aria-label="Play">{'\u25B6'}</button>
+            <button className="fp-ctrl-btn" id="mp-pause-btn" aria-label="Pause">{'\u23F8'}</button>
             <select className="fp-speed-select" id="mp-speed-select" defaultValue="1">
               <option value="0.5">0.5x</option>
               <option value="1">1x</option>
@@ -497,7 +612,7 @@ function App() {
 
       {/* Mobile Menu */}
       <div id="mobile-menu" className="mob-menu">
-        <button className="mob-menu-toggle" id="mob-menu-toggle">{'\u2630'}</button>
+        <button className="mob-menu-toggle" id="mob-menu-toggle" aria-label="Menu">{'\u2630'}</button>
         <div className="mob-menu-panel" id="mob-menu-panel">
           <div className="mob-menu-section">
             <div className="mob-menu-title">NAVIGATION</div>
@@ -536,6 +651,180 @@ function App() {
       </div>
 
       <div id="labels" />
+
+      {/* ── Contextual Side Panel ── */}
+      {sidePanel && (
+        <div className="ctx-panel open" role="complementary" aria-label="Launch details">
+          <div className="ctx-panel-header">
+            <span className="ctx-panel-title">{sidePanel.data?.mission_name || 'Details'}</span>
+            <button className="ctx-panel-close" onClick={() => setSidePanel(null)} aria-label="Close panel">{'\u2715'}</button>
+          </div>
+          {sidePanel.type === 'launch' && sidePanel.data && (
+            <div className="ctx-panel-body">
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Date</span><span className="ctx-panel-value">{sidePanel.data.launch_date}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Rocket</span><span className="ctx-panel-value">{sidePanel.data.rocket_name} {sidePanel.data.rocket_variant}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Provider</span><span className="ctx-panel-value">{sidePanel.data.provider}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Site</span><span className="ctx-panel-value">{sidePanel.data.launch_site}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Orbit</span><span className="ctx-panel-value">{sidePanel.data.orbit_type}</span></div>
+              <div className="ctx-panel-field"><span className="ctx-panel-label">Outcome</span><span className="ctx-panel-value">{sidePanel.data.outcome}</span></div>
+              <div className="ctx-panel-desc">{sidePanel.data.mission_description}</div>
+              {sidePanel.data.firsts?.length > 0 && (
+                <div className="ctx-panel-firsts">{sidePanel.data.firsts.map((f,i) => <div key={i}>{'\u2605'} {f}</div>)}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Lazy-loaded Pages ── */}
+      <Suspense fallback={null}>
+        <LaunchesPage open={activeNav === 'launches'} filters={filters} onTrackLaunch={missionLog.trackLaunch} />
+        <StatsPage open={activeNav === 'stats'}
+          onFilterYear={(y) => { filters.clearAll(); filters.setYearRange(Number(y), Number(y)); setActiveNav('launches') }}
+          onFilterSite={(s) => { filters.clearAll(); filters.setLaunchSite(s); setActiveNav('launches') }} />
+        <MissionLog open={activeNav === 'timeline'} missionLog={missionLog}
+          onViewLaunch={(l) => { missionLog.trackLaunch(l); filters.clearAll(); filters.setSearch(l.mission_name); setActiveNav('launches') }} />
+      </Suspense>
+
+      {/* ── Desktop Sidebar ── */}
+      <nav className="nav-sidebar" aria-label="Main navigation">
+        <div className="nav-sidebar-brand">I</div>
+        <div className="nav-sidebar-items">
+          {[
+            ['explore',   'Explore',   <><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></>],
+            ['launches',  'Launches',  <><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></>],
+            ['timeline',  'Timeline',  <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>],
+            ['stats',     'Stats',     <><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></>],
+          ].map(([id, label, icon]) => (
+            <button key={id} className={'nav-sidebar-item' + (activeNav === id ? ' active' : '')}
+              onClick={() => setActiveNav(id)} aria-label={label}>
+              <span className="nav-sidebar-icon"><svg viewBox="0 0 24 24">{icon}</svg></span>
+              <span className="nav-sidebar-label">{label}</span>
+            </button>
+          ))}
+          <div className="nav-sidebar-spacer" />
+          <button className="nav-sidebar-item" onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <span className="nav-sidebar-icon"><svg viewBox="0 0 24 24">
+              {theme === 'dark'
+                ? <><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>
+                : <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>}
+            </svg></span>
+            <span className="nav-sidebar-label">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+          <button className="nav-sidebar-item" onClick={() => setActiveNav('settings')}
+            aria-label="Settings">
+            <span className="nav-sidebar-icon"><svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg></span>
+            <span className="nav-sidebar-label">Settings</span>
+          </button>
+        </div>
+        <button className="nav-search-trigger" onClick={() => toggleCmd(true)} aria-label="Search">
+          <span className="nav-search-trigger-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <span className="nav-search-trigger-text">Search</span>
+          <span className="nav-search-trigger-kbd">{'\u2318'}K</span>
+        </button>
+      </nav>
+
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="nav-bottom" aria-label="Main navigation">
+        <div className="nav-bottom-items">
+          {[
+            ['explore',   'Explore',   <><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></>],
+            ['launches',  'Launches',  <><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></>],
+            ['timeline',  'Timeline',  <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>],
+            ['stats',     'Stats',     <><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></>],
+            ['settings',  'Settings',  <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>],
+          ].map(([id, label, icon]) => (
+            <button key={id} className={'nav-bottom-item' + (activeNav === id ? ' active' : '')}
+              onClick={() => setActiveNav(id)} aria-label={label}>
+              <span className="nav-bottom-icon"><svg viewBox="0 0 24 24">{icon}</svg></span>
+              <span className="nav-bottom-label">{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* ── Command Palette (⌘K) ── */}
+      <div className={'cmd-palette-overlay' + (cmdOpen ? ' open' : '')}
+        onClick={(e) => { if (e.target === e.currentTarget) toggleCmd(false) }}
+        role="dialog" aria-modal="true" aria-label="Command palette">
+        <div className="cmd-palette">
+          <div className="cmd-palette-input-row">
+            <span className="cmd-palette-search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input ref={cmdInputRef} className="cmd-palette-input" type="text"
+              placeholder="Search missions, rockets, planets..." spellCheck="false" autoComplete="off"
+              value={cmdQuery} onChange={e => setCmdQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && cmdQuery.trim()) handleCmdSelect('launch', cmdQuery.trim()) }} />
+            <span className="cmd-palette-kbd">ESC</span>
+          </div>
+          <div className="cmd-palette-body" aria-live="polite" aria-atomic="true">
+            {!cmdQuery.trim() && recent.length > 0 && (
+              <div className="cmd-palette-group">
+                <div className="cmd-palette-group-title">Recent Searches</div>
+                {recent.map(s => (
+                  <div key={s} className="cmd-palette-recent-item" onClick={() => handleCmdSelect('recent', s)}>
+                    <span className="cmd-palette-recent-icon">{'\u23F2'}</span>{s}
+                  </div>
+                ))}
+              </div>
+            )}
+            {!cmdQuery.trim() && recent.length === 0 && (
+              <div className="cmd-palette-hint">Type to search across the universe</div>
+            )}
+            {cmdQuery.trim() && !cmdResults && (
+              <div className="cmd-palette-hint">Searching...</div>
+            )}
+            {cmdResults && cmdResults.launches.length === 0 && cmdResults.rockets.length === 0 && cmdResults.providers.length === 0 && (
+              <div className="cmd-palette-hint">No results for "{cmdQuery}"</div>
+            )}
+            {cmdResults && cmdResults.launches.length > 0 && (
+              <div className="cmd-palette-group">
+                <div className="cmd-palette-group-title">Launches</div>
+                {cmdResults.launches.map(r => (
+                  <div key={r.id} className="cmd-palette-result" onClick={() => handleCmdSelect('launch', r.mission_name)}>
+                    <span className="cmd-palette-result-icon">{'\uD83D\uDE80'}</span>
+                    <span className="cmd-palette-result-text">{r.mission_name}</span>
+                    <span className="cmd-palette-result-meta">{r.launch_date.slice(0,4)} {'\u00B7'} {r.provider}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {cmdResults && cmdResults.rockets.length > 0 && (
+              <div className="cmd-palette-group">
+                <div className="cmd-palette-group-title">Rockets</div>
+                {cmdResults.rockets.map(r => (
+                  <div key={r} className="cmd-palette-result" onClick={() => handleCmdSelect('rocket', r)}>
+                    <span className="cmd-palette-result-icon">{'\u2B06'}</span>
+                    <span className="cmd-palette-result-text">{r}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {cmdResults && cmdResults.providers.length > 0 && (
+              <div className="cmd-palette-group">
+                <div className="cmd-palette-group-title">Providers</div>
+                {cmdResults.providers.map(p => (
+                  <div key={p} className="cmd-palette-result" onClick={() => handleCmdSelect('provider', p)}>
+                    <span className="cmd-palette-result-icon">{'\uD83C\uDFE2'}</span>
+                    <span className="cmd-palette-result-text">{p}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="cmd-palette-footer">
+            <span className="cmd-palette-footer-hint"><kbd>{'\u2191'}{'\u2193'}</kbd> navigate</span>
+            <span className="cmd-palette-footer-hint"><kbd>{'\u21B5'}</kbd> select</span>
+            <span className="cmd-palette-footer-hint"><kbd>esc</kbd> close</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Toasts & Scroll Progress ── */}
+      <ToastContainer />
+      <ScrollProgress target={activeNav === 'launches' ? '.lp-body' : activeNav === 'stats' ? '.stats-body' : '.home-scroll'} />
     </>
   )
 }
