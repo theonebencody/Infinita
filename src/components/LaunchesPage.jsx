@@ -4,6 +4,14 @@ import useDebounce from '../hooks/useDebounce.js'
 
 const PAGE_SIZE = 20
 
+const ORBIT_GLOSSARY = {
+  LEO: 'Low Earth Orbit', GTO: 'Transfer to Geostationary', GEO: 'Geostationary Orbit',
+  MEO: 'Medium Earth Orbit', SSO: 'Sun-Synchronous Orbit', ISS: 'International Space Station',
+  TLI: 'Trans-Lunar Injection', HEO: 'Highly Elliptical Orbit',
+  Mars: 'Mars trajectory', Moon: 'Lunar trajectory',
+  interplanetary: 'Beyond Earth orbit', suborbital: 'Below orbital altitude',
+}
+
 const OUTCOME_CFG = {
   success: { icon: '\u2713', label: 'Success',  cls: 'lp-outcome-success' },
   failure: { icon: '\u2717', label: 'Failure',  cls: 'lp-outcome-failure' },
@@ -324,7 +332,7 @@ export default function LaunchesPage({ open, filters }) {
                       <td className="lp-col-rocket">{r.rocket_name}{r.rocket_variant !== r.rocket_name ? ` ${r.rocket_variant}` : ''}</td>
                       <td className="lp-col-provider">{r.provider}</td>
                       <td className="lp-col-outcome"><OutcomeBadge outcome={r.outcome} /></td>
-                      <td className="lp-col-orbit" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-subtle)' }}>{r.orbit_type}</td>
+                      <td className="lp-col-orbit" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-subtle)' }} title={ORBIT_GLOSSARY[r.orbit_type] || r.orbit_type}>{r.orbit_type}</td>
                       {showSite    && <td className="lp-col-site" title={r.launch_site}>{r.launch_site}</td>}
                       {showMass    && <td className="lp-col-mass">{fmtMass(r.payload_mass_kg)}</td>}
                       {showLanding && <td className="lp-col-landing">{r.booster_landing_outcome || '\u2014'}</td>}
@@ -384,7 +392,7 @@ export default function LaunchesPage({ open, filters }) {
                   <div className="lp-card-detail">
                     <div className="lp-card-desc">{r.mission_description}</div>
                     <div className="lp-card-meta">
-                      <div><div className="lp-card-meta-label">Orbit</div><div className="lp-card-meta-value">{r.orbit_type}</div></div>
+                      <div><div className="lp-card-meta-label">Orbit</div><div className="lp-card-meta-value" title={ORBIT_GLOSSARY[r.orbit_type] || r.orbit_type}>{ORBIT_GLOSSARY[r.orbit_type] || r.orbit_type}</div></div>
                       <div><div className="lp-card-meta-label">Payload</div><div className="lp-card-meta-value">{fmtMass(r.payload_mass_kg)}</div></div>
                       <div><div className="lp-card-meta-label">Site</div><div className="lp-card-meta-value">{r.launch_site}</div></div>
                       <div><div className="lp-card-meta-label">Landing</div><div className="lp-card-meta-value">{r.booster_landing_outcome || 'N/A'}</div></div>

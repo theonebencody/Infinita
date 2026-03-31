@@ -198,7 +198,7 @@ function App() {
           onExplore={() => document.getElementById('splash-explore-btn')?.click()}
           onLaunches={() => {
             document.getElementById('splash-explore-btn')?.click()
-            setActiveNav('timeline')
+            setActiveNav('launches')
           }}
         />
         </Suspense>
@@ -811,7 +811,8 @@ function App() {
         <LaunchesPage open={activeNav === 'launches'} filters={filters} />
         <StatsPage open={activeNav === 'stats'}
           onFilterYear={(y) => { filters.clearAll(); filters.setYearRange(Number(y), Number(y)); setActiveNav('launches') }}
-          onFilterSite={(s) => { filters.clearAll(); filters.setLaunchSite(s); setActiveNav('launches') }} />
+          onFilterSite={(s) => { filters.clearAll(); filters.setLaunchSite(s); setActiveNav('launches') }}
+          onFilterRocket={(r) => { filters.clearAll(); filters.setSearch(r); setActiveNav('launches') }} />
       </Suspense>
 
       {/* ── Desktop Sidebar ── */}

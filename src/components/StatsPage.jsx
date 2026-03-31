@@ -68,7 +68,7 @@ function useScrollReveal() {
 }
 
 
-export default function StatsPage({ open, onFilterYear, onFilterSite }) {
+export default function StatsPage({ open, onFilterYear, onFilterSite, onFilterRocket }) {
   const [tip, setTip] = useState(null)
 
   const ref1 = useScrollReveal()
@@ -338,7 +338,10 @@ export default function StatsPage({ open, onFilterYear, onFilterSite }) {
               const barH = r.height ? (r.height / maxH) * 100 : (r.launches / maxRocketLaunches) * 100
               const active = r.lastYear >= 2024
               return (
-                <div key={r.name} className="stats-rocket-card">
+                <div key={r.name} className="stats-rocket-card" style={{ cursor: 'pointer' }}
+                  onClick={() => onFilterRocket?.(r.name)}
+                  role="button" tabIndex={0} aria-label={`${r.name}: ${r.launches} launches, ${rate}% success`}
+                  onKeyDown={e => { if (e.key === 'Enter') onFilterRocket?.(r.name) }}>
                   <div className="stats-rocket-bar-wrap">
                     <div className="stats-rocket-bar" style={{ height: `${barH}%` }} />
                   </div>
