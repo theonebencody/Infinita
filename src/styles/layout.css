@@ -724,7 +724,9 @@
   transition: color var(--duration-fast), background var(--duration-fast);
   letter-spacing: var(--tracking-wide);
 }
-.breadcrumb-item:hover { color: var(--color-text-primary); background: rgba(79,195,247,0.06); }
+.breadcrumb-item:hover:not(:disabled) { color: var(--color-text-primary); background: rgba(79,195,247,0.06); }
+.breadcrumb-item.current { color: var(--color-text-primary); cursor: default; opacity: 1; }
+.breadcrumb-item:disabled { opacity: 1; cursor: default; }
 .breadcrumb-item:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 .breadcrumb-sep {

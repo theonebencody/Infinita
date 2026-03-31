@@ -472,6 +472,14 @@ window.__infinita_flyToSite = (lat, lon, siteName) => {
     yaw = startYaw + (targetYaw - startYaw) * e;
     pitch = startPitch + (targetPitch - startPitch) * e;
     if (p < 1) requestAnimationFrame(_flyToSiteAnim);
+    else {
+      // Emit enriched breadcrumb with site name
+      window.__infinita_updateBreadcrumbs?.([
+        { label: 'Solar System', action: 'resetView' },
+        { label: 'Earth', action: 'flyTo:Earth' },
+        { label: siteName.split(',')[0], action: null },
+      ]);
+    }
   }
   _flyToSiteAnim();
 };
@@ -2962,9 +2970,23 @@ function goToNearest() {
   });
   if (target) {
     const dir = new THREE.Vector3().subVectors(target.pos, camera.position).normalize();
-    camera.position.copy(target.pos).addScaledVector(dir, -(target.radius * 3 + 0.05));
-    yaw = Math.atan2(-dir.x, -dir.z);
-    pitch = Math.asin(dir.y);
+    const targetPos = target.pos.clone().addScaledVector(dir, -(target.radius * 3 + 0.05));
+    const targetYaw = Math.atan2(-dir.x, -dir.z);
+    const targetPitch = Math.asin(dir.y);
+    const startPos = camera.position.clone();
+    const startYaw = yaw, startPitch = pitch;
+    let t = 0;
+    const dur = Math.min(2.0, Math.max(0.8, minDist * 0.5));
+    function _goAnim() {
+      t += 1/60;
+      const p = Math.min(t / dur, 1);
+      const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+      camera.position.lerpVectors(startPos, targetPos, e);
+      yaw = startYaw + (targetYaw - startYaw) * e;
+      pitch = startPitch + (targetPitch - startPitch) * e;
+      if (p < 1) requestAnimationFrame(_goAnim);
+    }
+    _goAnim();
   }
 }
 
@@ -4860,6 +4882,9 @@ function animate(now) {
       window.__infinita_updateBreadcrumbs(crumbs);
     }
   }
+  // Update compass needle rotation (mobile)
+  const _compassNeedle = document.getElementById('compass-needle');
+  if (_compassNeedle) _compassNeedle.setAttribute('transform', `rotate(${(yaw * 180 / Math.PI) % 360}, 20, 20)`);
   // Advance Grok shader time for animated planet surfaces
   _grokTime.value += dt * 0.5;
   renderer.render(scene, camera);

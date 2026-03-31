@@ -206,6 +206,14 @@ function App() {
 
       <div id="hud">
         <div className="crosshair"></div>
+        {/* Compass widget — shows camera orientation on mobile */}
+        <div className="compass-widget" id="compass-widget" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="40" height="40">
+            <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(79,195,247,0.2)" strokeWidth="1"/>
+            <line id="compass-needle" x1="20" y1="20" x2="20" y2="6" stroke="var(--color-accent-primary)" strokeWidth="2" strokeLinecap="round"/>
+            <text x="20" y="5" textAnchor="middle" fill="var(--color-accent-primary)" fontSize="6" fontFamily="var(--font-mono)">N</text>
+          </svg>
+        </div>
 
         <div className="hud-tl">
           <div className="hud-panel">
@@ -254,16 +262,12 @@ function App() {
         {/* Gesture hint for first-time visitors */}
         <div className="gesture-hint" id="gesture-hint" aria-hidden="true">
           <div className="gesture-hint-item">
-            <div className="gesture-hint-icon">{'\uD83D\uDD90\uFE0F'}</div>
+            <div className="gesture-hint-icon">{'\u270B'}</div>
             <div className="gesture-hint-text">Drag to look around</div>
           </div>
           <div className="gesture-hint-item">
-            <div className="gesture-hint-icon">{'\u2195'}</div>
-            <div className="gesture-hint-text">Scroll to adjust speed</div>
-          </div>
-          <div className="gesture-hint-item">
             <div className="gesture-hint-icon">{'\uD83D\uDDB1\uFE0F'}</div>
-            <div className="gesture-hint-text">Double-click a planet to fly to it</div>
+            <div className="gesture-hint-text">Double-click a planet</div>
           </div>
         </div>
 
@@ -793,11 +797,10 @@ function App() {
           {breadcrumbs.map((crumb, i) => (
             <span key={i}>
               {i > 0 && <span className="breadcrumb-sep">{'\u203A'}</span>}
-              <button className="breadcrumb-item" onClick={() => {
-                if (crumb.action === 'resetView') window.__infinita_resetView?.()
-                else if (crumb.action?.startsWith('flyTo:')) window.__infinita_flyToBody?.(crumb.action.slice(6))
-                closePanel()
-              }}>{crumb.label}</button>
+              <button className={`breadcrumb-item${!crumb.action ? ' current' : ''}`} onClick={() => {
+                if (crumb.action === 'resetView') { window.__infinita_resetView?.(); closePanel() }
+                else if (crumb.action?.startsWith('flyTo:')) { window.__infinita_flyToBody?.(crumb.action.slice(6)); closePanel() }
+              }} disabled={!crumb.action}>{crumb.label}</button>
             </span>
           ))}
         </div>
